@@ -1,0 +1,812 @@
+     1→     1→<!DOCTYPE html>
+     2→     2→<html lang="en">
+     3→     3→<head>
+     4→     4→  <meta charset="UTF-8" />
+     5→     5→  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     6→     6→  <meta name="theme-color" content="#153f2d" />
+     7→     7→  <meta name="description" content="New City Acupuncture & Wellness Center offers personalized acupuncture and holistic care for pain, stress, and better health in New City, NY." />
+     8→     8→  <title>New City Acupuncture & Wellness Center | Personalized Holistic Care</title>
+     9→     9→  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    10→    10→  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    11→    11→  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    12→    12→  <style>
+    13→    13→    :root {
+    14→    14→      --forest: #173f2e;
+    15→    15→      --forest-deep: #103322;
+    16→    16→      --forest-soft: #315b44;
+    17→    17→      --cream: #f8f4eb;
+    18→    18→      --cream-2: #f1eadb;
+    19→    19→      --paper: #fffdf8;
+    20→    20→      --ink: #1d2821;
+    21→    21→      --muted: #59645c;
+    22→    22→      --gold: #c4a15c;
+    23→    23→      --line: rgba(28, 63, 45, .15);
+    24→    24→      --shadow: 0 12px 34px rgba(31, 48, 35, .10);
+    25→    25→      --serif: "Cormorant Garamond", Georgia, serif;
+    26→    26→      --sans: "DM Sans", Arial, sans-serif;
+    27→    27→      --max: 1320px;
+    28→    28→    }
+    29→    29→
+    30→    30→    * { box-sizing: border-box; }
+    31→    31→    html { scroll-behavior: smooth; scroll-padding-top: 126px; }
+    32→    32→    body {
+    33→    33→      margin: 0;
+    34→    34→      color: var(--ink);
+    35→    35→      background: var(--paper);
+    36→    36→      font-family: var(--sans);
+    37→    37→      font-size: 15px;
+    38→    38→      line-height: 1.65;
+    39→    39→      -webkit-font-smoothing: antialiased;
+    40→    40→    }
+    41→    41→    img { display: block; max-width: 100%; }
+    42→    42→    a { color: inherit; text-decoration: none; }
+    43→    43→    button, input, textarea { font: inherit; }
+    44→    44→    button, a { -webkit-tap-highlight-color: transparent; }
+    45→    45→    .container { width: min(var(--max), calc(100% - 64px)); margin-inline: auto; }
+    46→    46→    .eyebrow {
+    47→    47→      display: inline-flex;
+    48→    48→      align-items: center;
+    49→    49→      gap: 10px;
+    50→    50→      color: var(--forest-soft);
+    51→    51→      font-size: .75rem;
+    52→    52→      font-weight: 700;
+    53→    53→      letter-spacing: .17em;
+    54→    54→      text-transform: uppercase;
+    55→    55→    }
+    56→    56→    .eyebrow::before { content: ""; display: inline-block; width: 30px; height: 1px; background: var(--gold); }
+    57→    57→    .section-heading { text-align: center; margin: 0 auto 30px; }
+    58→    58→    .section-heading h2 {
+    59→    59→      display: inline-flex;
+    60→    60→      align-items: center;
+    61→    61→      gap: 18px;
+    62→    62→      margin: 0;
+    63→    63→      color: var(--forest);
+    64→    64→      font: 600 clamp(2rem, 3vw, 2.8rem)/.98 var(--serif);
+    65→    65→      letter-spacing: -.025em;
+    66→    66→    }
+    67→    67→    .section-heading h2::before, .section-heading h2::after {
+    68→    68→      content: ""; width: clamp(42px, 9vw, 120px); height: 1px; background: var(--gold);
+    69→    69→    }
+    70→    70→    .section-heading p { margin: 8px 0 0; color: var(--muted); font: italic 1.12rem/1.3 var(--serif); }
+    71→    71→    .btn {
+    72→    72→      display: inline-flex;
+    73→    73→      align-items: center;
+    74→    74→      justify-content: center;
+    75→    75→      gap: 10px;
+    76→    76→      min-height: 48px;
+    77→    77→      padding: 0 24px;
+    78→    78→      border: 1px solid transparent;
+    79→    79→      border-radius: 999px;
+    80→    80→      background: var(--forest);
+    81→    81→      color: #fff;
+    82→    82→      font-size: .75rem;
+    83→    83→      font-weight: 700;
+    84→    84→      letter-spacing: .055em;
+    85→    85→      text-transform: uppercase;
+    86→    86→      transition: transform .25s ease, background .25s ease, box-shadow .25s ease;
+    87→    87→      cursor: pointer;
+    88→    88→    }
+    89→    89→    .btn:hover { transform: translateY(-3px); background: var(--forest-deep); box-shadow: 0 9px 20px rgba(18, 55, 36, .18); }
+    90→    90→    .btn-outline { color: var(--forest); border-color: rgba(23, 63, 46, .45); background: rgba(255,255,255,.25); }
+    91→    91→    .btn-outline:hover { color: #fff; border-color: var(--forest); background: var(--forest); }
+    92→    92→    .arrow { font-size: 1.05rem; line-height: 1; }
+    93→    93→
+    94→    94→    /* Header */
+    95→    95→    .site-header {
+    96→    96→      position: relative;
+    97→    97→      z-index: 50;
+    98→    98→      background: rgba(255, 253, 247, .97);
+    99→    99→      border-bottom: 1px solid rgba(34, 63, 44, .10);
+   100→   100→      box-shadow: 0 4px 18px rgba(34, 48, 36, .045);
+   101→   101→    }
+   102→   102→    .header-main {
+   103→   103→      min-height: 86px;
+   104→   104→      display: flex;
+   105→   105→      align-items: center;
+   106→   106→      justify-content: space-between;
+   107→   107→      gap: 26px;
+   108→   108→    }
+   109→   109→    .brand { display: inline-flex; align-items: center; gap: 13px; min-width: 310px; color: var(--forest); }
+   110→   110→    .brand-mark { width: 65px; height: 60px; flex: 0 0 auto; }
+   111→   111→    .brand-copy { display: flex; flex-direction: column; line-height: 1; }
+   112→   112→    .brand-name { font: 700 2.12rem/.9 var(--serif); letter-spacing: .035em; white-space: nowrap; }
+   113→   113→    .brand-tag { margin-top: 7px; font-size: .57rem; font-weight: 700; letter-spacing: .15em; white-space: nowrap; }
+   114→   114→    .header-contact { display: flex; align-items: center; justify-content: flex-end; gap: 22px; margin-left: auto; }
+   115→   115→    .contact-chip { display: inline-flex; align-items: center; gap: 9px; color: #242b25; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+   116→   116→    .contact-chip svg { width: 17px; height: 17px; color: var(--forest); flex: 0 0 auto; }
+   117→   117→    .header-book { min-height: 42px; padding-inline: 19px; border-radius: 9px; }
+   118→   118→    .header-nav { border-top: 1px solid rgba(33, 65, 45, .075); }
+   119→   119→    .nav-inner { min-height: 49px; display: flex; justify-content: flex-end; align-items: stretch; gap: clamp(15px, 2.15vw, 34px); }
+   120→   120→    .nav-link, .nav-dropdown-toggle {
+   121→   121→      position: relative;
+   122→   122→      display: inline-flex;
+   123→   123→      align-items: center;
+   124→   124→      gap: 6px;
+   125→   125→      border: 0;
+   126→   126→      padding: 0;
+   127→   127→      background: transparent;
+   128→   128→      color: #202821;
+   129→   129→      font-size: .78rem;
+   130→   130→      font-weight: 600;
+   131→   131→      cursor: pointer;
+   132→   132→      transition: color .2s ease;
+   133→   133→    }
+   134→   134→    .nav-link::after, .nav-dropdown-toggle::after {
+   135→   135→      content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+   136→   136→      background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform .25s ease;
+   137→   137→    }
+   138→   138→    .nav-link:hover, .nav-dropdown-toggle:hover, .nav-link.active { color: var(--forest); }
+   139→   139→    .nav-link:hover::after, .nav-dropdown-toggle:hover::after, .nav-link.active::after { transform: scaleX(1); }
+   140→   140→    .nav-dropdown { position: relative; display: flex; align-items: stretch; }
+   141→   141→    .nav-dropdown-toggle svg { width: 12px; height: 12px; transition: transform .2s ease; }
+   142→   142→    .nav-dropdown:hover .nav-dropdown-toggle svg, .nav-dropdown.open .nav-dropdown-toggle svg { transform: rotate(180deg); }
+   143→   143→    .dropdown-menu {
+   144→   144→      position: absolute; top: calc(100% - 1px); left: -18px; min-width: 245px; padding: 10px;
+   145→   145→      background: var(--paper); border: 1px solid var(--line); border-radius: 0 0 12px 12px;
+   146→   146→      box-shadow: var(--shadow); opacity: 0; visibility: hidden; transform: translateY(8px);
+   147→   147→      transition: opacity .2s ease, transform .2s ease, visibility .2s ease;
+   148→   148→    }
+   149→   149→    .nav-dropdown:hover .dropdown-menu, .nav-dropdown:focus-within .dropdown-menu, .nav-dropdown.open .dropdown-menu { opacity: 1; visibility: visible; transform: translateY(0); }
+   150→   150→    .dropdown-menu a { display: block; padding: 9px 12px; border-radius: 7px; color: var(--ink); font-size: .8rem; transition: background .2s ease, color .2s ease; }
+   151→   151→    .dropdown-menu a:hover { color: var(--forest); background: var(--cream-2); }
+   152→   152→    .mobile-toggle { display: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--forest); cursor: pointer; }
+   153→   153→    .mobile-toggle svg { width: 22px; height: 22px; }
+   154→   154→
+   155→   155→    /* Hero */
+   156→   156→    .hero {
+   157→   157→      position: relative;
+   158→   158→      min-height: 430px;
+   159→   159→      display: flex;
+   160→   160→      align-items: center;
+   161→   161→      overflow: hidden;
+   162→   162→      isolation: isolate;
+   163→   163→      background: #e9e4d3;
+   164→   164→    }
+   165→   165→    .hero::before {
+   166→   166→      content: ""; position: absolute; inset: 0; z-index: -2;
+   167→   167→      background: url("https://newcitywellness.com/wp-content/uploads/2023/01/20221231_200451-min.jpg") center 47%/cover no-repeat;
+   168→   168→      transform: scale(1.015);
+   169→   169→    }
+   170→   170→    .hero::after {
+   171→   171→      content: ""; position: absolute; inset: 0; z-index: -1;
+   172→   172→      background: linear-gradient(90deg, rgba(250,248,235,.98) 0%, rgba(250,248,235,.93) 31%, rgba(250,248,235,.68) 48%, rgba(250,248,235,.07) 73%, rgba(20,37,25,.12) 100%);
+   173→   173→    }
+   174→   174→    .hero-content { width: min(var(--max), calc(100% - 64px)); margin: 0 auto; padding: 58px 0 60px; }
+   175→   175→    .hero-copy { max-width: 560px; }
+   176→   176→    .hero .eyebrow { color: #314d39; margin-bottom: 14px; }
+   177→   177→    .hero h1 {
+   178→   178→      max-width: 580px;
+   179→   179→      margin: 0 0 18px;
+   180→   180→      color: var(--forest);
+   181→   181→      font: 700 clamp(2.65rem, 4.4vw, 4.2rem)/.92 var(--serif);
+   182→   182→      letter-spacing: -.035em;
+   183→   183→    }
+   184→   184→    .hero p { max-width: 530px; margin: 0; color: #202820; font-size: .99rem; line-height: 1.58; }
+   185→   185→    .hero-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 25px; }
+   186→   186→    .hero-stamp {
+   187→   187→      position: absolute; top: 22%; right: max(4.5%, calc((100vw - var(--max))/2 + 20px));
+   188→   188→      width: 132px; min-height: 124px; padding: 16px 14px; display: grid; place-content: center; justify-items: center;
+   189→   189→      border: 1px solid rgba(255,255,255,.7); border-radius: 13px; background: rgba(255,252,239,.88);
+   190→   190→      box-shadow: 0 12px 30px rgba(31, 46, 32, .13); text-align: center; backdrop-filter: blur(5px);
+   191→   191→    }
+   192→   192→    .hero-stamp svg { width: 37px; height: 37px; margin-bottom: 6px; color: var(--forest); }
+   193→   193→    .hero-stamp span { color: var(--forest-deep); font: 600 1.03rem/1.05 var(--serif); }
+   194→   194→
+   195→   195→    /* Therapies */
+   196→   196→    .therapies { padding: 24px 0 16px; background: linear-gradient(180deg, #fffefa, #fbf8f0); }
+   197→   197→    .therapies .section-heading { margin-bottom: 23px; }
+   198→   198→    .therapy-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; }
+   199→   199→    .therapy-card {
+   200→   200→      overflow: hidden; border: 1px solid rgba(160, 132, 75, .22); border-radius: 10px;
+   201→   201→      background: #fffaf0; box-shadow: 0 3px 9px rgba(42, 52, 35, .06);
+   202→   202→      transition: transform .3s ease, box-shadow .3s ease;
+   203→   203→    }
+   204→   204→    .therapy-card:hover { transform: translateY(-5px); box-shadow: 0 13px 25px rgba(42, 52, 35, .13); }
+   205→   205→    .therapy-image { height: 116px; overflow: hidden; background: var(--cream-2); }
+   206→   206→    .therapy-image img { width: 100%; height: 100%; object-fit: cover; transition: transform .55s ease; }
+   207→   207→    .therapy-card:hover .therapy-image img { transform: scale(1.07); }
+   208→   208→    .therapy-body { min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 9px 10px 10px; text-align: center; }
+   209→   209→    .therapy-body h3 { margin: 0; color: #171d17; font: 700 1.04rem/1.02 var(--serif); }
+   210→   210→    .therapy-body a { margin-top: 7px; color: var(--forest); font-size: .64rem; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
+   211→   211→    .therapy-body a span { display: inline-block; margin-left: 3px; transition: transform .2s ease; }
+   212→   212→    .therapy-body a:hover span { transform: translateX(4px); }
+   213→   213→
+   214→   214→    /* First visit */
+   215→   215→    .first-visit-wrap { padding: 0 0 11px; background: #fbf8f0; }
+   216→   216→    .first-visit {
+   217→   217→      position: relative; min-height: 137px; overflow: hidden; display: flex; align-items: center;
+   218→   218→      padding: 22px 38px; border-radius: 15px; isolation: isolate; background: #e9e9c8;
+   219→   219→    }
+   220→   220→    .first-visit::before {
+   221→   221→      content: ""; position: absolute; inset: 0; z-index: -2;
+   222→   222→      background: url("https://newcitywellness.com/wp-content/uploads/2022/12/319122145_534387168598573_2384832087500581039_n.jpg") center 43%/cover no-repeat;
+   223→   223→      opacity: .94;
+   224→   224→    }
+   225→   225→    .first-visit::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(235,237,199,.98) 0%, rgba(235,237,199,.94) 33%, rgba(235,237,199,.45) 53%, rgba(235,237,199,0) 76%); }
+   226→   226→    .first-visit-copy { max-width: 500px; }
+   227→   227→    .first-visit h2 { margin: 0 0 2px; color: var(--forest); font: 700 clamp(2rem, 3vw, 2.7rem)/1 var(--serif); }
+   228→   228→    .first-visit p { margin: 0 0 3px; color: #1c271e; font-size: .92rem; }
+   229→   229→    .text-link { display: inline-flex; align-items: center; gap: 6px; color: var(--forest); font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+   230→   230→    .text-link span { transition: transform .2s ease; }
+   231→   231→    .text-link:hover span { transform: translateX(4px); }
+   232→   232→
+   233→   233→    /* Practitioner */
+   234→   234→    .practitioner { position: relative; overflow: hidden; padding: 0 0 22px; background: #fbf8f0; }
+   235→   235→    .practitioner::after {
+   236→   236→      content: ""; position: absolute; z-index: 0; right: -25px; bottom: -70px; width: 260px; height: 360px; opacity: .22;
+   237→   237→      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 360' fill='none' stroke='%237e966b' stroke-width='2'%3E%3Cpath d='M118 350C112 260 130 170 194 47M115 275C73 235 49 194 46 143M126 218C164 188 187 158 193 119M109 313C75 296 46 266 27 227M142 173C145 128 136 91 113 51'/%3E%3Cpath d='M52 145C25 127 12 98 20 73c29 6 49 28 52 58M192 121c-1-29 18-54 45-65 6 29-7 55-39 72M31 230c-23-4-40-25-42-51 25-1 45 12 55 37M114 54c-20-14-26-37-18-58 25 13 36 32 29 54M196 50c1-22 17-40 40-47 4 23-7 43-30 56'/%3E%3C/svg%3E") center/contain no-repeat;
+   238→   238→      pointer-events: none;
+   239→   239→    }
+   240→   240→    .practitioner-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(280px, .82fr) 1.3fr; align-items: center; gap: clamp(28px, 4vw, 58px); }
+   241→   241→    .practitioner-photo { height: 290px; overflow: hidden; border-radius: 11px; box-shadow: var(--shadow); background: #e3e9d9; }
+   242→   242→    .practitioner-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+   243→   243→    .practitioner-copy { max-width: 660px; padding: 12px 80px 12px 0; }
+   244→   244→    .practitioner-copy h2 { margin: 0 0 2px; color: var(--forest); font: 700 clamp(2rem, 3vw, 2.65rem)/1.05 var(--serif); }
+   245→   245→    .practitioner-copy h3 { margin: 0 0 13px; color: #202820; font: 700 1.14rem/1.2 var(--serif); }
+   246→   246→    .gold-rule { width: 68px; height: 2px; margin: 0 0 14px; background: var(--gold); }
+   247→   247→    .practitioner-copy p { margin: 0 0 11px; color: #313a33; font-size: .91rem; line-height: 1.62; }
+   248→   248→    .practitioner-copy .btn { margin-top: 4px; min-height: 42px; }
+   249→   249→
+   250→   250→    /* Conditions */
+   251→   251→    .conditions { padding: 10px 0 19px; background: #fbf8f0; }
+   252→   252→    .conditions .section-heading { margin-bottom: 16px; }
+   253→   253→    .conditions .section-heading h2 { font-size: clamp(1.8rem, 2.5vw, 2.3rem); }
+   254→   254→    .condition-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 9px; }
+   255→   255→    .condition-card {
+   256→   256→      min-height: 112px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
+   257→   257→      padding: 10px 5px; border: 1px solid rgba(160, 132, 75, .2); border-radius: 9px;
+   258→   258→      background: #fffaf0; color: var(--forest); box-shadow: 0 3px 8px rgba(42, 52, 35, .045);
+   259→   259→      text-align: center; transition: transform .25s ease, background .25s ease, box-shadow .25s ease;
+   260→   260→    }
+   261→   261→    .condition-card:hover { transform: translateY(-4px); background: #f1efdc; box-shadow: 0 10px 18px rgba(42, 52, 35, .09); }
+   262→   262→    .condition-card svg { width: 36px; height: 36px; stroke: currentColor; stroke-width: 1.45; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+   263→   263→    .condition-card span { color: #202820; font-size: .69rem; line-height: 1.22; font-weight: 600; }
+   264→   264→
+   265→   265→    /* Testimonials */
+   266→   266→    .testimonials { position: relative; padding: 23px 0 28px; overflow: hidden; background: var(--forest); color: #fff; }
+   267→   267→    .testimonials::before, .testimonials::after { content: ""; position: absolute; width: 270px; height: 270px; border: 1px solid rgba(232, 215, 166, .12); border-radius: 50%; pointer-events: none; }
+   268→   268→    .testimonials::before { left: -140px; top: -155px; box-shadow: 0 0 0 22px rgba(255,255,255,.018), 0 0 0 44px rgba(255,255,255,.015); }
+   269→   269→    .testimonials::after { right: -150px; bottom: -190px; box-shadow: 0 0 0 22px rgba(255,255,255,.018), 0 0 0 44px rgba(255,255,255,.015); }
+   270→   270→    .testimonials .section-heading { position: relative; z-index: 1; margin-bottom: 18px; }
+   271→   271→    .testimonials .section-heading h2 { color: #fffdf4; font-size: clamp(1.9rem, 2.8vw, 2.35rem); }
+   272→   272→    .testimonial-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+   273→   273→    .testimonial-card { min-height: 185px; display: grid; grid-template-columns: 62px 1fr; gap: 14px; padding: 19px 20px; border-radius: 10px; background: #fffaf0; color: var(--ink); box-shadow: 0 7px 20px rgba(0,0,0,.12); }
+   274→   274→    .leaf-art { display: flex; align-items: flex-start; justify-content: center; padding-top: 7px; color: #778a5e; }
+   275→   275→    .leaf-art svg { width: 47px; height: 70px; stroke: currentColor; stroke-width: 1.4; fill: none; }
+   276→   276→    .testimonial-copy h3 { margin: 0 0 5px; color: var(--forest); font: 700 1.15rem/1.05 var(--serif); }
+   277→   277→    .testimonial-copy p { margin: 0; color: #354036; font-size: .77rem; line-height: 1.52; }
+   278→   278→    .testimonial-copy .reviewer { margin-top: 7px; color: var(--forest); font-size: .73rem; font-weight: 700; }
+   279→   279→    .testimonial-more { position: relative; z-index: 1; margin-top: 18px; text-align: center; }
+   280→   280→    .testimonial-more a { color: #f1dfb0; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+   281→   281→    .testimonial-more a:hover { color: #fff; }
+   282→   282→
+   283→   283→    /* Contact */
+   284→   284→    .contact-section { position: relative; overflow: hidden; padding: 34px 0 32px; background: #faf7ef; }
+   285→   285→    .contact-section::before { content: ""; position: absolute; left: -70px; top: -35px; width: 205px; height: 310px; opacity: .25; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 310' fill='none' stroke='%237e966b' stroke-width='2'%3E%3Cpath d='M94 305C92 225 111 155 173 38M91 242C58 213 35 175 29 131M106 186C139 155 153 126 166 95M88 281C57 264 33 241 17 205'/%3E%3Cpath d='M30 132C5 116-3 91 6 69c26 7 42 25 46 50M165 98c-1-27 16-49 40-59 4 25-7 49-34 64M20 207c-20-4-34-22-35-45 22-1 39 11 48 33'/%3E%3C/svg%3E") center/contain no-repeat; pointer-events: none; }
+   286→   286→    .contact-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1.02fr .76fr 1.5fr; gap: 30px; align-items: stretch; }
+   287→   287→    .contact-intro { padding: 4px 24px 5px 70px; border-right: 1px solid rgba(24, 67, 45, .42); }
+   288→   288→    .contact-intro h2 { margin: 0 0 5px; color: var(--forest); font: 700 clamp(2rem, 3vw, 2.6rem)/1 var(--serif); }
+   289→   289→    .contact-intro > p { max-width: 340px; margin: 0 0 15px; color: #303a32; font-size: .86rem; line-height: 1.5; }
+   290→   290→    .contact-details { display: grid; gap: 8px; }
+   291→   291→    .contact-details a, .contact-details span { display: flex; align-items: flex-start; gap: 10px; color: #253128; font-size: .78rem; font-weight: 500; line-height: 1.35; }
+   292→   292→    .contact-details svg { width: 16px; height: 16px; flex: 0 0 auto; color: var(--forest); }
+   293→   293→    .clinic-hours { padding: 9px 18px; border-right: 1px solid rgba(196, 161, 92, .4); }
+   294→   294→    .clinic-hours h3 { margin: 0 0 9px; color: #202820; font: 700 1.17rem/1.1 var(--serif); }
+   295→   295→    .clinic-hours p { margin: 0 0 7px; color: #303a32; font-size: .79rem; line-height: 1.45; }
+   296→   296→    .contact-form { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; align-content: start; padding-top: 0; }
+   297→   297→    .contact-form input, .contact-form textarea {
+   298→   298→      min-width: 0; width: 100%; padding: 12px 14px; border: 1px solid rgba(37, 62, 43, .17); border-radius: 10px;
+   299→   299→      outline: 0; background: rgba(255,255,255,.92); color: var(--ink); font-size: .8rem; transition: border-color .2s ease, box-shadow .2s ease;
+   300→   300→    }
+   301→   301→    .contact-form input:focus, .contact-form textarea:focus { border-color: var(--forest-soft); box-shadow: 0 0 0 3px rgba(49, 91, 68, .1); }
+   302→   302→    .contact-form input::placeholder, .contact-form textarea::placeholder { color: #657068; }
+   303→   303→    .contact-form .full { grid-column: 1 / -1; }
+   304→   304→    .contact-form textarea { min-height: 92px; resize: vertical; }
+   305→   305→    .contact-form .btn { justify-self: start; min-width: 190px; min-height: 43px; margin-top: 2px; }
+   306→   306→
+   307→   307→    /* Footer */
+   308→   308→    .site-footer { padding: 24px 0; background: linear-gradient(110deg, #153a29, #204b35); color: #fffdf5; }
+   309→   309→    .footer-inner { display: grid; grid-template-columns: 1.05fr 1.85fr 1.25fr; gap: 28px; align-items: center; }
+   310→   310→    .footer-brand { display: flex; align-items: center; gap: 11px; min-height: 65px; padding-right: 24px; border-right: 1px solid rgba(241, 224, 180, .55); }
+   311→   311→    .footer-brand .brand-mark { width: 50px; height: 49px; color: #ead8a8; }
+   312→   312→    .footer-brand .brand-name { color: #fffdf5; font-size: 1.65rem; }
+   313→   313→    .footer-brand .brand-tag { color: #f1e6cc; font-size: .45rem; }
+   314→   314→    .footer-links { padding: 0 8px; }
+   315→   315→    .footer-links h3 { margin: 0 0 6px; color: #f8edd2; font: 600 1.1rem/1.1 var(--serif); }
+   316→   316→    .footer-links .quick-nav { display: flex; flex-wrap: wrap; gap: 6px 0; align-items: center; }
+   317→   317→    .footer-links a { color: rgba(255,253,245,.9); font-size: .7rem; line-height: 1.4; }
+   318→   318→    .footer-links a:not(:last-child)::after { content: "|"; margin: 0 8px; color: rgba(240,220,175,.65); }
+   319→   319→    .footer-links a:hover { color: #f0d69b; text-decoration: underline; text-underline-offset: 3px; }
+   320→   320→    .copyright { min-height: 65px; display: flex; align-items: center; justify-content: flex-end; padding-left: 25px; border-left: 1px solid rgba(241, 224, 180, .55); color: rgba(255,253,245,.85); font-size: .64rem; line-height: 1.5; text-align: right; }
+   321→   321→
+   322→   322→    /* Reveal-on-entry motion */
+   323→   323→    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+   324→   324→    .reveal.from-left { transform: translateX(-34px); }
+   325→   325→    .reveal.from-right { transform: translateX(34px); }
+   326→   326→    .reveal.is-visible { opacity: 1; transform: translate(0,0); }
+   327→   327→    .delay-1 { transition-delay: .08s; }
+   328→   328→    .delay-2 { transition-delay: .16s; }
+   329→   329→    .delay-3 { transition-delay: .24s; }
+   330→   330→    .delay-4 { transition-delay: .32s; }
+   331→   331→    .delay-5 { transition-delay: .4s; }
+   332→   332→
+   333→   333→    @media (max-width: 1120px) {
+   334→   334→      .brand { min-width: 275px; }
+   335→   335→      .brand-mark { width: 55px; }
+   336→   336→      .brand-name { font-size: 1.86rem; }
+   337→   337→      .header-contact { gap: 13px; }
+   338→   338→      .contact-chip { font-size: .7rem; }
+   339→   339→      .nav-inner { gap: 18px; }
+   340→   340→      .condition-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+   341→   341→      .condition-card { min-height: 100px; }
+   342→   342→      .contact-grid { grid-template-columns: 1fr .78fr 1.25fr; gap: 22px; }
+   343→   343→      .contact-intro { padding-left: 45px; }
+   344→   344→    }
+   345→   345→    @media (max-width: 900px) {
+   346→   346→      html { scroll-padding-top: 82px; }
+   347→   347→      .container { width: min(100% - 40px, var(--max)); }
+   348→   348→      .header-main { min-height: 78px; }
+   349→   349→      .header-contact { display: none; }
+   350→   350→      .brand { min-width: 0; }
+   351→   351→      .mobile-toggle { display: inline-grid; place-items: center; }
+   352→   352→      .header-nav { display: none; border-top: 1px solid var(--line); }
+   353→   353→      .header-nav.is-open { display: block; }
+   354→   354→      .nav-inner { min-height: 0; display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 10px 0 15px; }
+   355→   355→      .nav-link, .nav-dropdown-toggle { min-height: 43px; width: 100%; justify-content: space-between; border-bottom: 1px solid rgba(30, 63, 43, .08); font-size: .88rem; }
+   356→   356→      .nav-link::after, .nav-dropdown-toggle::after { display: none; }
+   357→   357→      .nav-dropdown { display: block; }
+   358→   358→      .dropdown-menu { position: static; display: none; min-width: 100%; padding: 5px 8px 8px 15px; border: 0; border-radius: 0; background: #f6f1e6; box-shadow: none; opacity: 1; visibility: visible; transform: none; }
+   359→   359→      .nav-dropdown.open .dropdown-menu { display: block; }
+   360→   360→      .dropdown-menu a { padding: 9px 12px; }
+   361→   361→      .hero { min-height: 430px; }
+   362→   362→      .hero-content { width: min(100% - 40px, var(--max)); }
+   363→   363→      .hero::after { background: linear-gradient(90deg, rgba(250,248,235,.98) 0%, rgba(250,248,235,.92) 43%, rgba(250,248,235,.5) 72%, rgba(20,37,25,.08) 100%); }
+   364→   364→      .hero-copy { max-width: 520px; }
+   365→   365→      .hero-stamp { right: 25px; top: 18px; width: 105px; min-height: 100px; padding: 10px; }
+   366→   366→      .hero-stamp span { font-size: .88rem; }
+   367→   367→      .hero-stamp svg { width: 30px; height: 30px; }
+   368→   368→      .therapy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+   369→   369→      .therapy-image { height: 145px; }
+   370→   370→      .practitioner-grid { grid-template-columns: .85fr 1.15fr; gap: 24px; }
+   371→   371→      .practitioner-photo { height: 270px; }
+   372→   372→      .practitioner-copy { padding-right: 20px; }
+   373→   373→      .testimonial-grid { grid-template-columns: 1fr; }
+   374→   374→      .testimonial-card { min-height: 0; }
+   375→   375→      .contact-grid { grid-template-columns: 1fr 1fr; }
+   376→   376→      .contact-intro { padding-left: 45px; }
+   377→   377→      .clinic-hours { border-right: 0; }
+   378→   378→      .contact-form { grid-column: 1 / -1; padding-left: 45px; }
+   379→   379→      .footer-inner { grid-template-columns: 1fr 1.6fr; }
+   380→   380→      .copyright { grid-column: 1 / -1; justify-content: flex-start; min-height: 0; padding: 14px 0 0; border-left: 0; border-top: 1px solid rgba(241,224,180,.4); text-align: left; }
+   381→   381→    }
+   382→   382→    @media (max-width: 600px) {
+   383→   383→      body { font-size: 14px; }
+   384→   384→      .container { width: calc(100% - 30px); }
+   385→   385→      .header-main { min-height: 72px; }
+   386→   386→      .brand { gap: 8px; }
+   387→   387→      .brand-mark { width: 47px; height: 48px; }
+   388→   388→      .brand-name { font-size: 1.55rem; }
+   389→   389→      .brand-tag { font-size: .43rem; letter-spacing: .1em; }
+   390→   390→      .hero { min-height: 525px; align-items: flex-start; }
+   391→   391→      .hero::before { background-position: 62% center; }
+   392→   392→      .hero::after { background: linear-gradient(180deg, rgba(250,248,235,.97) 0%, rgba(250,248,235,.94) 45%, rgba(250,248,235,.56) 73%, rgba(20,37,25,.1) 100%); }
+   393→   393→      .hero-content { width: calc(100% - 34px); padding: 52px 0 45px; }
+   394→   394→      .hero-copy { max-width: 100%; }
+   395→   395→      .hero h1 { max-width: 440px; font-size: clamp(2.55rem, 12vw, 3.45rem); }
+   396→   396→      .hero p { font-size: .91rem; max-width: 440px; }
+   397→   397→      .hero-stamp { top: auto; bottom: 18px; right: 17px; width: 90px; min-height: 85px; }
+   398→   398→      .hero-stamp svg { width: 24px; height: 24px; margin-bottom: 2px; }
+   399→   399→      .hero-stamp span { font-size: .78rem; }
+   400→   400→      .hero-actions { gap: 9px; margin-top: 20px; }
+   401→   401→      .btn { min-height: 44px; padding: 0 17px; font-size: .68rem; }
+   402→   402→      .section-heading { margin-bottom: 20px; }
+   403→   403→      .section-heading h2 { gap: 10px; font-size: 2rem; }
+   404→   404→      .section-heading h2::before, .section-heading h2::after { width: 28px; }
+   405→   405→      .section-heading p { font-size: 1rem; }
+   406→   406→      .therapies { padding: 25px 0 20px; }
+   407→   407→      .therapy-grid { gap: 10px; }
+   408→   408→      .therapy-image { height: 105px; }
+   409→   409→      .therapy-body { min-height: 67px; padding: 8px 6px; }
+   410→   410→      .therapy-body h3 { font-size: .98rem; }
+   411→   411→      .therapy-body a { font-size: .59rem; }
+   412→   412→      .first-visit-wrap { padding-bottom: 12px; }
+   413→   413→      .first-visit { min-height: 155px; padding: 22px; border-radius: 11px; }
+   414→   414→      .first-visit::before { background-position: 63% center; }
+   415→   415→      .first-visit::after { background: linear-gradient(90deg, rgba(235,237,199,.98), rgba(235,237,199,.84) 62%, rgba(235,237,199,.2)); }
+   416→   416→      .first-visit h2 { max-width: 230px; font-size: 2.1rem; }
+   417→   417→      .first-visit p { max-width: 230px; font-size: .84rem; }
+   418→   418→      .practitioner { padding: 0 0 20px; }
+   419→   419→      .practitioner-grid { grid-template-columns: 1fr; gap: 18px; }
+   420→   420→      .practitioner-photo { height: 280px; max-width: 420px; }
+   421→   421→      .practitioner-copy { padding: 0 4px; }
+   422→   422→      .practitioner-copy h2 { font-size: 2.25rem; }
+   423→   423→      .practitioner-copy p { font-size: .87rem; }
+   424→   424→      .practitioner::after { width: 170px; height: 245px; opacity: .13; }
+   425→   425→      .conditions { padding: 11px 0 18px; }
+   426→   426→      .conditions .section-heading h2 { font-size: 1.75rem; }
+   427→   427→      .condition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+   428→   428→      .condition-card { min-height: 92px; flex-direction: row; justify-content: flex-start; gap: 10px; padding: 10px 12px; text-align: left; }
+   429→   429→      .condition-card svg { width: 30px; height: 30px; flex: 0 0 30px; }
+   430→   430→      .condition-card span { font-size: .75rem; }
+   431→   431→      .testimonials { padding: 24px 0 25px; }
+   432→   432→      .testimonials .section-heading h2 { font-size: 1.8rem; }
+   433→   433→      .testimonial-card { grid-template-columns: 46px 1fr; gap: 10px; padding: 16px 14px; }
+   434→   434→      .leaf-art svg { width: 38px; height: 60px; }
+   435→   435→      .testimonial-copy p { font-size: .75rem; }
+   436→   436→      .contact-section { padding: 26px 0; }
+   437→   437→      .contact-grid { grid-template-columns: 1fr; gap: 18px; }
+   438→   438→      .contact-intro { padding: 0 0 18px 32px; border-right: 0; border-bottom: 1px solid rgba(24,67,45,.3); }
+   439→   439→      .contact-intro h2 { font-size: 2.35rem; }
+   440→   440→      .clinic-hours { padding: 0 0 14px 32px; border-bottom: 1px solid rgba(196,161,92,.35); }
+   441→   441→      .contact-form { grid-column: auto; padding: 0 0 0 32px; }
+   442→   442→      .contact-form input, .contact-form textarea { padding: 11px 12px; }
+   443→   443→      .footer-inner { grid-template-columns: 1fr; gap: 16px; }
+   444→   444→      .footer-brand { min-height: 0; padding: 0 0 14px; border-right: 0; border-bottom: 1px solid rgba(241,224,180,.4); }
+   445→   445→      .footer-links { padding: 0; }
+   446→   446→      .footer-links .quick-nav { gap: 7px 0; }
+   447→   447→      .copyright { grid-column: auto; padding-top: 13px; }
+   448→   448→    }
+   449→   449→    @media (prefers-reduced-motion: reduce) {
+   450→   450→      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+   451→   451→      .reveal { opacity: 1; transform: none; }
+   452→   452→    }
+   453→   453→  </style>
+   454→   454→</head>
+   455→   455→<body>
+   456→   456→  <header class="site-header">
+   457→   457→    <div class="container header-main">
+   458→   458→      <a class="brand" href="https://newcitywellness.com/" aria-label="New City Acupuncture and Wellness Center home">
+   459→   459→        <svg class="brand-mark" viewBox="0 0 84 74" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+   460→   460→          <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+   461→   461→          <path d="M42 65C28 53 17 37 11 21C27 22 39 34 42 51C45 34 57 22 73 21C67 37 56 53 42 65Z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/>
+   462→   462→          <path d="M42 59C30 45 29 25 42 7C55 25 54 45 42 59Z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/>
+   463→   463→          <path d="M8 43C18 55 29 63 42 68C55 63 66 55 76 43" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>
+   464→   464→          <path d="M42 68C34 62 25 57 17 54" stroke="#c4a15c" stroke-width="1.7" stroke-linecap="round"/>
+   465→   465→          <path d="M42 68C50 62 59 57 67 54" stroke="#c4a15c" stroke-width="1.7" stroke-linecap="round"/>
+   466→   466→        </svg>
+   467→   467→        <span class="brand-copy">
+   468→   468→          <span class="brand-name">NEW CITY</span>
+   469→   469→          <span class="brand-tag">ACUPUNCTURE &amp; WELLNESS CENTER</span>
+   470→   470→        </span>
+   471→   471→      </a>
+   472→   472→
+   473→   473→      <div class="header-contact">
+   474→   474→        <a class="contact-chip" href="https://www.google.com/maps/search/?api=1&amp;query=125+South+Main+Street+New+City+NY+10956" target="_blank" rel="noopener">
+   475→   475→          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/></svg>
+   476→   476→          125 South Main Street, New City, NY 10956
+   477→   477→        </a>
+   478→   478→        <a class="contact-chip" href="tel:8455792428">
+   479→   479→          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 2.8 9.3 2c.7-.2 1.5.2 1.7.9l1.1 3.7c.2.6 0 1.2-.5 1.6l-1.8 1.4a15.4 15.4 0 0 0 4.6 4.6l1.4-1.8c.4-.5 1-.7 1.6-.5l3.7 1.1c.7.2 1.1 1 1 1.7l-.8 2.7c-.2.7-.9 1.2-1.6 1.2C10.1 18.6 5.4 13.9 5.4 4.4c0-.7.5-1.4 1.2-1.6Z"/></svg>
+   480→   480→          845-579-2428
+   481→   481→        </a>
+   482→   482→        <a class="btn header-book" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener">
+   483→   483→          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M7 3v4M17 3v4M3 10h18M12 13v5M9.5 15.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+   484→   484→          Book Appointment
+   485→   485→        </a>
+   486→   486→      </div>
+   487→   487→      <button class="mobile-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="primary-navigation">
+   488→   488→        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+   489→   489→      </button>
+   490→   490→    </div>
+   491→   491→    <nav class="header-nav" id="primary-navigation" aria-label="Main navigation">
+   492→   492→      <div class="container nav-inner">
+   493→   493→        <a class="nav-link active" href="https://newcitywellness.com/">Home</a>
+   494→   494→        <a class="nav-link" href="https://newcitywellness.com/about-us/">About</a>
+   495→   495→        <div class="nav-dropdown">
+   496→   496→          <button class="nav-dropdown-toggle" type="button" aria-expanded="false">Services <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+   497→   497→          <div class="dropdown-menu">
+   498→   498→            <a href="https://newcitywellness.com/services/">All Services</a>
+   499→   499→            <a href="https://newcitywellness.com/services/acupuncture/">Acupuncture</a>
+   500→   500→            <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Chinese Medical Massage (Tui-Na)</a>
+   501→   501→            <a href="https://newcitywellness.com/services/cupping/">Cupping</a>
+   502→   502→            <a href="https://newcitywellness.com/services/moxibustion/">Moxibustion</a>
+   503→   503→            <a href="https://newcitywellness.com/services/chinese-herbal-medicine/">Chinese Herbal Medicine</a>
+   504→   504→            <a href="https://newcitywellness.com/services/gua-sha/">Gua-Sha</a>
+   505→   505→            <a href="https://newcitywellness.com/services/qi-gong/">Qi-Gong</a>
+   506→   506→          </div>
+   507→   507→        </div>
+   508→   508→        <a class="nav-link" href="https://newcitywellness.com/faqs/">FAQs</a>
+   509→   509→        <a class="nav-link" href="https://newcitywellness.com/conditions-treated/">Conditions</a>
+   510→   510→        <a class="nav-link" href="https://newcitywellness.com/testimonials/">Testimonials</a>
+   511→   511→        <a class="nav-link" href="https://newcitywellness.com/insurance/">Insurance</a>
+   512→   512→        <a class="nav-link" href="https://newcitywellness.com/contact-us/">Contact</a>
+   513→   513→      </div>
+   514→   514→    </nav>
+   515→   515→  </header>
+   516→   516→
+   517→   517→  <main>
+   518→   518→    <section class="hero" aria-labelledby="hero-title">
+   519→   519→      <div class="hero-content">
+   520→   520→        <div class="hero-copy reveal from-left">
+   521→   521→          <span class="eyebrow">Personalized care · Whole-person wellness</span>
+   522→   522→          <h1 id="hero-title">Personalized Acupuncture &amp; Holistic Care for Pain, Stress, &amp; Better Health</h1>
+   523→   523→          <p>We take the time to listen and understand your concerns, considering your symptoms, lifestyle, nutrition, and overall health to provide thoughtful, individualized care focused on helping you feel better.</p>
+   524→   524→          <div class="hero-actions">
+   525→   525→            <a class="btn" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener">Book Appointment <span class="arrow">→</span></a>
+   526→   526→            <a class="btn btn-outline" href="#therapies">Explore Services <span class="arrow">→</span></a>
+   527→   527→          </div>
+   528→   528→        </div>
+   529→   529→      </div>
+   530→   530→      <div class="hero-stamp" aria-label="Personalized care tailored to you">
+   531→   531→        <svg viewBox="0 0 50 50" fill="none" aria-hidden="true"><path d="M25 42c-1-11-1-21 0-33M25 39C15 30 10 21 9 11c10 3 15 10 16 20 1-10 6-17 16-20-1 10-6 19-16 28Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M25 35C17 25 18 14 25 6c7 8 8 19 0 29Z" stroke="currentColor" stroke-width="1.7"/></svg>
+   532→   532→        <span>Care tailored<br />to you</span>
+   533→   533→      </div>
+   534→   534→    </section>
+   535→   535→
+   536→   536→    <section class="therapies" id="therapies" aria-labelledby="therapy-title">
+   537→   537→      <div class="container">
+   538→   538→        <div class="section-heading reveal">
+   539→   539→          <h2 id="therapy-title">Explore Our Therapies</h2>
+   540→   540→          <p>Traditional practices, thoughtfully personalized</p>
+   541→   541→        </div>
+   542→   542→        <div class="therapy-grid">
+   543→   543→          <article class="therapy-card reveal delay-1">
+   544→   544→            <a href="https://newcitywellness.com/services/acupuncture/" aria-label="Learn more about Acupuncture">
+   545→   545→              <div class="therapy-image"><img src="https://newcitywellness.com/wp-content/uploads/2022/12/young-man-getting-acupuncture-treatment-closeup-min.jpg" alt="A patient receiving acupuncture treatment" loading="lazy" /></div>
+   546→   546→              <div class="therapy-body"><h3>Acupuncture</h3><span class="text-link">Learn More <span>→</span></span></div>
+   547→   547→            </a>
+   548→   548→          </article>
+   549→   549→          <article class="therapy-card reveal delay-2">
+   550→   550→            <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/" aria-label="Learn more about Chinese Medical Massage (Tui-Na)">
+   551→   551→              <div class="therapy-image"><img src="https://newcitywellness.com/wp-content/uploads/2022/12/client-massage-session-min.jpg" alt="Chinese medical massage treatment" loading="lazy" /></div>
+   552→   552→              <div class="therapy-body"><h3>Chinese Medical Massage (Tui-Na)</h3><span class="text-link">Learn More <span>→</span></span></div>
+   553→   553→            </a>
+   554→   554→          </article>
+   555→   555→          <article class="therapy-card reveal delay-3">
+   556→   556→            <a href="https://newcitywellness.com/services/cupping/" aria-label="Learn more about Cupping">
+   557→   557→              <div class="therapy-image"><img src="https://newcitywellness.com/wp-content/uploads/2022/12/client-with-suction-cup-process-min.jpg" alt="Cupping therapy in progress" loading="lazy" /></div>
+   558→   558→              <div class="therapy-body"><h3>Cupping</h3><span class="text-link">Learn More <span>→</span></span></div>
+   559→   559→            </a>
+   560→   560→          </article>
+   561→   561→          <article class="therapy-card reveal delay-4">
+   562→   562→            <a href="https://newcitywellness.com/services/moxibustion/" aria-label="Learn more about Moxibustion">
+   563→   563→              <div class="therapy-image"><img src="https://newcitywellness.com/wp-content/uploads/2022/12/woman-undergoing-therapy-using-moxa-stick-closeup-min.jpg" alt="Moxibustion warming therapy" loading="lazy" /></div>
+   564→   564→              <div class="therapy-body"><h3>Moxibustion</h3><span class="text-link">Learn More <span>→</span></span></div>
+   565→   565→            </a>
+   566→   566→          </article>
+   567→   567→          <article class="therapy-card reveal delay-1">
+   568→   568→            <a href="https://newcitywellness.com/services/chinese-herbal-medicine/" aria-label="Learn more about Chinese Herbal Medicine">
+   569→   569→              <div class="therapy-image"><img src="https://newcitywellness.com/wp-content/uploads/2023/01/top-view-organic-medicines-with-ginger-min.jpg" alt="Natural herbs and ingredients used in Chinese herbal medicine" loading="lazy" /></div>
+   570→   570→              <div class="therapy-body"><h3>Chinese Herbal Medicine</h3><span class="text-link">Learn More <span>→</span></span></div>
+   571→   571→            </a>
+   572→   572→          </article>
+   573→   573→          <article class="therapy-card reveal delay-2">
+   574→   574→            <a href="https://newcitywellness.com/services/gua-sha/" aria-label="Learn more about Gua-Sha">
+   575→   575→              <div class="therapy-image"><img src="https://newcitywellness.com/wp-content/uploads/elementor/thumbs/man-therapy-session-min-q060pg2rvx5iekm2yc3g2898xyn5wv71n66df0mfdw.jpg" alt="Traditional hands-on therapy session" loading="lazy" /></div>
+   576→   576→              <div class="therapy-body"><h3>Gua-Sha</h3><span class="text-link">Learn More <span>→</span></span></div>
+   577→   577→            </a>
+   578→   578→          </article>
+   579→   579→          <article class="therapy-card reveal delay-3">
+   580→   580→            <a href="https://newcitywellness.com/services/qi-gong/" aria-label="Learn more about Qi-Gong">
+   581→   581→              <div class="therapy-image"><img src="https://newcitywellness.com/wp-content/uploads/2023/01/side-view-people-practicing-tai-chi-together-min.jpg" alt="People practicing gentle Tai Chi movements" loading="lazy" /></div>
+   582→   582→              <div class="therapy-body"><h3>Qi-Gong</h3><span class="text-link">Learn More <span>→</span></span></div>
+   583→   583→            </a>
+   584→   584→          </article>
+   585→   585→        </div>
+   586→   586→      </div>
+   587→   587→    </section>
+   588→   588→
+   589→   589→    <section class="first-visit-wrap" aria-labelledby="first-visit-title">
+   590→   590→      <div class="container">
+   591→   591→        <div class="first-visit reveal">
+   592→   592→          <div class="first-visit-copy">
+   593→   593→            <h2 id="first-visit-title">Your First Visit</h2>
+   594→   594→            <p>What can you expect at your first session?</p>
+   595→   595→            <a class="text-link" href="https://newcitywellness.com/faqs/">Learn More <span>→</span></a>
+   596→   596→          </div>
+   597→   597→        </div>
+   598→   598→      </div>
+   599→   599→    </section>
+   600→   600→
+   601→   601→    <section class="practitioner" aria-labelledby="practitioner-title">
+   602→   602→      <div class="container practitioner-grid">
+   603→   603→        <div class="practitioner-photo reveal from-left">
+   604→   604→          <img src="https://newcitywellness.com/wp-content/uploads/2022/12/profile-photo.png" alt="Mordechai Genut, New City Acupuncture and Wellness Center practitioner" loading="lazy" />
+   605→   605→        </div>
+   606→   606→        <div class="practitioner-copy reveal from-right">
+   607→   607→          <h2 id="practitioner-title">Meet the Practitioner</h2>
+   608→   608→          <h3>Mordechai Genut, MS, L.Ac.</h3>
+   609→   609→          <div class="gold-rule"></div>
+   610→   610→          <p>Mordechai Genut is the owner of New City Acupuncture &amp; Wellness Center. He is a licensed acupuncturist, holistic health practitioner, wellness coach, and martial arts expert. His practice is client-centered which focuses on providing care, compassion, attentiveness, and healing aimed at the whole person—mind, body, and spirit. He creates individualized treatment plans that target the specific needs of each person.</p>
+   611→   611→          <p>Mordechai’s goal is to help others maintain a mindful and well-balanced lifestyle to allow for optimal health, inner peace, and an overall good quality of life.</p>
+   612→   612→          <a class="btn" href="https://newcitywellness.com/about-us/">About the Center <span class="arrow">→</span></a>
+   613→   613→        </div>
+   614→   614→      </div>
+   615→   615→    </section>
+   616→   616→
+   617→   617→    <section class="conditions" aria-labelledby="conditions-title">
+   618→   618→      <div class="container">
+   619→   619→        <div class="section-heading reveal"><h2 id="conditions-title">Areas We Support</h2></div>
+   620→   620→        <div class="condition-grid">
+   621→   621→          <a class="condition-card reveal delay-1" href="https://newcitywellness.com/conditions-treated/" aria-label="Digestive Issues">
+   622→   622→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 5c-3 4-2 9 2 12 2 2 2 4 0 6-3 3-8 3-9 8-1 6 3 11 10 11 7 0 12-5 12-12 0-5-3-8-6-10-3-2-3-5-1-8"/><path d="M22 16c-1 4 1 7 5 8 4 1 7 4 7 8M12 28c3 2 6 2 9 0"/></svg>
+   623→   623→            <span>Digestive<br />Issues</span>
+   624→   624→          </a>
+   625→   625→          <a class="condition-card reveal delay-2" href="https://newcitywellness.com/conditions-treated/" aria-label="Prenatal Care">
+   626→   626→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M25 8c-5 0-8 4-8 9 0 4 2 6 5 8-4 2-7 6-7 12M24 25c8-1 13 4 13 12M24 25c-4 0-6-3-6-7 0-3 3-5 6-5 5 0 8 4 8 9 0 5-3 8-8 8"/><path d="M17 14c-2-2-5-1-6 2-1 3 1 6 4 7M15 37l-4 4M36 36l3 4"/></svg>
+   627→   627→            <span>Prenatal<br />Care</span>
+   628→   628→          </a>
+   629→   629→          <a class="condition-card reveal delay-3" href="https://newcitywellness.com/conditions-treated/" aria-label="General Wellness">
+   630→   630→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 41C11 33 8 23 13 15c6 0 10 5 11 11 1-7 5-12 11-12 5 9 1 20-11 27Z"/><path d="M24 41V18M24 29c-5-5-9-7-14-7M24 33c5-6 9-9 14-10"/></svg>
+   631→   631→            <span>General<br />Wellness</span>
+   632→   632→          </a>
+   633→   633→          <a class="condition-card reveal delay-4" href="https://newcitywellness.com/conditions-treated/" aria-label="Postpartum">
+   634→   634→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 7c-4 3-5 8-3 12 2 4 5 6 9 6 5 0 8-4 8-9 0-4-3-8-7-9M24 25c-5 2-8 6-8 12M24 25c6 1 10 6 10 13M15 37h-4M36 38h4"/><path d="M24 14c2 0 4 2 4 4"/></svg>
+   635→   635→            <span>Postpartum</span>
+   636→   636→          </a>
+   637→   637→          <a class="condition-card reveal delay-1" href="https://newcitywellness.com/conditions-treated/" aria-label="Musculoskeletal">
+   638→   638→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 5c-3 5-2 9 1 12l-1 14c-3 3-4 7-1 12M30 5c3 5 2 9-1 12l1 14c3 3 4 7 1 12"/><path d="M17 16h14M16 31h16M20 10h8M20 38h8"/></svg>
+   639→   639→            <span>Musculoskeletal</span>
+   640→   640→          </a>
+   641→   641→          <a class="condition-card reveal delay-2" href="https://newcitywellness.com/conditions-treated/" aria-label="Respiratory">
+   642→   642→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M23 7v16c-4-6-8-7-11-3-4 5-5 14-3 20 5 2 10 0 13-5l1-12M25 7v16c4-6 8-7 11-3 4 5 5 14 3 20-5 2-10 0-13-5l-1-12"/></svg>
+   643→   643→            <span>Respiratory</span>
+   644→   644→          </a>
+   645→   645→          <a class="condition-card reveal delay-3" href="https://newcitywellness.com/conditions-treated/" aria-label="Women's Health">
+   646→   646→            <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="15" r="10"/><path d="M24 25v17M18 35h12"/></svg>
+   647→   647→            <span>Women's<br />Health</span>
+   648→   648→          </a>
+   649→   649→          <a class="condition-card reveal delay-4" href="https://newcitywellness.com/conditions-treated/" aria-label="Psychological and Emotional">
+   650→   650→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 7c-9 0-16 6-16 15 0 6 4 10 9 12v7h14v-8c5-3 9-7 9-13C40 12 33 7 24 7Z"/><path d="M18 19c2-4 10-4 12 0M18 25c2 4 10 4 12 0M24 18v12"/></svg>
+   651→   651→            <span>Psychological &amp;<br />Emotional</span>
+   652→   652→          </a>
+   653→   653→          <a class="condition-card reveal delay-1" href="https://newcitywellness.com/conditions-treated/" aria-label="Neurological">
+   654→   654→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 7c-5-4-11 0-10 6-5 1-7 7-3 11-3 5 0 10 5 10 0 6 6 8 9 4M24 7c5-4 11 0 10 6 5 1 7 7 3 11 3 5 0 10-5 10 0 6-6 8-9 4M24 8v34M14 18l7 2M34 18l-7 2M14 29l7-2M34 29l-7-2"/></svg>
+   655→   655→            <span>Neurological</span>
+   656→   656→          </a>
+   657→   657→          <a class="condition-card reveal delay-2" href="https://newcitywellness.com/conditions-treated/" aria-label="Urogenital">
+   658→   658→            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8c-5 0-8 4-8 9s3 8 8 8c4 0 6-3 6-7V8M33 8c5 0 8 4 8 9s-3 8-8 8c-4 0-6-3-6-7V8M24 24v18M18 37c2-3 4-4 6-4s4 1 6 4"/></svg>
+   659→   659→            <span>Urogenital</span>
+   660→   660→          </a>
+   661→   661→        </div>
+   662→   662→      </div>
+   663→   663→    </section>
+   664→   664→
+   665→   665→    <section class="testimonials" aria-labelledby="testimonials-title">
+   666→   666→      <div class="container">
+   667→   667→        <div class="section-heading reveal"><h2 id="testimonials-title">Patient Experiences</h2></div>
+   668→   668→        <div class="testimonial-grid">
+   669→   669→          <article class="testimonial-card reveal from-left">
+   670→   670→            <div class="leaf-art" aria-hidden="true"><svg viewBox="0 0 48 70"><path d="M7 64C20 49 27 32 40 6M13 53C4 49 2 41 4 33c9 2 14 8 14 17M22 39c-2-11 3-19 13-24 2 11-2 20-13 24M28 25c-1-9 3-16 11-20 2 9-2 16-11 20M9 59C3 55-1 48 0 41"/></svg></div>
+   671→   671→            <div class="testimonial-copy"><h3>Hip &amp; Knee Pain</h3><p>“Highly recommend!! Tried everything for my hip &amp; knee &amp; nothing worked. 4 years later I decided to try acupuncture. Only gone once &amp; it's relieved a lot of the stiffness in my hips &amp; pain in my knee... Wish I tried this sooner! ❤️”</p><div class="reviewer">A. B.</div></div>
+   672→   672→          </article>
+   673→   673→          <article class="testimonial-card reveal">
+   674→   674→            <div class="leaf-art" aria-hidden="true"><svg viewBox="0 0 48 70"><path d="M7 64C20 49 27 32 40 6M13 53C4 49 2 41 4 33c9 2 14 8 14 17M22 39c-2-11 3-19 13-24 2 11-2 20-13 24M28 25c-1-9 3-16 11-20 2 9-2 16-11 20M9 59C3 55-1 48 0 41"/></svg></div>
+   675→   675→            <div class="testimonial-copy"><h3>IBS &amp; Headache</h3><p>“I went to New City Acupuncture for various health issues, including IBS and headaches. I was very impressed with the depth of the questions that Mordechai asked and the amount of time that he spent. I have seen a number of acupuncturists over the years, and I have great confidence in Mordechai’s knowledge and skill. I have already noticed very positive results after a few treatments.”</p><div class="reviewer">S. B.</div></div>
+   676→   676→          </article>
+   677→   677→          <article class="testimonial-card reveal from-right">
+   678→   678→            <div class="leaf-art" aria-hidden="true"><svg viewBox="0 0 48 70"><path d="M7 64C20 49 27 32 40 6M13 53C4 49 2 41 4 33c9 2 14 8 14 17M22 39c-2-11 3-19 13-24 2 11-2 20-13 24M28 25c-1-9 3-16 11-20 2 9-2 16-11 20M9 59C3 55-1 48 0 41"/></svg></div>
+   679→   679→            <div class="testimonial-copy"><h3>Anxiety &amp; Depression</h3><p>“I started with Mordechai 4 weeks ago. I was severely depressed, anxious &amp; was unable to keep up with my daily routine. After just one appointment I felt a huge difference. It's now a month later &amp; I Thank God I have my life back. I'm feeling energized, positive and happy and going on a vacation I could never have taken a month ago. Mordechai is very professional with a pleasant disposition. I urge people who suffer from these symptoms to try this out. Very, very Highly recommended!!”</p><div class="reviewer">D. G.</div></div>
+   680→   680→          </article>
+   681→   681→        </div>
+   682→   682→        <div class="testimonial-more"><a href="https://newcitywellness.com/testimonials/">Read More Patient Testimonials →</a></div>
+   683→   683→      </div>
+   684→   684→    </section>
+   685→   685→
+   686→   686→    <section class="contact-section" id="contact" aria-labelledby="contact-title">
+   687→   687→      <div class="container contact-grid">
+   688→   688→        <div class="contact-intro reveal from-left">
+   689→   689→          <h2 id="contact-title">Let’s Connect</h2>
+   690→   690→          <p>Contact us to make an appointment or find out what acupuncture can do for you.</p>
+   691→   691→          <div class="gold-rule"></div>
+   692→   692→          <div class="contact-details">
+   693→   693→            <a href="tel:8455792428"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 2.8 9.3 2c.7-.2 1.5.2 1.7.9l1.1 3.7c.2.6 0 1.2-.5 1.6l-1.8 1.4a15.4 15.4 0 0 0 4.6 4.6l1.4-1.8c.4-.5 1-.7 1.6-.5l3.7 1.1c.7.2 1.1 1 1 1.7l-.8 2.7c-.2.7-.9 1.2-1.6 1.2C10.1 18.6 5.4 13.9 5.4 4.4c0-.7.5-1.4 1.2-1.6Z"/></svg>845-579-2428</a>
+   694→   694→            <a href="mailto:newcitywellness@gmail.com"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm9 8L4 7v10h16V7l-8 6Zm0-2 7-4H5l7 4Z"/></svg>newcitywellness@gmail.com</a>
+   695→   695→            <a href="https://www.google.com/maps/search/?api=1&amp;query=125+South+Main+Street+New+City+NY+10956" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.5" fill="currentColor"/></svg>125 South Main Street, New City, NY 10956</a>
+   696→   696→          </div>
+   697→   697→        </div>
+   698→   698→        <div class="clinic-hours reveal">
+   699→   699→          <h3>Clinic Hours:</h3>
+   700→   700→          <p><strong>Sunday – Thursday</strong><br />9:00 am – 9:00 pm</p>
+   701→   701→          <p><strong>Friday</strong><br />9:00 am – 2:00 pm</p>
+   702→   702→          <p><strong>Saturday</strong><br />Closed</p>
+   703→   703→        </div>
+   704→   704→        <!-- Static HTML form: this opens the visitor's email app. Connect a form service or WordPress form endpoint for server-side submissions. -->
+   705→   705→        <form class="contact-form reveal from-right" id="contactForm">
+   706→   706→          <input type="text" name="name" placeholder="Name" aria-label="Name" required />
+   707→   707→          <input type="email" name="email" placeholder="Email" aria-label="Email" required />
+   708→   708→          <input class="full" type="tel" name="phone" placeholder="Phone" aria-label="Phone" />
+   709→   709→          <textarea class="full" name="message" placeholder="Message" aria-label="Message" required></textarea>
+   710→   710→          <button class="btn" type="submit">Send Message <span class="arrow">→</span></button>
+   711→   711→        </form>
+   712→   712→      </div>
+   713→   713→    </section>
+   714→   714→  </main>
+   715→   715→
+   716→   716→  <footer class="site-footer">
+   717→   717→    <div class="container footer-inner">
+   718→   718→      <a class="footer-brand" href="https://newcitywellness.com/" aria-label="New City Acupuncture and Wellness Center home">
+   719→   719→        <svg class="brand-mark" viewBox="0 0 84 74" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M42 68C41 48 41 25 42 7" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/><path d="M42 65C28 53 17 37 11 21C27 22 39 34 42 51C45 34 57 22 73 21C67 37 56 53 42 65Z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/><path d="M42 59C30 45 29 25 42 7C55 25 54 45 42 59Z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/><path d="M8 43C18 55 29 63 42 68C55 63 66 55 76 43" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>
+   720→   720→        <span class="brand-copy"><span class="brand-name">NEW CITY</span><span class="brand-tag">ACUPUNCTURE &amp; WELLNESS CENTER</span></span>
+   721→   721→      </a>
+   722→   722→      <div class="footer-links">
+   723→   723→        <h3>Quick Links:</h3>
+   724→   724→        <div class="quick-nav">
+   725→   725→          <a href="https://newcitywellness.com/services/acupuncture/">Acupuncture</a>
+   726→   726→          <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Tui-Na</a>
+   727→   727→          <a href="https://newcitywellness.com/services/cupping/">Cupping</a>
+   728→   728→          <a href="https://newcitywellness.com/services/moxibustion/">Moxibustion</a>
+   729→   729→          <a href="https://newcitywellness.com/services/chinese-herbal-medicine/">Herbal Medicine</a>
+   730→   730→          <a href="https://newcitywellness.com/services/gua-sha/">Gua-Sha</a>
+   731→   731→          <a href="https://newcitywellness.com/services/qi-gong/">Qi-Gong</a>
+   732→   732→        </div>
+   733→   733→      </div>
+   734→   734→      <div class="copyright">Copyright © 2022 New City Acupuncture &amp; Wellness Center. All Rights Reserved.</div>
+   735→   735→    </div>
+   736→   736→  </footer>
+   737→   737→
+   738→   738→  <script>
+   739→   739→    (() => {
+   740→   740→      const menuToggle = document.querySelector('.mobile-toggle');
+   741→   741→      const nav = document.querySelector('.header-nav');
+   742→   742→      const dropdown = document.querySelector('.nav-dropdown');
+   743→   743→      const dropdownToggle = document.querySelector('.nav-dropdown-toggle');
+   744→   744→
+   745→   745→      if (menuToggle && nav) {
+   746→   746→        menuToggle.addEventListener('click', () => {
+   747→   747→          const isOpen = nav.classList.toggle('is-open');
+   748→   748→          menuToggle.setAttribute('aria-expanded', String(isOpen));
+   749→   749→          menuToggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+   750→   750→          menuToggle.innerHTML = isOpen
+   751→   751→            ? '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>'
+   752→   752→            : '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+   753→   753→        });
+   754→   754→      }
+   755→   755→
+   756→   756→      if (dropdown && dropdownToggle) {
+   757→   757→        dropdownToggle.addEventListener('click', () => {
+   758→   758→          const isOpen = dropdown.classList.toggle('open');
+   759→   759→          dropdownToggle.setAttribute('aria-expanded', String(isOpen));
+   760→   760→        });
+   761→   761→      }
+   762→   762→
+   763→   763→      document.querySelectorAll('.nav-inner a').forEach((link) => {
+   764→   764→        link.addEventListener('click', () => {
+   765→   765→          if (nav) nav.classList.remove('is-open');
+   766→   766→          if (menuToggle) {
+   767→   767→            menuToggle.setAttribute('aria-expanded', 'false');
+   768→   768→            menuToggle.setAttribute('aria-label', 'Open menu');
+   769→   769→            menuToggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+   770→   770→          }
+   771→   771→          if (dropdown) dropdown.classList.remove('open');
+   772→   772→          if (dropdownToggle) dropdownToggle.setAttribute('aria-expanded', 'false');
+   773→   773→        });
+   774→   774→      });
+   775→   775→
+   776→   776→      // Reveal elements each time they enter the viewport, matching the requested repeat-on-scroll effect.
+   777→   777→      const revealItems = document.querySelectorAll('.reveal');
+   778→   778→      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+   779→   779→      if ('IntersectionObserver' in window && !reducedMotion) {
+   780→   780→        const revealObserver = new IntersectionObserver((entries) => {
+   781→   781→          entries.forEach((entry) => {
+   782→   782→            if (entry.isIntersecting) entry.target.classList.add('is-visible');
+   783→   783→            else entry.target.classList.remove('is-visible');
+   784→   784→          });
+   785→   785→        }, { threshold: 0.16, rootMargin: '0px 0px -35px 0px' });
+   786→   786→        revealItems.forEach((item) => revealObserver.observe(item));
+   787→   787→      } else {
+   788→   788→        revealItems.forEach((item) => item.classList.add('is-visible'));
+   789→   789→      }
+   790→   790→
+   791→   791→      // Fallback contact form behavior for this standalone preview.
+   792→   792→      // Replace this mailto handler with the site's WordPress form endpoint before launch if preferred.
+   793→   793→      const contactForm = document.getElementById('contactForm');
+   794→   794→      if (contactForm) {
+   795→   795→        contactForm.addEventListener('submit', (event) => {
+   796→   796→          event.preventDefault();
+   797→   797→          const formData = new FormData(contactForm);
+   798→   798→          const subject = encodeURIComponent('Website enquiry - New City Acupuncture & Wellness Center');
+   799→   799→          const body = encodeURIComponent(
+   800→   800→            'Name: ' + (formData.get('name') || '') + '\n' +
+   801→   801→            'Email: ' + (formData.get('email') || '') + '\n' +
+   802→   802→            'Phone: ' + (formData.get('phone') || '') + '\n\n' +
+   803→   803→            'Message:\n' + (formData.get('message') || '')
+   804→   804→          );
+   805→   805→          window.location.href = 'mailto:newcitywellness@gmail.com?subject=' + subject + '&body=' + body;
+   806→   806→        });
+   807→   807→      }
+   808→   808→    })();
+   809→   809→  </script>
+   810→   810→</body>
+   811→   811→</html>
+   812→   812→
