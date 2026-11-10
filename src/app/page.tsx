@@ -1,22 +1,7 @@
 'use client'
 
 import { useEffect } from "react"
-import { Cormorant_Garamond, DM_Sans } from "next/font/google"
 import "./wellness.css"
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-serif",
-  display: "swap",
-})
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans-wellness",
-  display: "swap",
-})
 
 /* ---------- Shared SVG art (kept identical to source motifs) ---------- */
 
@@ -164,7 +149,7 @@ export default function Home() {
   }, [])
 
   return (
-    <div className={`ncw ${cormorant.variable} ${dmSans.variable}`}>
+    <div className="ncw">
       {/* ===================== Header ===================== */}
       <header className="site-header">
         <div className="container header-main">
