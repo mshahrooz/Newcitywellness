@@ -1,22 +1,11 @@
 'use client'
 
 import { useEffect } from "react"
+import Link from "next/link"
+import { SiteHeader } from "./site-header"
+import { SiteFooter } from "./site-footer"
+import { BranchWatermark, Ornament } from "./wellness-art"
 import "./wellness.css"
-
-/* ---------- Shared SVG art (kept identical to source motifs) ---------- */
-
-function BrandMark({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 84 74" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
-      <path d="M42 65C28 53 17 37 11 21C27 22 39 34 42 51C45 34 57 22 73 21C67 37 56 53 42 65Z" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" />
-      <path d="M42 59C30 45 29 25 42 7C55 25 54 45 42 59Z" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" />
-      <path d="M8 43C18 55 29 63 42 68C55 63 66 55 76 43" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
-      <path d="M42 68C34 62 25 57 17 54" stroke="#b8924f" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M42 68C50 62 59 57 67 54" stroke="#b8924f" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  )
-}
 
 function LeafArt({ className }: { className?: string }) {
   return (
@@ -26,184 +15,56 @@ function LeafArt({ className }: { className?: string }) {
   )
 }
 
-function OrnamentMark({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 2C8.5 6 6.5 10 6.5 13.5C6.5 17 8.8 19.5 12 21.5C15.2 19.5 17.5 17 17.5 13.5C17.5 10 15.5 6 12 2Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
-      <path d="M12 5V21" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function Ornament() {
-  return (
-    <div className="ornament" aria-hidden="true">
-      <span className="ornament-line" />
-      <OrnamentMark className="ornament-mark" />
-      <span className="ornament-line flip" />
-    </div>
-  )
-}
-
-/* Branch watermark used in practitioner + contact sections */
-function BranchWatermark({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 240 360" fill="none" aria-hidden="true">
-      <path d="M118 350C112 260 130 170 194 47M115 275C73 235 49 194 46 143M126 218C164 188 187 158 193 119M109 313C75 296 46 266 27 227M142 173C145 128 136 91 113 51" stroke="currentColor" strokeWidth="2" />
-      <path d="M52 145C25 127 12 98 20 73c29 6 49 28 52 58M192 121c-1-29 18-54 45-65 6 29-7 55-39 72M31 230c-23-4-40-25-42-51 25-1 45 12 55 37M114 54c-20-14-26-37-18-58 25 13 36 32 29 54M196 50c1-22 17-40 40-47 4 23-7 43-30 56" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  )
-}
-
 export default function Home() {
   useEffect(() => {
-    const header = document.querySelector<HTMLElement>(".ncw .site-header")
-    const menuToggle = document.querySelector<HTMLButtonElement>(".ncw .mobile-toggle")
-    const nav = document.querySelector<HTMLElement>(".ncw .header-nav")
-    const dropdown = document.querySelector<HTMLElement>(".ncw .nav-dropdown")
-    const dropdownToggle = document.querySelector<HTMLButtonElement>(".ncw .nav-dropdown-toggle")
-
-    /* Scroll-aware header */
-    const onScroll = () => {
-      if (!header) return
-      if (window.scrollY > 40) header.classList.add("is-scrolled")
-      else header.classList.remove("is-scrolled")
-    }
-    onScroll()
-    window.addEventListener("scroll", onScroll, { passive: true })
-
-    /* Mobile menu */
-    const openMenuIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>'
-    const closeMenuIcon = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>'
-
-    if (menuToggle && nav) {
-      menuToggle.addEventListener("click", () => {
-        const isOpen = nav.classList.toggle("is-open")
-        menuToggle.setAttribute("aria-expanded", String(isOpen))
-        menuToggle.setAttribute("aria-label", isOpen ? "Close menu" : "Open menu")
-        menuToggle.innerHTML = isOpen ? closeMenuIcon : openMenuIcon
-      })
-    }
-
-    if (dropdown && dropdownToggle) {
-      dropdownToggle.addEventListener("click", (e) => {
-        e.stopPropagation()
-        const isOpen = dropdown.classList.toggle("open")
-        dropdownToggle.setAttribute("aria-expanded", String(isOpen))
-      })
-    }
-
-    document.querySelectorAll<HTMLElement>(".ncw .nav-inner a").forEach((link) => {
-      link.addEventListener("click", () => {
-        if (nav) nav.classList.remove("is-open")
-        if (menuToggle) {
-          menuToggle.setAttribute("aria-expanded", "false")
-          menuToggle.setAttribute("aria-label", "Open menu")
-          menuToggle.innerHTML = openMenuIcon
-        }
-        if (dropdown) dropdown.classList.remove("open")
-        if (dropdownToggle) dropdownToggle.setAttribute("aria-expanded", "false")
-      })
-    })
-
     /* Reveal on scroll — reveal once, then unobserve (robust: content stays visible) */
     const revealItems = document.querySelectorAll<HTMLElement>(".ncw .reveal")
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    let revealObserver: IntersectionObserver | undefined
     if ("IntersectionObserver" in window && !reducedMotion) {
-      const revealObserver = new IntersectionObserver(
+      const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               entry.target.classList.add("is-visible")
-              revealObserver.unobserve(entry.target)
+              observer.unobserve(entry.target)
             }
           })
         },
         { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
       )
-      revealItems.forEach((item) => revealObserver.observe(item))
+      revealObserver = observer
+      revealItems.forEach((item) => observer.observe(item))
     } else {
       revealItems.forEach((item) => item.classList.add("is-visible"))
     }
 
     /* Contact form — mailto fallback (matches source behavior) */
     const contactForm = document.getElementById("contactForm") as HTMLFormElement | null
-    if (contactForm) {
-      contactForm.addEventListener("submit", (event) => {
-        event.preventDefault()
-        const formData = new FormData(contactForm)
-        const subject = encodeURIComponent("Website enquiry - New City Acupuncture & Wellness Center")
-        const body = encodeURIComponent(
-          "Name: " + (formData.get("name") || "") + "\n" +
-          "Email: " + (formData.get("email") || "") + "\n" +
-          "Phone: " + (formData.get("phone") || "") + "\n\n" +
-          "Message:\n" + (formData.get("message") || "")
-        )
-        window.location.href = "mailto:newcitywellness@gmail.com?subject=" + subject + "&body=" + body
-      })
+    const onContactSubmit = (event: SubmitEvent) => {
+      if (!contactForm) return
+      event.preventDefault()
+      const formData = new FormData(contactForm)
+      const subject = encodeURIComponent("Website enquiry - New City Acupuncture & Wellness Center")
+      const body = encodeURIComponent(
+        "Name: " + (formData.get("name") || "") + "\n" +
+        "Email: " + (formData.get("email") || "") + "\n" +
+        "Phone: " + (formData.get("phone") || "") + "\n\n" +
+        "Message:\n" + (formData.get("message") || "")
+      )
+      window.location.href = "mailto:newcitywellness@gmail.com?subject=" + subject + "&body=" + body
     }
+    contactForm?.addEventListener("submit", onContactSubmit)
 
     return () => {
-      window.removeEventListener("scroll", onScroll)
+      revealObserver?.disconnect()
+      contactForm?.removeEventListener("submit", onContactSubmit)
     }
   }, [])
 
   return (
     <div className="ncw">
-      {/* ===================== Header ===================== */}
-      <header className="site-header">
-        <div className="container header-main">
-          <a className="brand" href="https://newcitywellness.com/" aria-label="New City Acupuncture and Wellness Center home">
-            <BrandMark className="brand-mark" />
-            <span className="brand-copy">
-              <span className="brand-name">NEW CITY</span>
-              <span className="brand-tag">ACUPUNCTURE &amp; WELLNESS CENTER</span>
-            </span>
-          </a>
-
-          <div className="header-contact">
-            <a className="contact-chip" href="https://www.google.com/maps/search/?api=1&amp;query=125+South+Main+Street+New+City+NY+10956" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" strokeWidth="2" /><circle cx="12" cy="10" r="2.5" fill="currentColor" /></svg>
-              125 South Main Street, New City, NY 10956
-            </a>
-            <a className="contact-chip" href="tel:8455792428">
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 2.8 9.3 2c.7-.2 1.5.2 1.7.9l1.1 3.7c.2.6 0 1.2-.5 1.6l-1.8 1.4a15.4 15.4 0 0 0 4.6 4.6l1.4-1.8c.4-.5 1-.7 1.6-.5l3.7 1.1c.7.2 1.1 1 1 1.7l-.8 2.7c-.2.7-.9 1.2-1.6 1.2C10.1 18.6 5.4 13.9 5.4 4.4c0-.7.5-1.4 1.2-1.6Z" /></svg>
-              845-579-2428
-            </a>
-            <a className="btn header-book" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M7 3v4M17 3v4M3 10h18M12 13v5M9.5 15.5h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-              Book Appointment
-            </a>
-          </div>
-          <button className="mobile-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="primary-navigation">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-          </button>
-        </div>
-        <nav className="header-nav" id="primary-navigation" aria-label="Main navigation">
-          <div className="container nav-inner">
-            <a className="nav-link active" href="https://newcitywellness.com/">Home</a>
-            <a className="nav-link" href="https://newcitywellness.com/about-us/">About</a>
-            <div className="nav-dropdown">
-              <button className="nav-dropdown-toggle" type="button" aria-expanded="false">Services <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
-              <div className="dropdown-menu">
-                <a href="https://newcitywellness.com/services/">All Services</a>
-                <a href="https://newcitywellness.com/services/acupuncture/">Acupuncture</a>
-                <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Chinese Medical Massage (Tui-Na)</a>
-                <a href="https://newcitywellness.com/services/cupping/">Cupping</a>
-                <a href="https://newcitywellness.com/services/moxibustion/">Moxibustion</a>
-                <a href="https://newcitywellness.com/services/chinese-herbal-medicine/">Chinese Herbal Medicine</a>
-                <a href="https://newcitywellness.com/services/gua-sha/">Gua-Sha</a>
-                <a href="https://newcitywellness.com/services/qi-gong/">Qi-Gong</a>
-              </div>
-            </div>
-            <a className="nav-link" href="https://newcitywellness.com/faqs/">FAQs</a>
-            <a className="nav-link" href="https://newcitywellness.com/conditions-treated/">Conditions</a>
-            <a className="nav-link" href="https://newcitywellness.com/testimonials/">Testimonials</a>
-            <a className="nav-link" href="https://newcitywellness.com/insurance/">Insurance</a>
-            <a className="nav-link" href="https://newcitywellness.com/contact-us/">Contact</a>
-          </div>
-        </nav>
-      </header>
+      <SiteHeader current="home" />
 
       <main>
         {/* ===================== Hero ===================== */}
@@ -322,7 +183,7 @@ export default function Home() {
               <div className="gold-rule" />
               <p>Mordechai Genut is the owner of New City Acupuncture &amp; Wellness Center. He is a licensed acupuncturist, holistic health practitioner, wellness coach, and martial arts expert. His practice is client-centered which focuses on providing care, compassion, attentiveness, and healing aimed at the whole person—mind, body, and spirit. He creates individualized treatment plans that target the specific needs of each person.</p>
               <p>Mordechai’s goal is to help others maintain a mindful and well-balanced lifestyle to allow for optimal health, inner peace, and an overall good quality of life.</p>
-              <a className="btn" href="https://newcitywellness.com/about-us/">About the Center <span className="arrow">→</span></a>
+              <Link className="btn" href="/about-us/">About the Center <span className="arrow">→</span></Link>
             </div>
           </div>
         </section>
@@ -458,28 +319,7 @@ export default function Home() {
         </section>
       </main>
 
-      {/* ===================== Footer ===================== */}
-      <footer className="site-footer">
-        <div className="container footer-inner">
-          <a className="footer-brand" href="https://newcitywellness.com/" aria-label="New City Acupuncture and Wellness Center home">
-            <BrandMark className="brand-mark" />
-            <span className="brand-copy"><span className="brand-name">NEW CITY</span><span className="brand-tag">ACUPUNCTURE &amp; WELLNESS CENTER</span></span>
-          </a>
-          <div className="footer-links">
-            <h3>Quick Links</h3>
-            <div className="quick-nav">
-              <a href="https://newcitywellness.com/services/acupuncture/">Acupuncture</a>
-              <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Tui-Na</a>
-              <a href="https://newcitywellness.com/services/cupping/">Cupping</a>
-              <a href="https://newcitywellness.com/services/moxibustion/">Moxibustion</a>
-              <a href="https://newcitywellness.com/services/chinese-herbal-medicine/">Herbal Medicine</a>
-              <a href="https://newcitywellness.com/services/gua-sha/">Gua-Sha</a>
-              <a href="https://newcitywellness.com/services/qi-gong/">Qi-Gong</a>
-            </div>
-          </div>
-          <div className="copyright">Copyright © 2022 New City Acupuncture &amp; Wellness Center. All Rights Reserved.</div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }
