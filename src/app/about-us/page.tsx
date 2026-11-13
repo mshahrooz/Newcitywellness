@@ -30,42 +30,44 @@ export default function AboutPage() {
       <main id="main-content">
         <section className="about-hero" aria-labelledby="about-title">
           <div className="container about-hero-inner">
-            <nav className="about-breadcrumb" aria-label="Breadcrumb">
-              <Link href="/">Home</Link><span aria-hidden="true">/</span><span aria-current="page">About Us</span>
-            </nav>
-            <span className="eyebrow">New City Acupuncture &amp; Wellness Center</span>
-            <h1 id="about-title">About Us</h1>
-            <p>Meet our practitioner, get to know our approach, and take a look inside our New City wellness center.</p>
-            <div className="about-actions">
-              <a className="btn btn-gold" href={booking} target="_blank" rel="noopener">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
-              <a className="about-hero-link" href="#practitioner">Meet the Practitioner <span aria-hidden="true">↓</span></a>
+            <div className="about-hero-copy">
+              <nav className="about-breadcrumb" aria-label="Breadcrumb">
+                <Link href="/">Home</Link><span aria-hidden="true">/</span><span aria-current="page">About Us</span>
+              </nav>
+              <span className="eyebrow">New City Acupuncture &amp; Wellness Center</span>
+              <h1 id="about-title">About Us</h1>
+              <p>Meet our practitioner, get to know our approach, and take a look inside our New City wellness center.</p>
+              <div className="about-actions">
+                <a className="btn" href={booking} target="_blank" rel="noopener">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
+                <a className="about-text-link" href="#practitioner">Meet the Practitioner <span aria-hidden="true">↓</span></a>
+              </div>
             </div>
+            <figure className="about-portrait">
+              <img {...about.photos[0]} alt="Mordechai Genut, owner of New City Acupuncture &amp; Wellness Center" fetchPriority="high" />
+              <figcaption><strong>Mordechai Genut, MS, L.Ac.</strong><span>Owner · NYS licensed acupuncturist</span></figcaption>
+            </figure>
           </div>
           <BranchWatermark className="about-hero-botanical" />
         </section>
 
-        <section id="practitioner" className="about-section" aria-labelledby="practitioner-heading">
+        <section id="practitioner" className="about-section about-practitioner" aria-labelledby="practitioner-heading">
           <div className="container">
             <div className="about-profile">
-              <figure className="about-portrait">
-                <img {...about.photos[0]} alt="Mordechai Genut, owner of New City Acupuncture &amp; Wellness Center" />
-                <figcaption><strong>Mordechai Genut, MS, L.Ac.</strong><span>Owner · NYS licensed acupuncturist</span></figcaption>
-              </figure>
               <div className="about-copy">
-                <span className="eyebrow">Owner · Meet the practitioner</span>
-                <h2 id="practitioner-heading">Mordechai Genut, MS, L.Ac.</h2>
+                <span className="eyebrow">Meet the practitioner</span>
+                <h2 id="practitioner-heading">Mordechai Genut, <span>MS, L.Ac.</span></h2>
+              </div>
+              <div className="about-copy about-prose">
                 <p>{about.training}</p>
                 <p>{about.origin}</p>
               </div>
             </div>
             <div className="about-bio-grid">
-              <article className="about-panel about-copy">
-                <span className="about-index" aria-hidden="true">01</span>
+              <article className="about-editorial-item about-copy">
                 <h3>A lifelong practice in movement</h3>
                 <p>{about.movement}</p>
               </article>
-              <article className="about-panel about-copy">
-                <span className="about-index" aria-hidden="true">02</span>
+              <article className="about-editorial-item about-copy">
                 <h3>An individual approach to care</h3>
                 <p>{about.approach}</p>
               </article>
@@ -100,13 +102,13 @@ export default function AboutPage() {
               </div>
             </div>
             <div className="about-bio-grid about-programs">
-              <article className="about-panel about-copy">
+              <article className="about-editorial-item about-copy">
                 <span className="eyebrow">Weekly group sessions</span>
                 <h3>Qigong, Breathing &amp; Meditation</h3>
                 <span className="about-time">Mondays at 9:30 am</span>
                 <p>{about.qigong}</p>
               </article>
-              <article className="about-panel about-copy">
+              <article className="about-editorial-item about-copy">
                 <span className="eyebrow">Beyond the treatment room</span>
                 <h3>Health &amp; Wellness Education</h3>
                 <p>{educationIntro}<a className="about-text-link" href={contact}>{contactLinkText}</a>{educationEnd}</p>
@@ -128,7 +130,7 @@ export default function AboutPage() {
                 {about.social.map(({ label, href }) => <a key={label} href={href} target="_blank" rel="noopener">{label} <span aria-hidden="true">↗</span></a>)}
               </div>
             </div>
-            <div className="about-contact-card">
+            <div className="about-contact-details">
               <h3>Visit the Center</h3>
               <address>
                 <a href={directions} target="_blank" rel="noopener">125 South Main Street<br />New City, NY 10956</a>

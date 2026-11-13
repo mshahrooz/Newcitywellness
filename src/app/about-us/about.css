@@ -1,84 +1,163 @@
+/* About-page editorial layout. Shared colors, type, buttons, header and footer
+   continue to come from wellness.css. */
 .ncw-about .about-hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  color: var(--paper-warm);
-  background: var(--forest-deep);
+  background: linear-gradient(115deg, var(--paper-warm), var(--cream) 100%);
 }
-.ncw-about .about-hero::before {
-  position: absolute;
-  inset: 0;
-  content: "";
-  z-index: -1;
-  background: linear-gradient(90deg, #0d2a1efc 5%, #153a2bf5 37%, #153a2b9c 68%, #0d2a1e68),
-    url("https://newcitywellness.com/wp-content/uploads/2023/01/white-stones-white-plumeria-near-water-wimming-pool-min.jpg") center 62% / cover no-repeat;
+.ncw-about .about-hero-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  align-items: center;
+  gap: clamp(26px, 7vw, 112px);
+  padding-block: clamp(40px, 6.7vw, 100px);
 }
-.ncw-about .about-hero-inner { position: relative; z-index: 1; padding-block: clamp(44px, 7vw, 102px); }
-.ncw-about .about-breadcrumb { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; color: var(--gold-pale); font-size: .8rem; }
-.ncw-about .about-breadcrumb a { text-decoration: underline; text-underline-offset: .22em; }
-.ncw-about .about-hero .eyebrow, .ncw-about .about-mission .eyebrow { color: var(--gold-pale); }
-.ncw-about .about-hero h1, .ncw-about .about-copy h2, .ncw-about .about-copy h3,
-.ncw-about .about-mission h2, .ncw-about .about-contact-card h3 {
+.ncw-about .about-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: clamp(23px, 3.4vw, 45px);
+  color: var(--muted);
+  font-size: .78rem;
+}
+.ncw-about .about-breadcrumb a { color: var(--forest); }
+.ncw-about .about-breadcrumb a:hover,
+.ncw-about .about-social a:hover { text-decoration: underline; text-underline-offset: .24em; }
+.ncw-about :is(.about-hero h1, .about-copy h2, .about-copy h3, .about-mission h2, .about-contact-details h3) {
+  margin: 0;
   font-family: var(--serif);
+  color: var(--forest);
   font-weight: 600;
-  letter-spacing: -.024em;
+  letter-spacing: -.027em;
   line-height: 1.03;
 }
-.ncw-about .about-hero h1 { font-size: clamp(3.6rem, 8vw, 7.2rem); margin: 8px 0 13px; }
-.ncw-about .about-hero p { color: #f6efe0; font-size: clamp(1rem, 1.8vw, 1.2rem); max-width: 38rem; margin: 0 0 26px; }
-.ncw-about .about-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
-.ncw-about .about-hero-link { color: var(--paper-warm); font-weight: 600; font-size: .9rem; }
-.ncw-about .about-hero-link:hover, .ncw-about .about-social a:hover { text-decoration: underline; text-underline-offset: .25em; }
-.ncw-about .about-hero-link span { color: var(--gold-pale); margin-left: 6px; }
-.ncw-about .about-hero-botanical { position: absolute; inset: auto 4% -46% auto; width: clamp(230px, 40vw, 650px); color: var(--gold-pale); opacity: .22; pointer-events: none; }
-.ncw-about .about-section { position: relative; padding-block: clamp(46px, 7vw, 104px); }
-.ncw-about #practitioner { scroll-margin-top: 145px; }
-.ncw-about .about-profile { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.25fr); gap: clamp(24px, 6vw, 98px); align-items: center; }
-.ncw-about .about-portrait { margin: 0; padding: 12px; background: var(--paper-warm); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
-.ncw-about .about-portrait img { width: 100%; aspect-ratio: 1.07; object-fit: cover; object-position: center 35%; border-radius: 12px; }
-.ncw-about .about-portrait figcaption { display: grid; gap: 2px; padding: 11px 8px 3px; color: var(--muted); font-size: .82rem; }
+.ncw-about .about-hero h1 { font-size: clamp(4.1rem, 9vw, 8.2rem); margin: 5px 0 12px; }
+.ncw-about .about-hero p {
+  max-width: 34rem;
+  margin: 0 0 25px;
+  color: var(--ink-soft);
+  font-size: clamp(1rem, 1.5vw, 1.17rem);
+}
+.ncw-about .about-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 13px 22px; }
+.ncw-about .about-text-link {
+  color: var(--forest);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: .25em;
+}
+.ncw-about .about-text-link span { margin-inline-start: .2em; }
+.ncw-about .about-hero-botanical {
+  position: absolute;
+  z-index: -1;
+  width: clamp(160px, 30vw, 430px);
+  right: -6%;
+  bottom: -48%;
+  color: var(--forest-soft);
+  opacity: .12;
+  pointer-events: none;
+}
+.ncw-about .about-portrait {
+  margin: 0;
+  width: min(100%, 360px);
+  justify-self: center;
+  text-align: center;
+}
+.ncw-about .about-portrait img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+.ncw-about .about-portrait figcaption { display: grid; gap: 1px; margin-top: 13px; color: var(--muted); font-size: .82rem; }
 .ncw-about .about-portrait strong { color: var(--forest); font-weight: 700; }
-.ncw-about .about-copy h2 { font-size: clamp(2.35rem, 4.45vw, 4.5rem); margin: 8px 0 18px; color: var(--forest); }
-.ncw-about .about-copy h3, .ncw-about .about-contact-card h3 { font-size: clamp(1.8rem, 3.4vw, 2.7rem); margin: 5px 0 14px; color: var(--forest); }
-.ncw-about .about-copy p { color: var(--ink-soft); margin: 0 0 15px; line-height: 1.78; }
+
+.ncw-about .about-section { position: relative; padding-block: clamp(45px, 7vw, 100px); }
+.ncw-about #practitioner { scroll-margin-top: 145px; }
+.ncw-about .about-profile,
+.ncw-about .about-facility-intro,
+.ncw-about .about-contact-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: clamp(20px, 6vw, 98px);
+}
+.ncw-about .about-profile { align-items: start; }
+.ncw-about .about-copy h2 { font-size: clamp(2.5rem, 5vw, 4.7rem); margin: 9px 0 18px; }
+.ncw-about .about-profile h2 { margin-bottom: 0; }
+.ncw-about .about-profile h2 span { display: block; font-size: .65em; margin-top: .18em; }
+.ncw-about .about-copy h3,
+.ncw-about .about-contact-details h3 { font-size: clamp(1.82rem, 3vw, 2.7rem); margin: 6px 0 13px; }
+.ncw-about .about-copy p { color: var(--ink-soft); margin: 0 0 15px; line-height: 1.75; }
 .ncw-about .about-copy p:last-child { margin-bottom: 0; }
-.ncw-about .about-bio-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 3vw, 32px); margin-top: clamp(28px, 5vw, 64px); }
-.ncw-about .about-panel { padding: clamp(19px, 3.2vw, 40px); border: 1px solid var(--line); border-radius: 16px; background: var(--paper-warm); box-shadow: var(--shadow-sm); }
-.ncw-about .about-index { font-size: .8rem; color: var(--forest-soft); letter-spacing: .16em; font-weight: 700; }
-.ncw-about .about-mission { position: relative; overflow: hidden; isolation: isolate; color: var(--paper-warm); background: linear-gradient(120deg, var(--forest-deep), var(--forest)); text-align: center; padding-block: clamp(35px, 5vw, 69px); }
+.ncw-about .about-prose { max-width: 72ch; }
+.ncw-about .about-bio-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(24px, 5.2vw, 76px);
+  margin-top: clamp(28px, 5vw, 66px);
+}
+.ncw-about .about-editorial-item { border-top: 1px solid var(--line); padding-top: clamp(17px, 2.4vw, 30px); }
+.ncw-about .about-editorial-item p { max-width: 65ch; }
+
+.ncw-about .about-mission {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(120deg, var(--forest-deep), var(--forest));
+  text-align: center;
+  padding-block: clamp(37px, 5vw, 66px);
+}
 .ncw-about .about-mission-inner { position: relative; z-index: 1; }
-.ncw-about .about-mission h2 { font-size: clamp(2.4rem, 5vw, 4.2rem); margin: 10px 0 0; }
-.ncw-about .about-mission p { max-width: 47rem; margin: 0 auto; font-size: clamp(1rem, 1.8vw, 1.25rem); color: var(--cream); }
-.ncw-about .about-mission .ornament { color: var(--gold-pale); margin-block: 14px; }
-.ncw-about .about-mission-botanical { position: absolute; right: 3%; top: -18%; width: min(33vw, 350px); opacity: .2; color: var(--gold-pale); }
+.ncw-about .about-mission .eyebrow { color: var(--gold-pale); }
+.ncw-about .about-mission h2 { color: var(--paper-warm); font-size: clamp(2.5rem, 5vw, 4.3rem); margin-top: 8px; }
+.ncw-about .about-mission p { max-width: 48rem; margin: 0 auto; font-size: clamp(1rem, 1.55vw, 1.17rem); color: var(--cream); }
+.ncw-about .about-mission .ornament { margin-block: 12px; }
+.ncw-about .about-mission .ornament-mark { color: var(--gold-pale); }
+.ncw-about .about-mission-botanical { position: absolute; right: 3%; top: -20%; width: min(35vw, 350px); opacity: .17; color: var(--gold-pale); pointer-events: none; }
+
 .ncw-about .about-facility { background: var(--paper-warm); }
-.ncw-about .about-facility-intro { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); align-items: center; gap: clamp(24px, 5vw, 78px); }
-.ncw-about .about-gallery { display: grid; grid-template-columns: 1.2fr 1fr; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 11px; min-height: 0; aspect-ratio: 1.38; }
-.ncw-about .about-gallery img { width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; border-radius: 12px; border: 1px solid var(--line); }
-.ncw-about .about-gallery img:first-child { grid-row: span 2; }
-.ncw-about .about-text-link { color: var(--forest); font-weight: 700; text-decoration: underline; text-underline-offset: .22em; }
-.ncw-about .about-time { display: inline-block; margin: 0 0 12px; padding: 4px 10px; border-radius: 6px; color: var(--forest-deep); background: var(--cream); font-weight: 700; font-size: .82rem; }
-.ncw-about .about-contact { background: var(--cream); border-top: 1px solid var(--line); }
-.ncw-about .about-contact-grid { display: grid; grid-template-columns: minmax(0, 1.16fr) minmax(0, .84fr); align-items: center; gap: clamp(22px, 5vw, 78px); }
+.ncw-about .about-facility-intro { align-items: center; }
+.ncw-about .about-gallery {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 1.1vw, 15px);
+  aspect-ratio: 1.48;
+}
+.ncw-about .about-gallery img { width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: cover; border-radius: 5px; }
+.ncw-about .about-gallery img:first-child { grid-row: span 2; border-radius: 38% 38% 5px 5px / 26% 26% 5px 5px; }
+.ncw-about .about-time { display: block; margin: 0 0 9px; color: var(--forest); font-weight: 700; font-size: .88rem; }
+
+.ncw-about .about-contact { background: var(--cream); }
+.ncw-about .about-contact-grid { grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); align-items: start; }
 .ncw-about .about-contact h2 span { display: block; font-size: .65em; margin-top: .17em; }
-.ncw-about .about-contact-card { background: var(--paper-warm); padding: clamp(20px, 3vw, 38px); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); }
-.ncw-about .about-contact-card address { display: grid; gap: 7px; margin-bottom: 17px; font-style: normal; overflow-wrap: anywhere; }
-.ncw-about .about-contact-card a { text-decoration: underline; text-underline-offset: .2em; }
-.ncw-about .about-contact-card h4 { color: var(--forest); margin: 0 0 6px; font-weight: 700; }
+.ncw-about .about-contact-details { border-inline-start: 1px solid var(--line); padding-inline-start: clamp(18px, 3vw, 43px); }
+.ncw-about .about-contact-details address { display: grid; gap: 7px; margin-bottom: 18px; font-style: normal; overflow-wrap: anywhere; }
+.ncw-about .about-contact-details a { text-decoration: underline; text-underline-offset: .2em; }
+.ncw-about .about-contact-details h4 { color: var(--forest); margin: 0 0 6px; font-weight: 700; }
 .ncw-about .about-hours { margin: 0; }
 .ncw-about .about-hours div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0 12px; padding: 5px 0; border-bottom: 1px solid var(--line); }
 .ncw-about .about-hours div:last-child { border-bottom: 0; }
 .ncw-about .about-hours dd { margin: 0; color: var(--muted); }
-.ncw-about .about-social { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 17px; font-size: .82rem; font-weight: 600; }
+.ncw-about .about-social { display: flex; flex-wrap: wrap; gap: 8px 15px; margin-top: 18px; font-size: .83rem; font-weight: 600; }
 .ncw-about :where(main a, main button):focus-visible { outline: 2px solid var(--forest); outline-offset: 4px; }
-.ncw-about .about-hero :focus-visible { outline-color: var(--gold-pale); }
-@media (max-width: 720px) {
-  .ncw-about .about-profile, .ncw-about .about-bio-grid, .ncw-about .about-facility-intro, .ncw-about .about-contact-grid { grid-template-columns: minmax(0, 1fr); }
-  .ncw-about .about-portrait { width: min(100%, 410px); }
-  .ncw-about #practitioner { scroll-margin-top: 90px; }
-  .ncw-about .about-hero::before { background-position: center, 67% center; }
-}
 .ncw-about .about-footer-nav { margin-bottom: 14px; }
+
 @media (max-width: 900px) {
   .ncw-about .header-nav.is-open { max-height: calc(100dvh - 78px); overflow-y: auto; }
+}
+@media (max-width: 720px) {
+  .ncw-about :is(.about-hero-inner, .about-profile, .about-bio-grid, .about-facility-intro, .about-contact-grid) { grid-template-columns: minmax(0, 1fr); }
+  .ncw-about .about-hero-inner { gap: 31px; }
+  .ncw-about .about-portrait { width: min(72%, 275px); }
+  .ncw-about .about-hero-botanical { bottom: -17%; }
+  .ncw-about #practitioner { scroll-margin-top: 90px; }
+  .ncw-about .about-profile { gap: 15px; }
+  .ncw-about .about-profile h2 span { display: inline; }
+  .ncw-about .about-contact-details { border-inline-start: 0; padding-inline-start: 0; border-top: 1px solid var(--line); padding-top: 18px; }
 }
