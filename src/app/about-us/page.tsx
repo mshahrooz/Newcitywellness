@@ -45,7 +45,7 @@ export default function AboutPage() {
         <div className="container bio-grid">
           <aside className="bio-aside">
             <figure className="bio-photo clinic-reveal from-left">
-              <img src="https://newcitywellness.com/wp-content/uploads/2022/12/profile-photo.png" alt="Mordechai Genut, licensed acupuncturist and owner of New City Acupuncture and Wellness Center" width={411} height={410} decoding="async" fetchPriority="high" />
+              <img src={about.photos[0].src} alt="Mordechai Genut, licensed acupuncturist and owner of New City Acupuncture and Wellness Center" width={411} height={410} decoding="async" fetchPriority="high" />
             </figure>
             <div className="creds clinic-reveal delay-1">
               <div className="cred">
@@ -128,7 +128,10 @@ export default function AboutPage() {
       <section className="block block--cream" aria-labelledby="facility-title">
         <div className="container split split--reverse">
           <figure className="frame frame--right split-media clinic-reveal from-right">
-            <img src="https://newcitywellness.com/wp-content/uploads/2023/01/20221231_200451-min.jpg" alt="Treatment space at New City Acupuncture &amp; Wellness Center" loading="lazy" width={1868} height={1934} decoding="async" />
+            <picture>
+              <source media="(min-width: 700px)" type="image/avif" srcSet={about.photos[2].largeAvif} />
+              <img src={about.photos[2].src} alt="Treatment space at New City Acupuncture &amp; Wellness Center" loading="lazy" width={about.photos[2].width} height={about.photos[2].height} decoding="async" />
+            </picture>
           </figure>
           <div className="split-copy copy clinic-reveal from-left">
             <span className="eyebrow">About</span>

@@ -10,7 +10,7 @@ export const about = {
   "mission": "New City Acupuncture & Wellness Center utilizes a variety of traditional Chinese medicine modalities to help you achieve your goal of maintaining a mindful and well-balanced lifestyle to allow for optimal health, inner peace, and an overall good quality of life. ",
   "photos": [
     {
-      "src": "https://newcitywellness.com/wp-content/uploads/2022/12/profile-photo.png",
+      "src": `${process.env.BASE_PATH || ""}/images/about/mordechai-genut.webp`,
       "width": 411,
       "height": 410
     },
@@ -20,9 +20,10 @@ export const about = {
       "height": 640
     },
     {
-      "src": "https://newcitywellness.com/wp-content/uploads/2023/01/20221231_200451-min.jpg",
-      "width": 1868,
-      "height": 1934
+      "src": `${process.env.BASE_PATH || ""}/images/about/treatment-room-640.webp`,
+      "largeAvif": `${process.env.BASE_PATH || ""}/images/about/treatment-room-960.avif`,
+      "width": 640,
+      "height": 663
     },
     {
       "src": `${process.env.BASE_PATH || ""}/images/about/practitioner-treatment.jpg`,
