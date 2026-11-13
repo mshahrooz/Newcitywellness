@@ -1,4 +1,4 @@
-const publishedServices = ["acupuncture", "chinese-medical-massage-tui-na"] as const
+const publishedServices = ["acupuncture", "chinese-medical-massage-tui-na", "cupping"] as const
 export type PublishedService = (typeof publishedServices)[number]
 
 export function serviceDetailHref(id: string) {
