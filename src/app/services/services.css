@@ -238,7 +238,7 @@
 .ncw-services .cta-band::after { display: none; }
 .ncw-services .cta-inner { max-width: 1000px; }
 .ncw-services .cta-inner h2 {
-  font-size: clamp(2.65rem, 5vw, 4.2rem);
+  font-size: clamp(2rem, 3.4vw, 2.8rem);
   line-height: 1.08;
   margin: 18px auto 22px;
 }
