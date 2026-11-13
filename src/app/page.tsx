@@ -131,10 +131,10 @@ export default function Home() {
                 </Link>
               </article>
               <article className="therapy-card reveal delay-1">
-                <a href="https://newcitywellness.com/services/chinese-herbal-medicine/" aria-label="Learn more about Chinese Herbal Medicine">
+                <Link href="/services/chinese-herbal-medicine/" aria-label="Learn more about Chinese Herbal Medicine">
                   <div className="therapy-image"><img src="images/herbal.png" alt="Natural herbs and ingredients used in Chinese herbal medicine" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Chinese Herbal Medicine</h3><span className="text-link">Learn More <span>→</span></span></div>
-                </a>
+                </Link>
               </article>
               <article className="therapy-card reveal delay-2">
                 <a href="https://newcitywellness.com/services/gua-sha/" aria-label="Learn more about Gua-Sha">

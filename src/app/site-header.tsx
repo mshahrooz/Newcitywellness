@@ -76,7 +76,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
                 <Link href="/services/chinese-medical-massage-tui-na/" aria-current={currentService === "chinese-medical-massage-tui-na" ? "page" : undefined} onClick={closeMenus}>Chinese Medical Massage (Tui-Na)</Link>
                 <Link href="/services/cupping/" aria-current={currentService === "cupping" ? "page" : undefined} onClick={closeMenus}>Cupping</Link>
                 <Link href="/services/moxibustion/" aria-current={currentService === "moxibustion" ? "page" : undefined} onClick={closeMenus}>Moxibustion</Link>
-                <a href="https://newcitywellness.com/services/chinese-herbal-medicine/">Chinese Herbal Medicine</a>
+                <Link href="/services/chinese-herbal-medicine/" aria-current={currentService === "chinese-herbal-medicine" ? "page" : undefined} onClick={closeMenus}>Chinese Herbal Medicine</Link>
                 <a href="https://newcitywellness.com/services/gua-sha/">Gua-Sha</a>
                 <a href="https://newcitywellness.com/services/qi-gong/">Qi-Gong</a>
               </div>
