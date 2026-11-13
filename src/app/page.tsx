@@ -210,7 +210,7 @@ export default function Home() {
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-media">
             <img
-              src="/images/hero.png"
+              src="images/hero.png"
               alt="Calm acupuncture and wellness treatment room"
               fetchPriority="high"
             />
@@ -247,43 +247,43 @@ export default function Home() {
             <div className="therapy-grid">
               <article className="therapy-card reveal delay-1">
                 <a href="https://newcitywellness.com/services/acupuncture/" aria-label="Learn more about Acupuncture">
-                  <div className="therapy-image"><img src="/images/acupuncture.png" alt="A patient receiving acupuncture treatment" loading="lazy" /></div>
+                  <div className="therapy-image"><img src="images/acupuncture.png" alt="A patient receiving acupuncture treatment" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Acupuncture</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </a>
               </article>
               <article className="therapy-card reveal delay-2">
                 <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/" aria-label="Learn more about Chinese Medical Massage (Tui-Na)">
-                  <div className="therapy-image"><img src="/images/tuina.png" alt="Chinese medical massage treatment" loading="lazy" /></div>
+                  <div className="therapy-image"><img src="images/tuina.png" alt="Chinese medical massage treatment" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Chinese Medical Massage (Tui-Na)</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </a>
               </article>
               <article className="therapy-card reveal delay-3">
                 <a href="https://newcitywellness.com/services/cupping/" aria-label="Learn more about Cupping">
-                  <div className="therapy-image"><img src="/images/cupping.png" alt="Cupping therapy in progress" loading="lazy" /></div>
+                  <div className="therapy-image"><img src="images/cupping.png" alt="Cupping therapy in progress" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Cupping</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </a>
               </article>
               <article className="therapy-card reveal delay-4">
                 <a href="https://newcitywellness.com/services/moxibustion/" aria-label="Learn more about Moxibustion">
-                  <div className="therapy-image"><img src="/images/moxibustion.png" alt="Moxibustion warming therapy" loading="lazy" /></div>
+                  <div className="therapy-image"><img src="images/moxibustion.png" alt="Moxibustion warming therapy" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Moxibustion</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </a>
               </article>
               <article className="therapy-card reveal delay-1">
                 <a href="https://newcitywellness.com/services/chinese-herbal-medicine/" aria-label="Learn more about Chinese Herbal Medicine">
-                  <div className="therapy-image"><img src="/images/herbal.png" alt="Natural herbs and ingredients used in Chinese herbal medicine" loading="lazy" /></div>
+                  <div className="therapy-image"><img src="images/herbal.png" alt="Natural herbs and ingredients used in Chinese herbal medicine" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Chinese Herbal Medicine</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </a>
               </article>
               <article className="therapy-card reveal delay-2">
                 <a href="https://newcitywellness.com/services/gua-sha/" aria-label="Learn more about Gua-Sha">
-                  <div className="therapy-image"><img src="/images/guasha.png" alt="Traditional hands-on therapy session" loading="lazy" /></div>
+                  <div className="therapy-image"><img src="images/guasha.png" alt="Traditional hands-on therapy session" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Gua-Sha</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </a>
               </article>
               <article className="therapy-card reveal delay-3">
                 <a href="https://newcitywellness.com/services/qi-gong/" aria-label="Learn more about Qi-Gong">
-                  <div className="therapy-image"><img src="/images/qigong.png" alt="People practicing gentle Tai Chi movements" loading="lazy" /></div>
+                  <div className="therapy-image"><img src="images/qigong.png" alt="People practicing gentle Tai Chi movements" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Qi-Gong</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </a>
               </article>
@@ -296,7 +296,7 @@ export default function Home() {
           <div className="container">
             <div className="first-visit reveal">
               <div className="first-visit-media">
-                <img src="/images/first-visit.png" alt="Welcoming clinic interior for your first visit" loading="lazy" />
+                <img src="images/first-visit.png" alt="Welcoming clinic interior for your first visit" loading="lazy" />
               </div>
               <div className="first-visit-copy">
                 <span className="eyebrow">Begin Your Journey</span>
@@ -313,7 +313,7 @@ export default function Home() {
           <BranchWatermark className="practitioner-art" />
           <div className="container practitioner-grid">
             <div className="practitioner-photo reveal from-left">
-              <img src="/images/practitioner.png" alt="Mordechai Genut, New City Acupuncture and Wellness Center practitioner" loading="lazy" />
+              <img src="images/practitioner.png" alt="Mordechai Genut, New City Acupuncture and Wellness Center practitioner" loading="lazy" />
             </div>
             <div className="practitioner-copy reveal from-right">
               <span className="eyebrow">Your Practitioner</span>

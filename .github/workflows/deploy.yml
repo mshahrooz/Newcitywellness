@@ -1,0 +1,84 @@
+# Deploy the Next.js site to GitHub Pages as a fully static export.
+#
+# No design or layout changes are needed — the app is statically exported
+# (output: "export") and served as-is. The workflow auto-detects whether
+# the repository is a user/org page (served from "/") or a project page
+# (served from "/<repo>") and sets the basePath accordingly.
+#
+# One-time setup in your GitHub repo:
+#   Settings  ->  Pages  ->  Build and deployment  ->  Source: GitHub Actions
+#
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, cancelling runs in-progress.
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Compute base path
+        run: |
+          REPO="${GITHUB_REPOSITORY#*/}"
+          OWNER="${GITHUB_REPOSITORY%/*}"
+          if [[ "$REPO" == "$OWNER.github.io" ]]; then
+            # User/org page -> served from site root
+            echo "BASE_PATH=" >> "$GITHUB_ENV"
+          else
+            # Project page -> served from /<repo>
+            echo "BASE_PATH=/$REPO" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build static site
+        run: bun run build:pages
+        env:
+          BUILD_TARGET: pages
+          BASE_PATH: ${{ env.BASE_PATH }}
+
+      - name: Ensure .nojekyll
+        run: touch out/.nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
