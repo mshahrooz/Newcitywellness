@@ -125,10 +125,10 @@ export default function Home() {
                 </Link>
               </article>
               <article className="therapy-card reveal delay-4">
-                <a href="https://newcitywellness.com/services/moxibustion/" aria-label="Learn more about Moxibustion">
+                <Link href="/services/moxibustion/" aria-label="Learn more about Moxibustion">
                   <div className="therapy-image"><img src="images/moxibustion.png" alt="Moxibustion warming therapy" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Moxibustion</h3><span className="text-link">Learn More <span>→</span></span></div>
-                </a>
+                </Link>
               </article>
               <article className="therapy-card reveal delay-1">
                 <a href="https://newcitywellness.com/services/chinese-herbal-medicine/" aria-label="Learn more about Chinese Herbal Medicine">
