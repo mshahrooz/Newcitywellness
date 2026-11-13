@@ -77,7 +77,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
                 <Link href="/services/cupping/" aria-current={currentService === "cupping" ? "page" : undefined} onClick={closeMenus}>Cupping</Link>
                 <Link href="/services/moxibustion/" aria-current={currentService === "moxibustion" ? "page" : undefined} onClick={closeMenus}>Moxibustion</Link>
                 <Link href="/services/chinese-herbal-medicine/" aria-current={currentService === "chinese-herbal-medicine" ? "page" : undefined} onClick={closeMenus}>Chinese Herbal Medicine</Link>
-                <a href="https://newcitywellness.com/services/gua-sha/">Gua-Sha</a>
+                <Link href="/services/gua-sha/" aria-current={currentService === "gua-sha" ? "page" : undefined} onClick={closeMenus}>Gua-Sha</Link>
                 <a href="https://newcitywellness.com/services/qi-gong/">Qi-Gong</a>
               </div>
             </div>
