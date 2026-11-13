@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { BrandMark } from "./wellness-art"
 
-export function SiteHeader({ current }: { current: "home" | "about" }) {
+export function SiteHeader({ current }: { current: "home" | "about" | "services" }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -68,9 +68,9 @@ export function SiteHeader({ current }: { current: "home" | "about" }) {
             <Link className={current === "home" ? "nav-link active" : "nav-link"} aria-current={current === "home" ? "page" : undefined} href="/" onClick={closeMenus}>Home</Link>
             <Link className={current === "about" ? "nav-link active" : "nav-link"} aria-current={current === "about" ? "page" : undefined} href="/about-us/" onClick={closeMenus}>About</Link>
             <div className={dropdownOpen ? "nav-dropdown open" : "nav-dropdown"}>
-              <button className="nav-dropdown-toggle" type="button" ref={dropdownButton} aria-expanded={dropdownOpen} aria-controls="services-menu" onClick={() => setDropdownOpen(!dropdownOpen)}>Services <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
+              <button className={current === "services" ? "nav-dropdown-toggle active" : "nav-dropdown-toggle"} type="button" ref={dropdownButton} aria-expanded={dropdownOpen} aria-controls="services-menu" onClick={() => setDropdownOpen(!dropdownOpen)}>Services <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
               <div className="dropdown-menu" id="services-menu">
-                <a href="https://newcitywellness.com/services/">All Services</a>
+                <Link href="/services/" aria-current={current === "services" ? "page" : undefined} onClick={closeMenus}>All Services</Link>
                 <a href="https://newcitywellness.com/services/acupuncture/">Acupuncture</a>
                 <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Chinese Medical Massage (Tui-Na)</a>
                 <a href="https://newcitywellness.com/services/cupping/">Cupping</a>

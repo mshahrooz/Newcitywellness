@@ -149,6 +149,7 @@ export default function Home() {
                 </a>
               </article>
             </div>
+            <div className="services-overview-link"><Link className="btn btn-outline" href="/services/">View All Services <span className="arrow" aria-hidden="true">→</span></Link></div>
           </div>
         </section>
 

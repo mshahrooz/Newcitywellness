@@ -1827,3 +1827,7 @@
   .ncw .hero-media img { animation: none; }
   .ncw .hero-seal { animation: none; }
 }
+
+.ncw .nav-dropdown-toggle.active { color: var(--forest); }
+.ncw .nav-dropdown-toggle.active::after { transform: scaleX(1); }
+.ncw .services-overview-link { display: flex; justify-content: center; margin-top: clamp(22px, 3vw, 36px); }
