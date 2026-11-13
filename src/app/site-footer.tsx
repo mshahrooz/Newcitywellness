@@ -36,7 +36,7 @@ export function SiteFooter() {
           <nav className="footer-col" aria-label="Our services">
             <h3>Our Services</h3>
             <ul>
-              <li><a href="https://newcitywellness.com/services/acupuncture/">Acupuncture</a></li>
+              <li><Link href="/services/acupuncture/">Acupuncture</Link></li>
               <li><a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Tui-Na</a></li>
               <li><a href="https://newcitywellness.com/services/cupping/">Cupping</a></li>
               <li><a href="https://newcitywellness.com/services/moxibustion/">Moxibustion</a></li>

@@ -107,10 +107,10 @@ export default function Home() {
             </div>
             <div className="therapy-grid">
               <article className="therapy-card reveal delay-1">
-                <a href="https://newcitywellness.com/services/acupuncture/" aria-label="Learn more about Acupuncture">
+                <Link href="/services/acupuncture/" aria-label="Learn more about Acupuncture">
                   <div className="therapy-image"><img src="images/acupuncture.png" alt="A patient receiving acupuncture treatment" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Acupuncture</h3><span className="text-link">Learn More <span>→</span></span></div>
-                </a>
+                </Link>
               </article>
               <article className="therapy-card reveal delay-2">
                 <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/" aria-label="Learn more about Chinese Medical Massage (Tui-Na)">

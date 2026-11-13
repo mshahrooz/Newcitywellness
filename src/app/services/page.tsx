@@ -51,9 +51,15 @@ function Therapy({ therapy, reverse }: { therapy: (typeof therapies)[number]; re
           <p>{therapy.description}</p>
           <p className="chip-label">At a glance</p>
           <Chips items={therapy.highlights} />
-          <a className="btn service-btn" href={`${clinicServices}/${therapy.id}/`} aria-label={`Read more about ${therapy.title}`}>
-            Read More <span className="arrow" aria-hidden="true">→</span>
-          </a>
+          {therapy.id === "acupuncture" ? (
+            <Link className="btn service-btn" href="/services/acupuncture/" aria-label="Read more about Acupuncture">
+              Read More <span className="arrow" aria-hidden="true">→</span>
+            </Link>
+          ) : (
+            <a className="btn service-btn" href={`${clinicServices}/${therapy.id}/`} aria-label={`Read more about ${therapy.title}`}>
+              Read More <span className="arrow" aria-hidden="true">→</span>
+            </a>
+          )}
         </div>
       </div>
     </section>

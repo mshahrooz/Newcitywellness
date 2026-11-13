@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { BrandMark } from "./wellness-art"
 
-export function SiteHeader({ current }: { current: "home" | "about" | "services" }) {
+export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services"; currentService?: "acupuncture" }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -70,8 +70,8 @@ export function SiteHeader({ current }: { current: "home" | "about" | "services"
             <div className={dropdownOpen ? "nav-dropdown open" : "nav-dropdown"}>
               <button className={current === "services" ? "nav-dropdown-toggle active" : "nav-dropdown-toggle"} type="button" ref={dropdownButton} aria-expanded={dropdownOpen} aria-controls="services-menu" onClick={() => setDropdownOpen(!dropdownOpen)}>Services <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></button>
               <div className="dropdown-menu" id="services-menu">
-                <Link href="/services/" aria-current={current === "services" ? "page" : undefined} onClick={closeMenus}>All Services</Link>
-                <a href="https://newcitywellness.com/services/acupuncture/">Acupuncture</a>
+                <Link href="/services/" aria-current={current === "services" && !currentService ? "page" : undefined} onClick={closeMenus}>All Services</Link>
+                <Link href="/services/acupuncture/" aria-current={currentService === "acupuncture" ? "page" : undefined} onClick={closeMenus}>Acupuncture</Link>
                 <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Chinese Medical Massage (Tui-Na)</a>
                 <a href="https://newcitywellness.com/services/cupping/">Cupping</a>
                 <a href="https://newcitywellness.com/services/moxibustion/">Moxibustion</a>
