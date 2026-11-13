@@ -286,3 +286,21 @@
 @media (prefers-reduced-motion: reduce) {
   .ncw-about .rise, .ncw-about main .clinic-reveal { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
 }
+
+/* Both source photos are square and the practitioner's face reaches their top edge.
+   Let their intrinsic height set the frame, rather than cropping to a landscape box. */
+.ncw-about .split-media.frame.about-full-photo,
+.ncw-about .sessions-media.about-full-photo {
+  align-self: center;
+  min-height: 0;
+  height: auto;
+  aspect-ratio: auto;
+}
+.ncw-about .about-full-photo img {
+  position: static;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  object-position: center top;
+}
+.ncw-about .frame.about-full-photo::before { border-top: 0; }

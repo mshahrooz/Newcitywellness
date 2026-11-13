@@ -15,7 +15,7 @@ export const about = {
       "height": 410
     },
     {
-      "src": "https://newcitywellness.com/wp-content/uploads/2022/12/319122145_534387168598573_2384832087500581039_n.jpg",
+      "src": `${process.env.BASE_PATH || ""}/images/about/hands-on-treatment.jpg`,
       "width": 640,
       "height": 640
     },
@@ -25,7 +25,7 @@ export const about = {
       "height": 1934
     },
     {
-      "src": "https://newcitywellness.com/wp-content/uploads/2022/12/318923293_1549622728822885_4225025424993331185_n.jpg",
+      "src": `${process.env.BASE_PATH || ""}/images/about/practitioner-treatment.jpg`,
       "width": 640,
       "height": 640
     }

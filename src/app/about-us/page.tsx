@@ -3,6 +3,7 @@ import Link from "next/link"
 import { SiteHeader } from "../site-header"
 import { SiteFooter } from "../site-footer"
 import { AboutMotion } from "./about-motion"
+import { about } from "./content"
 import "../wellness.css"
 import "./about.css"
 
@@ -97,8 +98,8 @@ export default function AboutPage() {
 
       <section className="block block--paper" aria-labelledby="approach-title">
         <div className="container split">
-          <figure className="frame split-media clinic-reveal from-left">
-            <img src="https://newcitywellness.com/wp-content/uploads/2022/12/319122145_534387168598573_2384832087500581039_n.jpg" alt="Inside New City Acupuncture &amp; Wellness Center" loading="lazy" width={640} height={640} decoding="async" />
+          <figure className="frame split-media about-full-photo clinic-reveal from-left">
+            <img src={about.photos[1].src} alt="Inside New City Acupuncture &amp; Wellness Center" loading="lazy" width={640} height={640} decoding="async" />
           </figure>
           <div className="split-copy copy clinic-reveal from-right">
             <span className="eyebrow">Our Approach</span>
@@ -161,8 +162,8 @@ export default function AboutPage() {
       <section className="sessions-wrap" aria-labelledby="sessions-title">
         <div className="container">
           <div className="sessions clinic-reveal">
-            <figure className="sessions-media">
-              <img src="https://newcitywellness.com/wp-content/uploads/2022/12/318923293_1549622728822885_4225025424993331185_n.jpg" alt="Hands-on treatment at New City Acupuncture &amp; Wellness Center" loading="lazy" width={640} height={640} decoding="async" />
+            <figure className="sessions-media about-full-photo">
+              <img src={about.photos[3].src} alt="Hands-on treatment at New City Acupuncture &amp; Wellness Center" loading="lazy" width={640} height={640} decoding="async" />
             </figure>
             <div className="sessions-copy">
               <span className="session-badge">
