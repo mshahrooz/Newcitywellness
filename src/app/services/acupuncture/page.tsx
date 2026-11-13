@@ -12,8 +12,7 @@ export const metadata: Metadata = {
   description: "Learn about acupuncture with Mordechai Genut, MS, L.Ac., in New City, NY. Find out what to expect at your first visit and book an appointment.",
 }
 
-const imageBase = `${process.env.BASE_PATH || ""}/images`
-const treatmentImage = `${imageBase}/services/acupuncture/treatment`
+const treatmentImage = `${process.env.BASE_PATH || ""}/images/services/acupuncture/treatment`
 const bookingUrl = "https://acusimple.com/bookings/8635"
 const clinicPhone = "tel:+18455792428"
 const clinicServices = "https://newcitywellness.com/services"
@@ -39,7 +38,10 @@ const questions = [
 const related = [
   { title: "Chinese Herbal Medicine", href: "chinese-herbal-medicine", copy: "Individualized herbal formulas." },
   { title: "Cupping", href: "cupping", copy: "A traditional technique that uses suction cups." },
+  { title: "Gua-Sha", href: "gua-sha", copy: "Gentle strokes with a smooth tool." },
+  { title: "Chinese Medical Massage (Tui-Na)", href: "chinese-medical-massage-tui-na", copy: "Hands-on massage with rhythmic pressure." },
   { title: "Moxibustion", href: "moxibustion", copy: "A traditional technique that applies warmth near selected points." },
+  { title: "Qi-Gong", href: "qi-gong", copy: "Gentle movement, breathing, and meditation." },
 ]
 
 function BookingLink() {
@@ -51,8 +53,14 @@ export default function AcupuncturePage() {
     <div className="ncw ncw-services ncw-acupuncture">
       <SiteHeader current="services" currentService="acupuncture" />
       <main id="main-content">
-        <section className="page-hero acu-hero" aria-labelledby="acupuncture-title">
-          <div className="container acu-hero-grid">
+        <section className="page-hero" aria-labelledby="acupuncture-title">
+          <svg className="page-hero-art" viewBox="0 0 84 74" fill="none" aria-hidden="true">
+            <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
+            <path d="M42 65C28 53 17 37 11 21C27 22 39 34 42 51C45 34 57 22 73 21C67 37 56 53 42 65Z" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
+            <path d="M42 59C30 45 29 25 42 7C55 25 54 45 42 59Z" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
+            <path d="M8 43C18 55 29 63 42 68C55 63 66 55 76 43" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
+          </svg>
+          <div className="container">
             <div className="page-hero-copy">
               <nav aria-label="Breadcrumb">
                 <ol className="crumbs">
@@ -61,15 +69,10 @@ export default function AcupuncturePage() {
                   <li aria-current="page">Acupuncture</li>
                 </ol>
               </nav>
-              <span className="eyebrow acu-hero-kicker">Traditional Chinese Medicine</span>
               <h1 id="acupuncture-title">Acupuncture</h1>
               <div className="gold-rule" aria-hidden="true" />
               <p>Personalized acupuncture in New City, NY, with Mordechai Genut, MS, L.Ac.</p>
-              <div className="acu-hero-actions"><BookingLink /><a href={clinicPhone} className="acu-hero-phone">845-579-2428</a></div>
             </div>
-            <figure className="acu-hero-photo">
-              <img src={`${treatmentImage}-1000.webp`} srcSet={`${treatmentImage}-640.webp 640w, ${treatmentImage}-1000.webp 1000w`} sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1304px) 43vw, 550px" width={1000} height={667} fetchPriority="high" decoding="async" alt="Fine acupuncture needles being placed along a patient’s upper back" />
-            </figure>
           </div>
         </section>
 
@@ -92,13 +95,18 @@ export default function AcupuncturePage() {
               <p>In the traditional framework, <em>qi</em> (pronounced “chee”) is often described as vital energy. It is understood to move through pathways called meridians. Traditional Chinese medicine describes 12 primary meridians, with specific points along them that practitioners select based on the individual.</p>
               <p>Modern researchers study acupuncture from a different perspective, including how it affects the nervous system and pain signaling. Evidence varies by condition. <a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety">Read the NIH overview of acupuncture.</a></p>
             </div>
-            <aside className="acu-practitioner" aria-labelledby="acu-practitioner-title">
-              <img src={`${imageBase}/about/mordechai-genut.webp`} width={411} height={410} alt="Mordechai Genut" loading="lazy" decoding="async" />
-              <span className="eyebrow">Your Practitioner</span>
-              <h3 id="acu-practitioner-title">Mordechai Genut, MS, L.Ac.</h3>
-              <p>New York State licensed acupuncturist and owner of New City Acupuncture &amp; Wellness Center.</p>
-              <Link className="text-link" href="/about-us/">Meet Your Practitioner <span aria-hidden="true">→</span></Link>
-            </aside>
+            <figure className="frame frame--right acu-treatment-photo">
+              <img
+                src={`${treatmentImage}-1000.webp`}
+                srcSet={`${treatmentImage}-640.webp 640w, ${treatmentImage}-1000.webp 1000w`}
+                sizes="(max-width: 600px) calc(100vw - 32px), (max-width: 760px) calc(100vw - 40px), (max-width: 1304px) 41vw, 520px"
+                width={1000}
+                height={667}
+                loading="lazy"
+                decoding="async"
+                alt="Fine acupuncture needles being placed along a patient’s upper back"
+              />
+            </figure>
           </div>
         </section>
 

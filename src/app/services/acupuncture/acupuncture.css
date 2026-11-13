@@ -1,54 +1,3 @@
-.ncw-acupuncture .acu-hero {
-  padding-block: clamp(50px, 6vw, 86px);
-}
-
-.ncw-acupuncture .acu-hero-grid {
-  display: grid;
-  grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
-  gap: clamp(36px, 6vw, 88px);
-  align-items: center;
-}
-
-.ncw-acupuncture .acu-hero-kicker {
-  color: var(--gold-pale);
-  margin-bottom: 12px;
-  letter-spacing: .16em;
-}
-
-.ncw-acupuncture .acu-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px 22px;
-  margin-top: 27px;
-}
-
-.ncw-acupuncture .acu-hero-phone {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--gold-pale);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 5px;
-}
-
-.ncw-acupuncture .acu-hero-photo {
-  margin: 0;
-  padding: 7px;
-  border-radius: 22px;
-  border: 1px solid rgb(230 214 171 / 43%);
-  background: rgb(255 253 245 / 6%);
-  box-shadow: 0 22px 60px rgb(5 23 16 / 36%);
-  position: relative;
-}
-
-.ncw-acupuncture .acu-hero-photo img {
-  width: 100%;
-  height: auto;
-  border-radius: 15px;
-}
-
 .ncw-acupuncture .acu-index {
   background: var(--cream);
   border-bottom: 1px solid rgb(184 146 79 / 25%);
@@ -89,7 +38,11 @@
   gap: clamp(36px, 7vw, 100px);
 }
 
-.ncw-acupuncture .acu-editorial { grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); }
+.ncw-acupuncture .acu-editorial {
+  grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 72px);
+}
 .ncw-acupuncture .acu-faq-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
 .ncw-acupuncture .acu-article { max-width: 69ch; }
 
@@ -100,27 +53,17 @@
   text-underline-offset: 3px;
 }
 
-.ncw-acupuncture .acu-practitioner {
-  border-inline-start: 1px solid rgb(184 146 79 / 44%);
-  padding-inline-start: clamp(28px, 4vw, 60px);
+.ncw-acupuncture .acu-treatment-photo img {
+  width: 100%;
+  height: auto;
 }
 
-.ncw-acupuncture .acu-practitioner img {
-  width: 106px;
-  height: 106px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-bottom: 22px;
-}
-
-.ncw-acupuncture .acu-practitioner h3,
 .ncw-acupuncture .acu-steps h3 {
   font: 600 clamp(1.55rem, 2.4vw, 1.9rem)/1.12 var(--serif);
   color: var(--forest);
   margin: 12px 0 10px;
 }
 
-.ncw-acupuncture .acu-practitioner p,
 .ncw-acupuncture .acu-steps p,
 .ncw-acupuncture .acu-faq-list p {
   margin: 0;
@@ -128,8 +71,6 @@
   font-size: .98rem;
   line-height: 1.72;
 }
-
-.ncw-acupuncture .acu-practitioner .text-link { margin-top: 15px; }
 
 .ncw-acupuncture .acu-steps {
   list-style: none;
@@ -206,17 +147,17 @@
 }
 
 @media (max-width: 760px) {
-  .ncw-acupuncture .acu-hero-grid,
   .ncw-acupuncture .acu-editorial,
   .ncw-acupuncture .acu-faq-layout { grid-template-columns: minmax(0, 1fr); }
 
-  .ncw-acupuncture .acu-hero-grid { gap: 32px; }
-  .ncw-acupuncture .acu-hero-phone { display: none; }
   .ncw-acupuncture .acu-index nav,
   .ncw-acupuncture .acu-index ul { column-gap: 16px; }
   .ncw-acupuncture .acu-index a { min-height: 44px; font-size: .8rem; }
-  .ncw-acupuncture .acu-practitioner { border-inline-start: 0; border-top: 1px solid rgb(184 146 79 / 44%); padding: 26px 0 0; }
-  .ncw-acupuncture .acu-steps,
-  .ncw-acupuncture .acu-related ul { grid-template-columns: minmax(0, 1fr); }
+  .ncw-acupuncture .acu-steps { grid-template-columns: minmax(0, 1fr); }
+  .ncw-acupuncture .acu-related ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ncw-acupuncture .acu-steps li { padding-top: 16px; }
+}
+
+@media (max-width: 520px) {
+  .ncw-acupuncture .acu-related ul { grid-template-columns: minmax(0, 1fr); }
 }
