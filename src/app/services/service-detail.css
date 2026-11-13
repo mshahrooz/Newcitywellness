@@ -1,0 +1,165 @@
+.ncw-service-detail .acu-index {
+  background: var(--cream);
+  border-bottom: 1px solid rgb(184 146 79 / 25%);
+}
+
+.ncw-service-detail .acu-index nav,
+.ncw-service-detail .acu-index ul {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 24px;
+}
+
+.ncw-service-detail .acu-index nav { justify-content: space-between; }
+.ncw-service-detail .acu-index ul { padding: 0; margin: 0; list-style: none; }
+
+.ncw-service-detail .acu-index a {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--forest);
+  font-weight: 700;
+  font-size: .85rem;
+}
+
+.ncw-service-detail .acu-index a:hover,
+.ncw-service-detail .acu-article a:hover,
+.ncw-service-detail .acu-faq-layout .copy a:hover { text-decoration-thickness: 2px; }
+.ncw-service-detail .acu-index a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.ncw-service-detail .acu-index .acu-all-services { color: var(--forest-soft); }
+.ncw-service-detail section.acu-section[id] { scroll-margin-top: 144px; }
+
+.ncw-service-detail .acu-editorial,
+.ncw-service-detail .acu-faq-layout {
+  display: grid;
+  align-items: start;
+  gap: clamp(36px, 7vw, 100px);
+}
+
+.ncw-service-detail .acu-editorial {
+  grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(32px, 5vw, 72px);
+}
+.ncw-service-detail .acu-faq-layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+.ncw-service-detail .acu-article { max-width: 69ch; }
+
+.ncw-service-detail .acu-article a,
+.ncw-service-detail .acu-faq-layout .copy a {
+  color: var(--forest);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ncw-service-detail .acu-treatment-photo img {
+  width: 100%;
+  height: auto;
+}
+
+.ncw-service-detail .acu-steps h3 {
+  font: 600 clamp(1.55rem, 2.4vw, 1.9rem)/1.12 var(--serif);
+  color: var(--forest);
+  margin: 12px 0 10px;
+}
+
+.ncw-service-detail .acu-steps p,
+.ncw-service-detail .acu-faq-list p {
+  margin: 0;
+  color: #343d35;
+  font-size: .98rem;
+  line-height: 1.72;
+}
+
+.ncw-service-detail .acu-steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(22px, 4vw, 52px);
+  padding: 0;
+  margin: 0;
+}
+
+.ncw-service-detail .acu-steps li {
+  border-top: 1px solid rgb(184 146 79 / 50%);
+  padding-top: 20px;
+}
+
+.ncw-service-detail .acu-step-number {
+  font: 700 .78rem/1.4 var(--sans);
+  color: var(--forest-soft);
+  letter-spacing: .16em;
+}
+
+.ncw-service-detail .acu-faq-list details {
+  border-bottom: 1px solid var(--line);
+}
+
+.ncw-service-detail .acu-faq-list details:first-child { border-top: 1px solid var(--line); }
+
+.ncw-service-detail .acu-faq-list summary {
+  color: var(--forest);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+  gap: 18px;
+  padding: 16px 4px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ncw-service-detail .acu-faq-list summary::-webkit-details-marker { display: none; }
+.ncw-service-detail .acu-faq-list summary::after { content: "+" / ""; font-size: 1.2rem; }
+.ncw-service-detail .acu-faq-list details[open] summary::after { content: "−" / ""; }
+.ncw-service-detail .acu-faq-list summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.ncw-service-detail .acu-faq-list p { padding: 0 28px 18px 4px; }
+
+.ncw-service-detail .acu-related { background: var(--cream); padding-block: clamp(36px, 5vw, 64px); }
+.ncw-service-detail .acu-related h2 { margin: 0 0 24px; }
+.ncw-service-detail .acu-related ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 28px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ncw-service-detail .acu-related a {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  height: 100%;
+  gap: 12px;
+  border-top: 1px solid rgb(184 146 79 / 46%);
+  padding: 14px 0;
+  color: var(--forest);
+}
+
+.ncw-service-detail .acu-related a:hover strong { text-decoration: underline; text-underline-offset: 3px; }
+.ncw-service-detail .acu-related-copy { display: block; color: var(--muted); font-size: .85rem; }
+.ncw-service-detail .acu-related-arrow { font-size: 1.15rem; }
+
+@media (max-width: 900px) {
+  .ncw-service-detail section.acu-section[id] { scroll-margin-top: 90px; }
+}
+
+@media (max-width: 760px) {
+  .ncw-service-detail .acu-editorial,
+  .ncw-service-detail .acu-faq-layout { grid-template-columns: minmax(0, 1fr); }
+
+  .ncw-service-detail .acu-index nav,
+  .ncw-service-detail .acu-index ul { column-gap: 16px; }
+  .ncw-service-detail .acu-index a { min-height: 44px; font-size: .8rem; }
+  .ncw-service-detail .acu-steps { grid-template-columns: minmax(0, 1fr); }
+  .ncw-service-detail .acu-related ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ncw-service-detail .acu-steps li { padding-top: 16px; }
+}
+
+@media (max-width: 520px) {
+  .ncw-service-detail .acu-related ul { grid-template-columns: minmax(0, 1fr); }
+}
+
+.ncw-service-detail .page-hero h1 { text-wrap: balance; }

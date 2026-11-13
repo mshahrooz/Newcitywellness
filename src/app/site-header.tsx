@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { BrandMark } from "./wellness-art"
+import type { PublishedService } from "./services/service-links"
 
-export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services"; currentService?: "acupuncture" }) {
+export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services"; currentService?: PublishedService }) {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -72,7 +73,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
               <div className="dropdown-menu" id="services-menu">
                 <Link href="/services/" aria-current={current === "services" && !currentService ? "page" : undefined} onClick={closeMenus}>All Services</Link>
                 <Link href="/services/acupuncture/" aria-current={currentService === "acupuncture" ? "page" : undefined} onClick={closeMenus}>Acupuncture</Link>
-                <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Chinese Medical Massage (Tui-Na)</a>
+                <Link href="/services/chinese-medical-massage-tui-na/" aria-current={currentService === "chinese-medical-massage-tui-na" ? "page" : undefined} onClick={closeMenus}>Chinese Medical Massage (Tui-Na)</Link>
                 <a href="https://newcitywellness.com/services/cupping/">Cupping</a>
                 <a href="https://newcitywellness.com/services/moxibustion/">Moxibustion</a>
                 <a href="https://newcitywellness.com/services/chinese-herbal-medicine/">Chinese Herbal Medicine</a>

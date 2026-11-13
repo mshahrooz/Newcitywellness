@@ -5,6 +5,7 @@ import { SiteFooter } from "../site-footer"
 import { Ornament } from "../wellness-art"
 import { ServicesMotion } from "./services-motion"
 import { therapies } from "./content"
+import { serviceDetailHref } from "./service-links"
 import "../wellness.css"
 import "./services.css"
 
@@ -15,7 +16,6 @@ export const metadata: Metadata = {
 
 const basePath = process.env.BASE_PATH || ""
 const imageBase = `${basePath}/images/services`
-const clinicServices = "https://newcitywellness.com/services"
 const sessionActivities = ["Qigong", "Breathing", "Meditation", "Relaxation"]
 
 function Chips({ items }: { items: readonly string[] }) {
@@ -28,6 +28,7 @@ function Chips({ items }: { items: readonly string[] }) {
 
 function Therapy({ therapy, reverse }: { therapy: (typeof therapies)[number]; reverse: boolean }) {
   const titleId = `service-${therapy.id}`
+  const href = serviceDetailHref(therapy.id)
   const src = `${imageBase}/${therapy.image}.webp`
   return (
     <section id={therapy.id} className={`block service ${reverse ? "block--cream" : "block--paper"}`} aria-labelledby={titleId}>
@@ -51,12 +52,12 @@ function Therapy({ therapy, reverse }: { therapy: (typeof therapies)[number]; re
           <p>{therapy.description}</p>
           <p className="chip-label">At a glance</p>
           <Chips items={therapy.highlights} />
-          {therapy.id === "acupuncture" ? (
-            <Link className="btn service-btn" href="/services/acupuncture/" aria-label="Read more about Acupuncture">
+          {href.startsWith("/") ? (
+            <Link className="btn service-btn" href={href} aria-label={`Read more about ${therapy.title}`}>
               Read More <span className="arrow" aria-hidden="true">→</span>
             </Link>
           ) : (
-            <a className="btn service-btn" href={`${clinicServices}/${therapy.id}/`} aria-label={`Read more about ${therapy.title}`}>
+            <a className="btn service-btn" href={href} aria-label={`Read more about ${therapy.title}`}>
               Read More <span className="arrow" aria-hidden="true">→</span>
             </a>
           )}

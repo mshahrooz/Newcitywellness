@@ -37,7 +37,7 @@ export function SiteFooter() {
             <h3>Our Services</h3>
             <ul>
               <li><Link href="/services/acupuncture/">Acupuncture</Link></li>
-              <li><a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/">Tui-Na</a></li>
+              <li><Link href="/services/chinese-medical-massage-tui-na/">Tui-Na</Link></li>
               <li><a href="https://newcitywellness.com/services/cupping/">Cupping</a></li>
               <li><a href="https://newcitywellness.com/services/moxibustion/">Moxibustion</a></li>
               <li><a href="https://newcitywellness.com/services/chinese-herbal-medicine/">Chinese Herbal Medicine</a></li>

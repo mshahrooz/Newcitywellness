@@ -1,27 +1,10 @@
 import type { Metadata } from "next"
-import Link from "next/link"
-import { SiteHeader } from "../../site-header"
-import { SiteFooter } from "../../site-footer"
-import { Ornament } from "../../wellness-art"
-import "../../wellness.css"
-import "../services.css"
-import "./acupuncture.css"
+import { ServiceDetailPage } from "../service-detail-page"
 
 export const metadata: Metadata = {
   title: "Acupuncture in New City, NY | New City Acupuncture & Wellness Center",
   description: "Learn about acupuncture with Mordechai Genut, MS, L.Ac., in New City, NY. Find out what to expect at your first visit and book an appointment.",
 }
-
-const treatmentImage = `${process.env.BASE_PATH || ""}/images/services/acupuncture/treatment`
-const bookingUrl = "https://acusimple.com/bookings/8635"
-const clinicPhone = "tel:+18455792428"
-const clinicServices = "https://newcitywellness.com/services"
-
-const sections = [
-  { id: "about-acupuncture", label: "About Acupuncture" },
-  { id: "what-to-expect", label: "What to Expect" },
-  { id: "acupuncture-faq", label: "Common Questions" },
-]
 
 const visitSteps = [
   { title: "Talk through your concerns", copy: "Your practitioner asks about your symptoms, health history, and what you hope to get from your visit. This is a good time to mention any concerns about needles." },
@@ -35,145 +18,24 @@ const questions = [
   { title: "How many visits will I need?", copy: "There isn’t a set number of visits for everyone. Your practitioner can suggest a plan based on your goals, your health history, and how you respond to treatment." },
 ]
 
-const related = [
-  { title: "Chinese Herbal Medicine", href: "chinese-herbal-medicine", copy: "Individualized herbal formulas." },
-  { title: "Cupping", href: "cupping", copy: "A traditional technique that uses suction cups." },
-  { title: "Gua-Sha", href: "gua-sha", copy: "Gentle strokes with a smooth tool." },
-  { title: "Chinese Medical Massage (Tui-Na)", href: "chinese-medical-massage-tui-na", copy: "Hands-on massage with rhythmic pressure." },
-  { title: "Moxibustion", href: "moxibustion", copy: "A traditional technique that applies warmth near selected points." },
-  { title: "Qi-Gong", href: "qi-gong", copy: "Gentle movement, breathing, and meditation." },
-]
-
-function BookingLink() {
-  return <a className="btn btn-gold" href={bookingUrl} target="_blank" rel="noopener noreferrer">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
-}
-
 export default function AcupuncturePage() {
   return (
-    <div className="ncw ncw-services ncw-acupuncture">
-      <SiteHeader current="services" currentService="acupuncture" />
-      <main id="main-content">
-        <section className="page-hero" aria-labelledby="acupuncture-title">
-          <svg className="page-hero-art" viewBox="0 0 84 74" fill="none" aria-hidden="true">
-            <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
-            <path d="M42 65C28 53 17 37 11 21C27 22 39 34 42 51C45 34 57 22 73 21C67 37 56 53 42 65Z" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
-            <path d="M42 59C30 45 29 25 42 7C55 25 54 45 42 59Z" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
-            <path d="M8 43C18 55 29 63 42 68C55 63 66 55 76 43" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
-          </svg>
-          <div className="container">
-            <div className="page-hero-copy">
-              <nav aria-label="Breadcrumb">
-                <ol className="crumbs">
-                  <li><Link href="/">Home</Link></li>
-                  <li><Link href="/services/">Services</Link></li>
-                  <li aria-current="page">Acupuncture</li>
-                </ol>
-              </nav>
-              <h1 id="acupuncture-title">Acupuncture</h1>
-              <div className="gold-rule" aria-hidden="true" />
-              <p>Personalized acupuncture in New City, NY, with Mordechai Genut, MS, L.Ac.</p>
-            </div>
-          </div>
-        </section>
-
-        <div className="acu-index">
-          <nav className="container" aria-label="On this page">
-            <ul>
-              {sections.map((section) => <li key={section.id}><a href={`#${section.id}`}>{section.label}</a></li>)}
-            </ul>
-            <Link className="acu-all-services" href="/services/"><span aria-hidden="true">←</span> All Services</Link>
-          </nav>
-        </div>
-
-        <section className="block block--paper acu-section" id="about-acupuncture" aria-labelledby="acu-about-title">
-          <div className="container acu-editorial">
-            <div className="copy acu-article">
-              <span className="eyebrow">The Practice</span>
-              <h2 id="acu-about-title" className="section-title">What Is Acupuncture?</h2>
-              <div className="gold-rule" aria-hidden="true" />
-              <p>Acupuncture has been part of traditional Chinese medicine for more than 2,000 years. Early descriptions appear in the <em>Huang Di Nei Jing</em>, also known as the <em>Yellow Emperor’s Classic of Internal Medicine</em>. Today, acupuncture is practiced around the world.</p>
-              <p>In the traditional framework, <em>qi</em> (pronounced “chee”) is often described as vital energy. It is understood to move through pathways called meridians. Traditional Chinese medicine describes 12 primary meridians, with specific points along them that practitioners select based on the individual.</p>
-              <p>Modern researchers study acupuncture from a different perspective, including how it affects the nervous system and pain signaling. Evidence varies by condition. <a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety">Read the NIH overview of acupuncture.</a></p>
-            </div>
-            <figure className="frame frame--right acu-treatment-photo">
-              <img
-                src={`${treatmentImage}-1000.webp`}
-                srcSet={`${treatmentImage}-640.webp 640w, ${treatmentImage}-1000.webp 1000w`}
-                sizes="(max-width: 600px) calc(100vw - 32px), (max-width: 760px) calc(100vw - 40px), (max-width: 1304px) 41vw, 520px"
-                width={1000}
-                height={667}
-                loading="lazy"
-                decoding="async"
-                alt="Fine acupuncture needles being placed along a patient’s upper back"
-              />
-            </figure>
-          </div>
-        </section>
-
-        <section className="block block--cream acu-section" id="what-to-expect" aria-labelledby="acu-visit-title">
-          <div className="container">
-            <div className="section-heading acu-visit-heading">
-              <span className="eyebrow">Your First Visit</span>
-              <h2 id="acu-visit-title">What to Expect</h2>
-              <Ornament />
-            </div>
-            <ol className="acu-steps">
-              {visitSteps.map((step, index) => (
-                <li key={step.title}>
-                  <span className="acu-step-number" aria-hidden="true">0{index + 1}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.copy}</p>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-
-        <section className="block block--paper acu-section" id="acupuncture-faq" aria-labelledby="acu-faq-title">
-          <div className="container acu-faq-layout">
-            <div className="copy">
-              <span className="eyebrow">Before You Book</span>
-              <h2 id="acu-faq-title" className="section-title">Common Questions</h2>
-              <div className="gold-rule" aria-hidden="true" />
-              <p>Have a question that’s not answered here? <a href={clinicPhone}>Call the clinic</a> before your visit.</p>
-            </div>
-            <div className="acu-faq-list">
-              {questions.map((question) => (
-                <details key={question.title}>
-                  <summary>{question.title}</summary>
-                  <p>{question.copy}</p>
-                </details>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="acu-related" aria-labelledby="acu-related-title">
-          <div className="container">
-            <h2 className="section-title" id="acu-related-title">Explore Other Therapies</h2>
-            <ul>
-              {related.map((therapy) => (
-                <li key={therapy.href}>
-                  <a href={`${clinicServices}/${therapy.href}/`}>
-                    <span><strong>{therapy.title}</strong><span className="acu-related-copy">{therapy.copy}</span></span>
-                    <span className="acu-related-arrow" aria-hidden="true">→</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="cta-band" aria-labelledby="acu-cta-title">
-          <div className="container cta-inner">
-            <span className="eyebrow">Get In Touch</span>
-            <h2 id="acu-cta-title">Let’s Talk About Your First Visit</h2>
-            <p>Have a question about acupuncture? Call the center or book your visit online.</p>
-            <div className="cta-actions"><BookingLink /><a className="cta-phone" href={clinicPhone}>845-579-2428</a></div>
-          </div>
-        </section>
-      </main>
-      <SiteFooter />
-    </div>
+    <ServiceDetailPage
+      id="acupuncture"
+      title="Acupuncture"
+      shortTitle="Acupuncture"
+      description="Personalized acupuncture in New City, NY, with Mordechai Genut, MS, L.Ac."
+      photo={{ path: "acupuncture/treatment", height: 667, alt: "Fine acupuncture needles being placed along a patient’s upper back" }}
+      visitSteps={visitSteps}
+      questions={questions}
+      bookingCopy="Have a question about acupuncture? Call the center or book your visit online."
+      intro={
+        <>
+          <p>Acupuncture has been part of traditional Chinese medicine for more than 2,000 years. Early descriptions appear in the <em>Huang Di Nei Jing</em>, also known as the <em>Yellow Emperor’s Classic of Internal Medicine</em>. Today, acupuncture is practiced around the world.</p>
+          <p>In the traditional framework, <em>qi</em> (pronounced “chee”) is often described as vital energy. It is understood to move through pathways called meridians. Traditional Chinese medicine describes 12 primary meridians, with specific points along them that practitioners select based on the individual.</p>
+          <p>Modern researchers study acupuncture from a different perspective, including how it affects the nervous system and pain signaling. Evidence varies by condition. <a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety">Read the NIH overview of acupuncture.</a></p>
+        </>
+      }
+    />
   )
 }

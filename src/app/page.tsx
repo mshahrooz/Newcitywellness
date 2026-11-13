@@ -113,10 +113,10 @@ export default function Home() {
                 </Link>
               </article>
               <article className="therapy-card reveal delay-2">
-                <a href="https://newcitywellness.com/services/chinese-medical-massage-tui-na/" aria-label="Learn more about Chinese Medical Massage (Tui-Na)">
+                <Link href="/services/chinese-medical-massage-tui-na/" aria-label="Learn more about Chinese Medical Massage (Tui-Na)">
                   <div className="therapy-image"><img src="images/tuina.png" alt="Chinese medical massage treatment" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Chinese Medical Massage (Tui-Na)</h3><span className="text-link">Learn More <span>→</span></span></div>
-                </a>
+                </Link>
               </article>
               <article className="therapy-card reveal delay-3">
                 <a href="https://newcitywellness.com/services/cupping/" aria-label="Learn more about Cupping">
