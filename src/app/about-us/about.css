@@ -1,146 +1,288 @@
-/* About page follows the Z.ai section order and shares the homepage design tokens. */
-.ncw.ncw-about { overflow-x: clip; }
-.ncw-about .about-wrap { max-width: 1200px; }
-.ncw-about .about-hero {
-  position: relative;
-  isolation: isolate;
-  display: grid;
-  align-items: center;
-  min-height: clamp(310px, 44vh, 450px);
-  overflow: hidden;
-  background: var(--forest-deep);
-  color: var(--paper-warm);
+/* Layout and visual treatments from the supplied About design. */
+.ncw.ncw-about {
+  --max: 1240px;
+  --section-y: clamp(64px, 8vw, 112px);
+  --gap: clamp(32px, 5vw, 72px);
+  --radius: 18px;
+  overflow-x: clip;
 }
-.ncw-about .about-hero-image,
-.ncw-about .about-hero::after { position: absolute; inset: 0; width: 100%; height: 100%; }
-.ncw-about .about-hero-image { z-index: -2; object-fit: cover; object-position: center 71%; }
-.ncw-about .about-hero::after {
-  content: "";
-  z-index: -1;
-  background: linear-gradient(90deg, rgba(10,35,25,.97) 0%, rgba(13,42,30,.89) 42%, rgba(15,45,32,.55) 72%, rgba(15,45,32,.25) 100%);
-}
-.ncw-about .about-hero-inner { padding-block: clamp(45px, 7vw, 88px); }
-.ncw-about .about-hero-copy { max-width: 44rem; }
-.ncw-about :is(.about-hero, .about-contact) .eyebrow { color: var(--gold-pale); }
-.ncw-about :is(.about-hero h1, .about-copy h2, .about-copy h3, .about-session h3, .about-contact h2, .about-contact-details h3) {
-  font-family: var(--serif);
-  font-weight: 600;
-  letter-spacing: -.026em;
-  line-height: 1.04;
-}
-.ncw-about .about-hero h1 { margin: 9px 0 13px; font-size: clamp(3.8rem, 7vw, 6.6rem); }
-.ncw-about .about-hero p { max-width: 58ch; margin: 0; color: var(--cream); font-size: clamp(1rem, 1.6vw, 1.18rem); line-height: 1.68; }
+.ncw-about main { position: relative; z-index: 1; }
+.ncw-about main a:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 
-.ncw-about .about-section { position: relative; padding-block: clamp(48px, 6.6vw, 94px); }
-.ncw-about .about-bio { isolation: isolate; }
-.ncw-about .about-bio-art {
-  position: absolute;
-  z-index: -1;
-  inset: auto auto 2% -3%;
-  width: clamp(140px, 26vw, 350px);
-  color: var(--forest-soft);
-  opacity: .10;
-  pointer-events: none;
-}
-.ncw-about .about-practitioner-grid {
-  display: grid;
-  grid-template-columns: minmax(0, .76fr) minmax(0, 1.44fr);
-  align-items: start;
-  gap: clamp(28px, 6vw, 92px);
-}
-.ncw-about .about-portrait { margin: clamp(7px, 2vw, 32px) 0 0; width: min(100%, 342px); justify-self: center; text-align: center; }
-.ncw-about .about-portrait img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 50%; }
-.ncw-about .about-portrait figcaption { margin-top: 13px; color: var(--muted); font-size: .83rem; }
-.ncw-about .about-copy h2 { margin: 8px 0 0; font-size: clamp(2.45rem, 4.5vw, 4.4rem); color: var(--forest); }
-.ncw-about .about-practitioner-copy h2 span { white-space: nowrap; font-size: .77em; }
-.ncw-about .about-copy h3 { margin: 28px 0 8px; color: var(--forest); font-size: clamp(1.55rem, 2.5vw, 2rem); }
-.ncw-about .about-gold-rule { width: 64px; height: 1px; margin: 17px 0 23px; background: linear-gradient(90deg, var(--gold), transparent); }
-.ncw-about .about-copy p { margin: 0 0 14px; color: var(--ink-soft); line-height: 1.76; }
-.ncw-about .about-copy p:last-child { margin-bottom: 0; }
-.ncw-about .about-pullquote { margin: 25px 0 0; padding: 2px 0 2px 17px; border-inline-start: 2px solid var(--gold); }
-.ncw-about .about-pullquote p { margin: 0 0 6px; font: 600 clamp(1.34rem, 2.3vw, 1.9rem)/1.24 var(--serif); color: var(--forest); }
-.ncw-about .about-pullquote cite { color: var(--muted); font-size: .81rem; font-style: normal; }
-@media (min-width: 901px) {
-  .ncw-about .about-portrait { position: sticky; top: 150px; }
-}
+.ncw-about .section-title { margin: 14px 0 0; color: var(--forest);
+      font-family: var(--serif); font-weight: 600;
+      font-size: clamp(2.1rem, 3.5vw, 2.9rem); line-height: 1.05;
+      letter-spacing: -0.022em; }
 
-.ncw-about .about-facility { background: linear-gradient(160deg, var(--paper-warm), var(--cream)); border-top: 1px solid var(--line-soft); }
-.ncw-about .about-facility-heading { margin-bottom: clamp(23px, 4vw, 45px); }
-.ncw-about .about-gallery {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(9px, 1.6vw, 23px);
-  margin-bottom: clamp(23px, 4.5vw, 55px);
-}
-.ncw-about .about-gallery figure { min-width: 0; aspect-ratio: 1.23; margin: 0; overflow: hidden; border-radius: 10px; }
-.ncw-about .about-gallery img { width: 100%; height: 100%; object-fit: cover; }
-.ncw-about .about-gallery figure:nth-child(2) img { object-position: center 54%; }
-.ncw-about .about-facility-copy { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px clamp(25px, 6vw, 78px); }
-.ncw-about .about-facility-copy p { margin: 0; }
-.ncw-about .about-education { grid-column: 1 / -1; max-width: 85ch; }
-.ncw-about .about-text-link { color: var(--forest); font-weight: 700; text-decoration: underline; text-underline-offset: .24em; }
-.ncw-about .about-session {
-  display: grid;
-  grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr);
-  align-items: center;
-  gap: 12px clamp(25px, 6vw, 78px);
-  margin-top: clamp(28px, 4.5vw, 55px);
-  padding-block: clamp(18px, 2.8vw, 34px);
-  border-block: 1px solid var(--line);
-}
-.ncw-about .about-session h3 { margin: 6px 0; color: var(--forest); font-size: clamp(1.65rem, 3.2vw, 2.45rem); }
-.ncw-about .about-session-time { margin: 0; color: var(--forest-soft); font-weight: 700; font-size: .9rem; }
-.ncw-about .about-session-copy { margin: 0; color: var(--ink-soft); }
+.ncw-about .gold-rule { width: 76px; height: 2px; background: linear-gradient(90deg, var(--gold), var(--gold-soft)); border-radius: 2px; margin: 18px 0 24px; }
 
-.ncw-about .about-contact {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  padding-block: clamp(44px, 6vw, 79px);
-  color: var(--paper-warm);
-  background: linear-gradient(120deg, var(--forest-deep), var(--forest));
-  text-align: center;
-}
-.ncw-about .about-contact-art { position: absolute; z-index: -1; right: -2%; bottom: -40%; width: clamp(160px, 33vw, 440px); opacity: .17; color: var(--gold-pale); pointer-events: none; }
-.ncw-about .about-contact h2 { margin: 9px 0 21px; color: var(--paper-warm); font-size: clamp(2.55rem, 5.8vw, 4.65rem); }
-.ncw-about .about-actions, .ncw-about .about-social { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px 20px; }
-.ncw-about .about-phone { font-weight: 700; }
-.ncw-about .about-social { margin-top: 17px; gap: 6px 16px; font-size: .85rem; color: var(--gold-pale); }
-.ncw-about .about-contact :is(.about-phone, .about-social a, address a):hover { text-decoration: underline; text-underline-offset: .23em; }
-.ncw-about .about-contact-details {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  max-width: 660px;
-  margin: 30px auto 0;
-  padding-top: 20px;
-  border-top: 1px solid #e6d6ab45;
-  text-align: start;
-  gap: 18px clamp(18px, 4vw, 55px);
-  font-size: .87rem;
-  color: var(--cream);
-}
-.ncw-about .about-contact-details h3 { margin: 0 0 8px; font-size: 1.47rem; color: var(--gold-pale); }
-.ncw-about .about-contact-details address { display: grid; gap: 5px; font-style: normal; overflow-wrap: anywhere; }
-.ncw-about .about-hours { margin: 0; }
-.ncw-about .about-hours div { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0 8px; }
-.ncw-about .about-hours dd { margin: 0; }
-.ncw-about main a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
-.ncw-about .about-contact .btn:focus-visible { outline-color: var(--gold-pale); }
-.ncw-about .about-footer-nav { margin-bottom: 14px; }
+.ncw-about .copy p { margin: 0 0 16px; color: #343d35; font-size: 0.98rem; line-height: 1.75; }
 
+.ncw-about .copy p:last-child { margin-bottom: 0; }
+
+.ncw-about .page-hero { position: relative; isolation: isolate; overflow: clip;
+      padding: clamp(64px, 8vw, 104px) 0 clamp(56px, 7vw, 88px);
+      color: #fffdf5;
+      background:
+        radial-gradient(ellipse 55% 130% at 88% 10%, rgba(63,107,83,0.55), transparent 62%),
+        linear-gradient(120deg, var(--forest-deep), var(--forest) 55%, var(--forest-soft)); }
+
+.ncw-about .page-hero::before, .ncw-about .page-hero::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; z-index: -1; border: 1px solid rgba(230,214,171,0.12); }
+
+.ncw-about .page-hero::before { width: 420px; height: 420px; left: -180px; bottom: -260px; }
+
+.ncw-about .page-hero::after { width: 300px; height: 300px; right: 30%; top: -190px; }
+
+.ncw-about .page-hero-art { position: absolute; z-index: -1; right: clamp(16px, 7vw, 120px); top: 50%; width: clamp(220px, 30vw, 400px); transform: translateY(-50%); color: var(--gold); opacity: 0.2; pointer-events: none; }
+
+.ncw-about .page-hero-copy { max-width: 640px; }
+
+.ncw-about .crumbs { display: flex; align-items: center; gap: 10px; margin: 0 0 22px; padding: 0; list-style: none; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,253,245,0.7); }
+
+.ncw-about .crumbs a { transition: color .22s ease; }
+
+.ncw-about .crumbs a:hover { color: var(--gold-pale); }
+
+.ncw-about .crumbs li + li::before { content: "/"; margin-right: 10px; color: var(--gold-soft); }
+
+.ncw-about .crumbs [aria-current] { color: var(--gold-pale); }
+
+.ncw-about .page-hero h1 { margin: 0 0 18px; color: #fffdf4; font-family: var(--serif); font-weight: 700; font-size: clamp(2.9rem, 6vw, 4.8rem); line-height: 0.98; letter-spacing: -0.03em; }
+
+.ncw-about .page-hero p { margin: 0; max-width: 520px; color: rgba(255,253,245,0.86); font-size: clamp(1rem, 1.2vw, 1.1rem); line-height: 1.65; }
+
+.ncw-about .page-hero .gold-rule { margin: 0 0 22px; }
+
+.ncw-about .rise { opacity: 0; transform: translateY(24px); animation: clinicAboutRise .9s cubic-bezier(.2,.7,.2,1) forwards; }
+
+.ncw-about .rise.d1 { animation-delay: .1s; }
+
+.ncw-about .rise.d2 { animation-delay: .2s; }
+
+.ncw-about .rise.d3 { animation-delay: .3s; }
+
+.ncw-about .rise.d4 { animation-delay: .4s; }
+
+.ncw-about .frame { position: relative; margin: 0; border-radius: var(--radius); background: var(--cream-2); box-shadow: var(--shadow-lg); }
+
+.ncw-about .frame img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+
+.ncw-about .frame::before { content: ""; position: absolute; inset: 12px; z-index: 2; border: 1px solid rgba(255,255,255,0.45); border-radius: calc(var(--radius) - 6px); pointer-events: none; }
+
+.ncw-about .frame::after { content: ""; position: absolute; left: -16px; bottom: -16px; width: 110px; height: 110px; border-left: 2px solid var(--gold); border-bottom: 2px solid var(--gold); border-radius: 0 0 0 var(--radius); pointer-events: none; }
+
+.ncw-about .frame--right::after { left: auto; right: -16px; border-left: 0; border-right: 2px solid var(--gold); border-radius: 0 0 var(--radius) 0; }
+
+.ncw-about .bio { position: relative; padding: var(--section-y) 0; background: linear-gradient(180deg, var(--paper), #f9f5ec); }
+
+.ncw-about .bio-grid { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: var(--gap); align-items: start; }
+
+.ncw-about .bio-aside { position: sticky; top: 148px; display: grid; gap: 24px; }
+
+
+
+
+
+.ncw-about .creds { display: grid; gap: 18px; padding: 24px 26px; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); }
+
+.ncw-about .cred { display: flex; align-items: flex-start; gap: 14px; }
+
+.ncw-about .cred-icon { flex: 0 0 auto; width: 40px; height: 40px; display: grid; place-content: center; border-radius: 50%; background: var(--cream); color: var(--forest); }
+
+.ncw-about .cred-icon svg { width: 20px; height: 20px; }
+
+.ncw-about .cred strong { display: block; color: var(--forest); font-size: 0.9rem; font-weight: 700; line-height: 1.3; }
+
+.ncw-about .cred span { display: block; margin-top: 2px; color: var(--muted); font-size: 0.8rem; line-height: 1.45; }
+
+.ncw-about .bio-copy { max-width: 680px; }
+
+.ncw-about .bio-copy h2 { margin: 14px 0 0; color: var(--forest); font-family: var(--serif); font-weight: 700; font-size: clamp(2.1rem, 3.4vw, 2.9rem); line-height: 1.05; letter-spacing: -0.022em; }
+
+.ncw-about .bio-copy .lead { color: var(--ink); font-size: 1.08rem; line-height: 1.7; }
+
+.ncw-about .pullquote { margin: 28px 0 0; padding: 22px 26px 22px 28px;
+      border-left: 3px solid var(--gold); background: var(--cream); border-radius: 0 14px 14px 0;
+      font-family: var(--serif); font-style: italic; font-size: 1.28rem; line-height: 1.45; color: var(--forest-soft); }
+
+.ncw-about .pullquote cite { display: block; margin-top: 10px; font-style: normal; font-family: var(--sans); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+.ncw-about .statement { padding: clamp(52px, 6vw, 84px) 0; background: var(--cream); text-align: center; border-block: 1px solid rgba(184,146,79,0.22); }
+
+.ncw-about .statement-inner { max-width: 920px; margin: 0 auto; }
+
+.ncw-about .ornament { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 0 auto 24px; }
+
+.ncw-about .ornament-line { width: clamp(48px, 8vw, 96px); height: 1px; background: linear-gradient(90deg, transparent, var(--gold) 60%, var(--gold-soft)); }
+
+.ncw-about .ornament-line.flip { background: linear-gradient(90deg, var(--gold-soft), var(--gold) 40%, transparent); }
+
+.ncw-about .ornament-mark { width: 24px; height: 24px; color: var(--gold); flex: 0 0 auto; }
+
+.ncw-about .statement p { margin: 0; color: var(--forest); font-family: var(--serif); font-weight: 600; font-size: clamp(1.45rem, 2.6vw, 2.05rem); line-height: 1.38; letter-spacing: -0.01em; }
+
+.ncw-about .block { padding: var(--section-y) 0; }
+
+.ncw-about .block--paper { background: var(--paper); }
+
+.ncw-about .block--cream { background: linear-gradient(180deg, #f9f5ec, var(--cream)); }
+
+.ncw-about .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gap); align-items: stretch; }
+
+.ncw-about .split-media { min-height: 400px; }
+
+.ncw-about .split-media.frame { height: 100%; }
+
+.ncw-about .split-media img { position: absolute; inset: 0; }
+
+.ncw-about .split--reverse .split-media { order: 2; }
+
+.ncw-about .split-copy { align-self: center; }
+
+.ncw-about .pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }
+
+.ncw-about .pillar { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 12px; text-align: center; background: #fff; border: 1px solid var(--line-soft); border-radius: 14px; box-shadow: var(--shadow-sm); transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
+
+.ncw-about .pillar:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: rgba(184,146,79,0.4); }
+
+.ncw-about .pillar svg { width: 28px; height: 28px; color: var(--gold); }
+
+.ncw-about .pillar span { color: var(--forest); font-size: 0.8rem; font-weight: 700; line-height: 1.3; letter-spacing: 0.02em; }
+
+.ncw-about .chip-label { margin: 26px 0 12px; color: var(--forest-soft); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+
+.ncw-about .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+
+.ncw-about .chip { padding: 7px 15px; border-radius: 999px; background: var(--paper-warm); border: 1px solid rgba(184,146,79,0.4); color: var(--forest); font-size: 0.8rem; font-weight: 500; line-height: 1.4; }
+
+.ncw-about .sessions-wrap { padding: 0 0 var(--section-y); background: var(--cream); }
+
+.ncw-about .block--cream + .sessions-wrap { padding-top: 0; }
+
+.ncw-about .sessions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); overflow: clip; border-radius: 22px; background: linear-gradient(120deg, var(--forest), var(--forest-soft)); border: 1px solid rgba(184,146,79,0.3); box-shadow: var(--shadow-lg); }
+
+.ncw-about .sessions-media { position: relative; min-height: 420px; margin: 0; background: var(--forest-deep); }
+
+.ncw-about .sessions-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.ncw-about .sessions-copy { align-self: center; padding: clamp(32px, 5vw, 64px); color: #fffdf5; }
+
+.ncw-about .session-badge { display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 999px; background: rgba(230,214,171,0.14); border: 1px solid rgba(230,214,171,0.4); color: var(--gold-pale); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.ncw-about .session-badge svg { width: 16px; height: 16px; }
+
+.ncw-about .sessions-copy h2 { margin: 18px 0 0; color: #fffdf4; font-family: var(--serif); font-weight: 600; font-size: clamp(1.9rem, 3vw, 2.5rem); line-height: 1.08; letter-spacing: -0.02em; }
+
+.ncw-about .sessions-copy .gold-rule { margin: 16px 0 20px; }
+
+.ncw-about .sessions-copy p { margin: 0; color: rgba(255,253,245,0.88); font-size: 0.97rem; line-height: 1.75; }
+
+.ncw-about .sessions-copy .chips { margin-top: 24px; }
+
+.ncw-about .sessions-copy .chip { background: rgba(255,255,255,0.08); border-color: rgba(230,214,171,0.4); color: var(--gold-pale); }
+
+.ncw-about .cta-band { position: relative; overflow: clip; padding: var(--section-y) 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(63,107,83,0.4), transparent 60%), linear-gradient(180deg, var(--forest), var(--forest-deep));
+      color: #fffdf5; }
+
+.ncw-about .cta-band::before, .ncw-about .cta-band::after { content: ""; position: absolute; border: 1px solid rgba(230,214,171,0.12); border-radius: 50%; pointer-events: none; }
+
+.ncw-about .cta-band::before { width: 280px; height: 280px; left: -140px; top: -160px; }
+
+.ncw-about .cta-band::after { width: 340px; height: 340px; right: -160px; bottom: -200px; }
+
+.ncw-about .cta-inner { position: relative; z-index: 1; text-align: center; max-width: 700px; margin: 0 auto; }
+
+.ncw-about .cta-inner .eyebrow { color: var(--gold-pale); }
+
+.ncw-about .cta-inner .eyebrow::before { background: linear-gradient(90deg, transparent, var(--gold-soft)); }
+
+.ncw-about .cta-inner h2 { margin: 16px 0 16px; color: #fffdf4; font-family: var(--serif); font-weight: 600; font-size: clamp(2rem, 3.4vw, 2.8rem); line-height: 1.08; letter-spacing: -0.02em; }
+
+.ncw-about .cta-inner > p { margin: 0 auto; max-width: 600px; color: rgba(255,253,245,0.84); font-size: 0.98rem; line-height: 1.7; }
+
+.ncw-about .cta-phone { display: inline-flex; align-items: center; gap: 12px;
+      margin: 30px 0 22px; padding: 14px 30px; border-radius: 999px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(230,214,171,0.3);
+      color: #fffdf5; font-family: var(--serif); font-weight: 600;
+      font-size: clamp(1.5rem, 2.4vw, 2rem); letter-spacing: 0.01em;
+      transition: all .3s ease; }
+
+.ncw-about .cta-phone:hover { background: rgba(184,146,79,0.18); border-color: var(--gold-soft); transform: translateY(-2px); }
+
+.ncw-about .cta-phone svg { width: 24px; height: 24px; color: var(--gold-pale); }
+
+
+@keyframes clinicAboutRise { to { opacity: 1; transform: none; } }
+/* Keep the supplied portrait round at all widths, with no frame or backing. */
+.ncw-about .bio-photo {
+  margin: 0;
+  width: min(100%, 400px);
+  aspect-ratio: 1;
+  justify-self: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.ncw-about .bio-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+}
+.ncw-about .clinic-reveal { transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1); }
+.ncw-about main.clinic-motion .clinic-reveal:not(.is-visible) { opacity: 0; transform: translateY(30px); }
+.ncw-about main.clinic-motion .clinic-reveal.from-left:not(.is-visible) { transform: translateX(-40px); }
+.ncw-about main.clinic-motion .clinic-reveal.from-right:not(.is-visible) { transform: translateX(40px); }
+.ncw-about main.clinic-motion .clinic-reveal.is-visible { transform: none; }
 @media (max-width: 900px) {
   .ncw-about .header-nav.is-open { max-height: calc(100dvh - 78px); overflow-y: auto; }
+
+.ncw-about .page-hero-art { opacity: 0.12; right: -40px; }
+
+.ncw-about .bio-grid { grid-template-columns: 1fr; gap: 40px; }
+
+.ncw-about .bio-aside { position: static; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: center; gap: 28px; }
+
+.ncw-about .bio-copy { max-width: none; }
+
+.ncw-about .split { grid-template-columns: 1fr; gap: 40px; }
+
+.ncw-about .split--reverse .split-media { order: 0; }
+
+.ncw-about .split-media { min-height: 0; aspect-ratio: 16 / 10; }
+
+.ncw-about .split-media.frame { height: auto; }
+
+.ncw-about .sessions { grid-template-columns: 1fr; }
+
+.ncw-about .sessions-media { min-height: 0; aspect-ratio: 16 / 9; }
+
+    }
+@media (max-width: 600px) {
+
+.ncw-about .page-hero h1 { font-size: clamp(2.6rem, 13vw, 3.4rem); }
+
+.ncw-about .frame::after { left: -10px; bottom: -10px; width: 70px; height: 70px; }
+
+.ncw-about .frame--right::after { left: auto; right: -10px; }
+
+.ncw-about .bio-aside { grid-template-columns: 1fr; }
+
+
+
+.ncw-about .pullquote { font-size: 1.15rem; padding: 18px 20px; }
+
+.ncw-about .pillars { grid-template-columns: 1fr; }
+
+.ncw-about .pillar { flex-direction: row; justify-content: flex-start; text-align: left; padding: 14px 18px; }
+
+
+  .ncw-about .bio-photo { width: min(76%, 340px); }
 }
-@media (max-width: 680px) {
-  .ncw-about .about-hero { min-height: 0; }
-  .ncw-about .about-hero-inner { padding-block: clamp(42px, 9vw, 58px); }
-  .ncw-about .about-hero::after { background: linear-gradient(90deg, rgba(10,35,25,.94), rgba(13,42,30,.72)); }
-  .ncw-about :is(.about-practitioner-grid, .about-facility-copy, .about-session) { grid-template-columns: minmax(0, 1fr); }
-  .ncw-about .about-portrait { width: min(62%, 236px); margin-top: 0; }
-  .ncw-about .about-bio-art { top: 2%; bottom: auto; }
-  .ncw-about .about-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ncw-about .about-gallery figure:nth-child(2) { grid-column: 1 / -1; grid-row: 1; aspect-ratio: 1.65; }
-}
-@media (max-width: 460px) {
-  .ncw-about .about-contact-details { grid-template-columns: minmax(0, 1fr); max-width: 310px; }
+@media (prefers-reduced-motion: reduce) {
+  .ncw-about .rise, .ncw-about main .clinic-reveal { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
 }
