@@ -2,6 +2,8 @@ import { Children, isValidElement, type CSSProperties, type ReactElement, type R
 import { blankLayout, customSection, sectionOrder, type BuilderElement, type BuilderRow, type SectionStyle } from "../content/builder-model"
 import { published, type PageKey } from "../content/editor-model"
 import "./builder-page.css"
+import grapesPublished from "../content/grapes-published.json"
+import { designScope, type DesignPart } from "../content/grapes-model"
 
 const base = process.env.BASE_PATH || ""
 export const publicAsset = (path: string) => base + "/" + path
@@ -76,8 +78,10 @@ export function BuilderMain({ page, id, children }: { page: PageKey; id?: string
   const fallback = nodes.filter(node => !native.includes(node as ReactElement<NativeProps>))
   const layout = published.pages[page]?.layout ?? blankLayout
   const byId = new Map(native.map(({ props }) => [props.id, props]))
-  return <main id={id} data-builder-page={page}>
-    {sectionOrder(layout, native.map(item => item.props.id)).map(key => {
+  const design = (grapesPublished as Partial<Record<PageKey, { parts: DesignPart[]; css: string }>>)[page]
+  const originalOrder = sectionOrder(layout, native.map(item => item.props.id))
+  const retained = new Set(design?.parts.flatMap(part => part.type === "native" ? [part.id] : []) ?? [])
+  function renderNative(key: string) {
       const source = byId.get(key)
       const style = layout.sections?.[key]
       const isNew = customSection(key)
@@ -90,7 +94,16 @@ export function BuilderMain({ page, id, children }: { page: PageKey; id?: string
         {source?.children}
         <PageRows rows={style?.after} zone="after" />
       </div>
+  }
+  return <main id={id} data-builder-page={page}>
+    {design?.css && <style data-grapes-css={page}>{design.css}</style>}
+    {(design?.parts ?? []).map((part, index) => {
+      if (part.type === "native") return originalOrder.includes(part.id) ? renderNative(part.id) : null
+      // Only compiler-validated HTML is rendered. Rewrite local paths for GitHub Project Pages.
+      const html = base ? part.html.replace(/ (src|href|poster)="(\/(?!\/)[^"]*)"/g, (match, attr, value) => value.startsWith(base + "/") ? match : ` ${attr}="${base}${value}"`) : part.html
+      return <div key={"design-" + index} className={designScope(page)} data-grapes-section=""><div className="grapes-markup" dangerouslySetInnerHTML={{ __html: html }} /></div>
     })}
+    {originalOrder.filter(key => !retained.has(key)).map(renderNative)}
     {fallback}
   </main>
 }

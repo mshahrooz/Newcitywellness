@@ -36,3 +36,8 @@
 .ncw [data-builder-moved-source], .ncw [data-builder-native-hidden],
 .ncw :is(h2,h3,h4,p):has(> [data-builder-moved-field]:only-child),
 .ncw :is(h2,h3,h4,p):has(> [data-builder-moved-source]:only-child) { display: none !important; }
+
+.ncw [data-grapes-section] { display: flow-root; max-width: 100%; overflow-wrap: anywhere; }
+.ncw [data-grapes-section] .grapes-markup { display: contents; }
+.ncw [data-grapes-section] :is(img,video,iframe) { max-width: 100%; }
+.ncw [data-grapes-section] iframe { border: 0; }

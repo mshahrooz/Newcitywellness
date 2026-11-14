@@ -542,6 +542,7 @@ export function VisualEditor() {
     <header className="editor-top">
       <div className="builder-brand"><LayoutTemplate size={22} aria-hidden="true" /><div><span className="editor-kicker">NEW CITY WELLNESS</span><h1>Website Builder</h1></div></div>
       <div className="editor-top-actions">
+        <a href={base + "/admin/grapes/"}>GrapesJS Design Studio ↗</a>
         <a href={base + "/"} target="_blank" rel="noopener noreferrer">View website ↗</a>
         {editorOpen && <button type="button" onClick={toggleFullscreen}>{fullScreen ? "Exit fullscreen" : "Fullscreen"}</button>}
         {editorOpen && <button type="button" disabled={busy} onClick={lock}>{previewOnly ? "Exit demo" : "Lock editor"}</button>}

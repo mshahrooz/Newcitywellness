@@ -1,0 +1,37 @@
+.grapes-studio { height:100dvh; min-height:0; display:flex; flex-direction:column; overflow:hidden; background:#edf0eb; color:#15372a; --gjs-primary-color:#f5f7f1; --gjs-secondary-color:#173c2d; --gjs-tertiary-color:#43795f; --gjs-quaternary-color:#2b634a; }
+.studio-header,.studio-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px clamp(10px,2vw,25px); }
+.studio-header { background:#183a2c; color:#fffdf4; justify-content:space-between; }
+.studio-header-actions,.studio-toolgroup,.studio-brand,.studio-tabs,.studio-insert { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.studio-header button,.studio-toolbar button,.studio-drawer button,.studio-open-tools { display:inline-flex; align-items:center; gap:6px; min-height:34px; }
+.studio-brand > a { display:grid; place-content:center; width:34px; height:34px; border-radius:8px; border:1px solid #c7d4c773; margin-right:6px; }
+.studio-brand span { font-size:.63rem; font-weight:800; letter-spacing:.16em; color:#efcd89; }
+.grapes-studio .studio-brand h1 { font-size:1.7rem; line-height:1; }
+.studio-toolbar { background:#fffefa; border-bottom:1px solid #d0dcd3; }
+.studio-toolbar select { width:min(220px,52vw); }
+.studio-toolbar button[aria-pressed=true],.studio-tabs button[aria-pressed=true] { background:#e1efdf; border-color:#7fa589; }
+.studio-state { margin-inline-start:auto; color:#42604e; font-size:.78rem; }
+.grapes-studio .studio-notice { background:#e4ede2; color:#284a3a; padding:5px clamp(10px,2vw,25px); font-size:.76rem; }
+.grapes-studio .studio-error { color:#8d291d; background:#fff3e9; }
+.studio-notice a,.studio-actions a { text-decoration:underline; text-underline-offset:3px; }
+.studio-workspace { position:relative; flex:1; min-height:0; display:flex; min-width:0; }
+.studio-canvas { flex:1; min-width:0; }
+.studio-canvas .gjs-cv-canvas { top:0; width:100%; height:100%; border:0; background:#dce4dd; }
+.studio-drawer { width:min(300px,40%); background:#fafbf7; border-left:1px solid #c9d6cc; display:flex; flex-direction:column; overflow:auto; }
+.studio-drawer-hide { display:none; }
+.studio-open-tools { position:absolute; top:9px; right:9px; z-index:5; }
+.studio-tabs { padding:7px; border-bottom:1px solid #d8e2d8; }
+.studio-tabs button { padding:4px 5px; }
+.studio-pane { padding:9px; flex:1; }
+.studio-pane h2 { font-size:1.2rem; }
+.studio-pane p,.studio-actions p,.studio-pane summary { font-size:.75rem; color:#45614f; margin-block:3px 8px; }
+.studio-block-icon { font:700 23px/1 system-ui,sans-serif; }
+.studio-pane .gjs-block { min-height:60px; width:calc(50% - 10px); padding:7px 3px; justify-content:center; }
+.studio-pane .gjs-block-label { font-weight:700; color:#183c2c; }
+.studio-actions { display:grid; gap:7px; padding:9px; border-top:1px solid #d1dfd3; font-size:.78rem; }
+.studio-insert button { font-size:.7rem; min-height:28px; }
+.grapes-studio .gjs-modal-dialog { color:#183c2c; background:#fffefa; }
+@media(max-width:700px) { .studio-drawer { width:min(250px,48%); } .studio-toolbar,.studio-header { gap:6px; } .studio-tabs button { font-size:.66rem; } .studio-tabs button svg { display:none; } .studio-state { display:none; } }
+
+.studio-export { position:relative; }
+.studio-export summary { cursor:pointer; font-size:.78rem; font-weight:700; padding:5px; }
+.studio-export > div { position:absolute; left:0; top:100%; z-index:8; display:grid; gap:5px; min-width:136px; padding:7px; background:#fff; border:1px solid #d1dfd3; border-radius:7px; }

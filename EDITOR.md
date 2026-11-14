@@ -24,3 +24,12 @@ If a token expires or GitHub denies access while publishing, use **More → Reco
 - Documents support PDF, DOCX, TXT, XLSX, PPTX and CSV up to 8 MB.
 - Uploaded videos support MP4 and WebM up to 20 MB. Use a YouTube link for a larger video.
 - Upload only public website content. Removing an element removes it from the page, not from earlier commits. Draft JSON backups contain text, structure and file references, not the file bytes.
+
+## GrapesJS Design Studio
+
+Open **GrapesJS Design Studio** from the builder header, or go to `/admin/grapes/`. The studio opens in a demo state and does not write to GitHub until you connect and confirm publishing.
+
+- Select the page, then drag a section, columns, title, paragraph, photo, button, file download, YouTube video or local video from **Blocks**. Double-click new text to edit it. The block panel also has a click-to-insert option.
+- Click a new block to open its **Styles** panel or the relevant media controls. Uploaded files use the same repository and limits as the existing builder. Use **Layers** to review the structure and the device controls to check widths.
+- Existing Next.js sections are shown as reorderable cards. They are not imported as editable HTML. Use the original Site Builder to edit their copy, colors, and content so forms and interactive features keep working. If a page has been reordered in GrapesJS, its published section order is controlled by GrapesJS.
+- GitHub stores the editable GrapesJS project and separate HTML/CSS output. The build cleans and scopes that output before rendering it on the public page. **Backup** downloads the project and HTML/CSS as JSON. Uploaded files are not embedded in that backup.
