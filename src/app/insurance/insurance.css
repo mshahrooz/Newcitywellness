@@ -1,0 +1,59 @@
+.ncw-insurance .insurance-hero .page-hero-copy { max-width: 730px; }
+.ncw-insurance .insurance-hero .page-hero-photo img { object-position: 72% center; }
+.ncw-insurance .insurance-hero .page-hero-photo::after {
+  background: linear-gradient(105deg, rgba(13,42,30,.98) 5%, rgba(21,58,43,.93) 36%, rgba(28,67,49,.78) 62%, rgba(35,76,56,.44) 100%);
+}
+.ncw-insurance .insurance-hero-link { margin-top: 28px; }
+.ncw-insurance .insurance-overview {
+  padding: clamp(52px, 7vw, 90px) 0;
+  background: var(--paper-warm);
+}
+.ncw-insurance .insurance-overview-copy { max-width: 680px; margin: 0 auto; text-align: center; }
+.ncw-insurance .insurance-overview-copy p,
+.ncw-insurance .insurance-form-header p {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: .98rem;
+  line-height: 1.7;
+}
+.ncw-insurance .insurance-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 36px 0 0;
+  padding: 0;
+  border-block: 1px solid var(--line);
+  list-style: none;
+}
+.ncw-insurance .insurance-benefits li { display: flex; align-items: baseline; gap: 15px; padding: 22px clamp(14px, 2.4vw, 32px); }
+.ncw-insurance .insurance-benefits li + li { border-left: 1px solid var(--line); }
+.ncw-insurance .insurance-benefits span { color: #80602a; font-size: .75rem; font-weight: 700; letter-spacing: .08em; }
+.ncw-insurance .insurance-benefits h3 { margin: 0; color: var(--forest); font: 700 1.45rem/1.12 var(--serif); }
+.ncw-insurance .insurance-benefits p { margin: 7px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.5; }
+.ncw-insurance .insurance-verification {
+  padding: clamp(52px, 7vw, 92px) 0;
+  background: linear-gradient(180deg, var(--cream), var(--paper));
+  border-top: 1px solid var(--line);
+  scroll-margin-top: var(--section-scroll-offset);
+}
+.ncw-insurance .insurance-form-wrap { max-width: 1120px; }
+.ncw-insurance .insurance-form-header { display: flex; align-items: end; justify-content: space-between; gap: 20px 32px; margin-bottom: 28px; }
+.ncw-insurance .insurance-form-header p { max-width: 62ch; }
+.ncw-insurance .insurance-direct { flex-shrink: 0; }
+.ncw-insurance .insurance-frame {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
+.ncw-insurance .insurance-frame iframe { display: block; width: 100%; height: 2800px; border: 0; }
+@media (max-width: 760px) {
+  .ncw-insurance .insurance-hero .page-hero-photo::after {
+    background: linear-gradient(115deg, rgba(13,42,30,.96) 10%, rgba(21,58,43,.91) 55%, rgba(35,76,56,.69));
+  }
+  .ncw-insurance .insurance-form-header { flex-direction: column; align-items: start; }
+  .ncw-insurance .insurance-benefits { grid-template-columns: minmax(0, 1fr); margin-top: 28px; }
+  .ncw-insurance .insurance-benefits li { padding: 16px 8px; }
+  .ncw-insurance .insurance-benefits li + li { border-left: none; border-top: 1px solid var(--line); }
+  .ncw-insurance .insurance-frame iframe { height: 3200px; }
+}
