@@ -38,32 +38,7 @@ export default function ConditionsPage() {
           </div>
         </section>
 
-        <div className="condition-context">
-          <div className="container">
-            <p><strong>How to use this guide.</strong> These are topics to discuss with a practitioner, not a list of conditions acupuncture has been proven to treat. Complementary care does not replace diagnosis, prescribed treatment, or emergency care.</p>
-          </div>
-        </div>
-
         <ConditionDirectory imageBase={imageBase} />
-
-        <section className="condition-evidence" aria-labelledby="condition-evidence-title">
-          <div className="container condition-evidence-grid">
-            <figure className="frame">
-              <img src={`${imageBase}/research.webp`} width={800} height={533} alt="Practitioner providing acupuncture to a patient resting on a treatment table" loading="lazy" decoding="async" />
-            </figure>
-            <div className="copy">
-              <span className="eyebrow">Acupuncture &amp; Your Care</span>
-              <h2 className="section-title" id="condition-evidence-title">What does the research say?</h2>
-              <div className="gold-rule" aria-hidden="true" />
-              <p>Research suggests acupuncture may help with some types of pain, including chronic low-back pain, knee osteoarthritis pain, and some headaches. Evidence varies by condition.</p>
-              <p>At your first visit, you can share your health history, medications, and goals. Your practitioner can discuss whether complementary care is appropriate alongside the care you already receive.</p>
-              <div className="condition-evidence-links">
-                <Link href="/faqs/#first-session">What to expect at your first visit <span aria-hidden="true">→</span></Link>
-                <a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety">NIH guide to acupuncture <span aria-hidden="true">↗</span></a>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <section className="cta-band" aria-labelledby="conditions-contact-title">
           <div className="container cta-inner">
