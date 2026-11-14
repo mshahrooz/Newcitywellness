@@ -71,14 +71,17 @@ export default function Home() {
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-media">
             <img
-              src="images/hero.png"
-              alt="Calm acupuncture and wellness treatment room"
+              src="images/home/acupuncture-hero.webp"
+              srcSet="images/home/acupuncture-hero-960.webp 960w, images/home/acupuncture-hero.webp 1694w"
+              sizes="100vw"
+              width={1694}
+              height={928}
+              alt="Patient receiving acupuncture in a sunlit treatment room"
               fetchPriority="high"
             />
           </div>
           <div className="hero-content">
             <div className="hero-copy reveal from-left">
-              <span className="eyebrow">Personalized care · Whole-person wellness</span>
               <h1 id="hero-title">Personalized Acupuncture &amp; Holistic Care for Pain, Stress, &amp; Better Health</h1>
               <p>We take the time to listen and understand your concerns, considering your symptoms, lifestyle, nutrition, and overall health to provide thoughtful, individualized care focused on helping you feel better.</p>
               <div className="hero-actions">
@@ -175,7 +178,7 @@ export default function Home() {
           <BranchWatermark className="practitioner-art" />
           <div className="container practitioner-grid">
             <div className="practitioner-photo reveal from-left">
-              <img src="images/practitioner.png" alt="Mordechai Genut, New City Acupuncture and Wellness Center practitioner" loading="lazy" />
+              <img src="images/home/practitioner-portrait.webp" width={411} height={410} alt="Mordechai Genut, New City Acupuncture and Wellness Center practitioner" loading="lazy" decoding="async" />
             </div>
             <div className="practitioner-copy reveal from-right">
               <span className="eyebrow">Your Practitioner</span>

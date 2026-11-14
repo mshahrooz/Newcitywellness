@@ -582,7 +582,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 42%;
+  object-position: 42% 50%;
+  /* The patient is on the left in the original, where the headline sits. */
+  scale: -1 1;
   transform: scale(1.04);
   animation: heroZoom 18s ease-in-out infinite alternate;
 }
@@ -615,11 +617,6 @@
 
 .ncw .hero-copy {
   max-width: 600px;
-}
-
-.ncw .hero .eyebrow {
-  color: #2f4a39;
-  margin-bottom: 20px;
 }
 
 .ncw .hero h1 {
@@ -936,41 +933,15 @@
 
 .ncw .practitioner-photo {
   position: relative;
-  height: 420px;
-  overflow: hidden;
-  border-radius: 18px;
-  box-shadow: var(--shadow-lg);
-  background: #e3e9d9;
+  width: min(100%, 411px);
+  justify-self: center;
 }
 
 .ncw .practitioner-photo img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center 28%;
-}
-
-.ncw .practitioner-photo::before {
-  content: "";
-  position: absolute;
-  inset: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 12px;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.ncw .practitioner-photo::after {
-  content: "";
-  position: absolute;
-  left: -18px;
-  bottom: -18px;
-  width: 120px;
-  height: 120px;
-  border-left: 2px solid var(--gold);
-  border-bottom: 2px solid var(--gold);
-  border-radius: 0 0 0 18px;
-  pointer-events: none;
+  height: auto;
+  aspect-ratio: 411 / 410;
 }
 
 .ncw .practitioner-copy {
@@ -1735,7 +1706,6 @@
   .ncw .therapy-image { height: 170px; }
 
   .ncw .practitioner-grid { grid-template-columns: 0.9fr 1.1fr; gap: 30px; }
-  .ncw .practitioner-photo { height: 360px; }
 
   .ncw .testimonial-grid { grid-template-columns: 1fr; }
 
@@ -1767,7 +1737,7 @@
     min-height: 600px;
     align-items: flex-start;
   }
-  .ncw .hero-media img { object-position: 64% center; }
+  .ncw .hero-media img { object-position: 19% center; }
   .ncw .hero-media::after {
     background:
       linear-gradient(180deg,
@@ -1810,8 +1780,7 @@
   .ncw .first-visit p { max-width: 280px; font-size: 0.88rem; }
 
   .ncw .practitioner-grid { grid-template-columns: 1fr; gap: 22px; }
-  .ncw .practitioner-photo { height: 320px; max-width: 440px; }
-  .ncw .practitioner-photo::after { width: 80px; height: 80px; left: -12px; bottom: -12px; }
+  .ncw .practitioner-photo { width: min(80%, 320px); }
   .ncw .practitioner-copy p { font-size: 0.92rem; }
   .ncw .practitioner-art { width: 180px; height: 260px; opacity: 0.1; }
 
