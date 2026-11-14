@@ -8,7 +8,7 @@ function HeaderLogo() {
   return <img className="header-logo-image" src={`${process.env.BASE_PATH || ""}/images/new-city-logo.webp`} width={280} height={56} alt="" />
 }
 
-export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services" | "faqs" | "conditions" | "testimonials" | "insurance"; currentService?: PublishedService }) {
+export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services" | "faqs" | "conditions" | "testimonials" | "insurance" | "contact"; currentService?: PublishedService }) {
   const [scrolled, setScrolled] = useState(false)
   const [navPinned, setNavPinned] = useState(false)
   const header = useRef<HTMLElement>(null)
@@ -99,7 +99,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
             <Link className={current === "conditions" ? "nav-link active" : "nav-link"} aria-current={current === "conditions" ? "page" : undefined} href="/conditions-treated/" onClick={closeMenus}>Conditions</Link>
             <Link className={current === "testimonials" ? "nav-link active" : "nav-link"} aria-current={current === "testimonials" ? "page" : undefined} href="/testimonials/" onClick={closeMenus}>Testimonials</Link>
             <Link className={current === "insurance" ? "nav-link active" : "nav-link"} aria-current={current === "insurance" ? "page" : undefined} href="/insurance/" onClick={closeMenus}>Insurance</Link>
-            <a className="nav-link" href="https://newcitywellness.com/contact-us/">Contact</a>
+            <Link className={current === "contact" ? "nav-link active" : "nav-link"} aria-current={current === "contact" ? "page" : undefined} href="/contact-us/" onClick={closeMenus}>Contact</Link>
           </div>
       </nav>
     </>

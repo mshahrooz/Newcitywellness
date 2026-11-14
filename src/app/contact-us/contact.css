@@ -1,0 +1,75 @@
+.ncw-contact .contact-hero .page-hero-photo img { object-position: 42% 72%; transform: scaleX(-1); }
+.ncw-contact .contact-hero .page-hero-photo::after {
+  background: linear-gradient(105deg, rgba(13,42,30,.98) 8%, rgba(21,58,43,.92) 39%, rgba(28,67,49,.71) 65%, rgba(35,76,56,.39) 100%);
+}
+.ncw-contact .contact-hero-link { margin-top: 28px; }
+.ncw-contact .contact-details-block {
+  padding: var(--section-y) 0;
+  background: var(--paper-warm);
+  scroll-margin-top: var(--section-scroll-offset);
+}
+.ncw-contact .contact-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: clamp(32px, 7vw, 100px);
+  align-items: start;
+}
+.ncw-contact .contact-page-details { padding: clamp(0px, 2vw, 25px) 0; }
+.ncw-contact .contact-page-list { margin: 26px 0 30px; padding: 0; }
+.ncw-contact .contact-page-list div { display: grid; grid-template-columns: minmax(65px,.28fr) minmax(0,1fr); gap: 10px; border-bottom: 1px solid var(--line); padding: 13px 0; }
+.ncw-contact .contact-page-list dt { color: var(--forest); font-weight: 700; }
+.ncw-contact .contact-page-list dd, .ncw-contact .contact-hours dd { margin: 0; }
+.ncw-contact .contact-page-list a,
+.ncw-contact .contact-page-panel > p a,
+.ncw-contact .contact-draft-status a { overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+.ncw-contact .contact-page-list a:hover,
+.ncw-contact .contact-page-panel > p a:hover { color: var(--forest-soft); text-decoration-color: currentColor; }
+.ncw-contact .contact-hours-title { margin: 0 0 8px; color: var(--forest); font: 700 1.55rem/1.2 var(--serif); }
+.ncw-contact .contact-hours { margin: 0; color: var(--muted); }
+.ncw-contact .contact-hours div { display: flex; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; padding: 7px 0; font-size: .9rem; }
+.ncw-contact .contact-page-panel {
+  padding: clamp(22px, 4.2vw, 48px);
+  border: 1px solid rgba(184,146,79,.34);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background: #fff;
+}
+.ncw-contact .contact-page-panel > p, .ncw-contact .contact-map-header p { margin: 14px 0 0; color: var(--muted); }
+.ncw-contact .contact-page-form { margin-top: 24px; }
+.ncw-contact .contact-page-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 15px; }
+.ncw-contact .contact-page-fields label { font-size: .85rem; color: var(--forest); font-weight: 700; }
+.ncw-contact .contact-page-fields label > span { color: #80602a; }
+.ncw-contact .contact-message { grid-column: 1 / -1; }
+.ncw-contact .contact-page-fields input,
+.ncw-contact .contact-page-fields textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  min-height: 46px;
+  color: var(--ink);
+  background: var(--paper-warm);
+  border: 1px solid rgba(21,56,42,.25);
+  border-radius: 8px;
+  font: 400 1rem/1.4 var(--sans);
+}
+.ncw-contact .contact-page-fields textarea { resize: vertical; }
+.ncw-contact .contact-page-fields input:focus-visible,
+.ncw-contact .contact-page-fields textarea:focus-visible,
+.ncw-contact .contact-page-form button:focus-visible { outline: 2px solid var(--forest-soft); outline-offset: 2px; }
+.ncw-contact .contact-form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 18px; margin-top: 20px; }
+.ncw-contact .contact-form-actions p, .ncw-contact .contact-draft-status { color: var(--muted); font-size: .8rem; margin: 0; }
+.ncw-contact .contact-draft-status:not(:empty) { margin-top: 12px; }
+.ncw-contact .contact-map-block { padding: var(--section-y) 0; border-top: 1px solid var(--line); background: var(--cream); }
+.ncw-contact .contact-map-header { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 24px; }
+.ncw-contact .contact-map-frame { overflow: hidden; background: var(--paper-warm); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.ncw-contact .contact-map-frame iframe { display: block; width: 100%; height: clamp(290px, 36vw, 430px); border: 0; }
+@media (max-width: 850px) {
+  .ncw-contact .contact-page-grid { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 600px) {
+  .ncw-contact .contact-hero .page-hero-photo::after { background: linear-gradient(110deg, rgba(13,42,30,.95), rgba(21,58,43,.9) 54%, rgba(35,76,56,.67)); }
+}
+@media (max-width: 480px) {
+  .ncw-contact .contact-page-fields { grid-template-columns: minmax(0,1fr); }
+}
