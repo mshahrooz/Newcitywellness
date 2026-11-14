@@ -9,7 +9,7 @@ import { BuilderCanvas, canvasCss, dragMime, type DragItem, type NativeCanvas } 
 import { ColumnOptions, ElementFields, ElementPalette, PositionPicker, SectionForm } from "./builder-controls"
 import { optimizeImage } from "./optimize-image"
 import { prepareBuilderUpload } from "./builder-upload"
-import { publish, repoUrl, unlock, type Snapshot } from "./github-store"
+import { GitHubAccessError, publish, repoUrl, tokenSetupUrl, unlock, type Snapshot } from "./github-store"
 
 const base = process.env.BASE_PATH || ""
 const emptyPage: PageContent = {}
@@ -69,10 +69,11 @@ export function VisualEditor() {
   const [error, setError] = useState("")
   const [notice, setNotice] = useState("")
   const [confirmPublish, setConfirmPublish] = useState(false)
+  const [reconnect, setReconnect] = useState(false)
+  const [needsToken, setNeedsToken] = useState(false)
   const [commit, setCommit] = useState("")
   const [available, setAvailable] = useState({ width: 0, height: 0 })
   const token = useRef("")
-  const pass = useRef<HTMLInputElement>(null)
   const uploads = useRef(new Map<string, Blob>())
   const previewUrls = useRef(new Map<string, string>())
   const frame = useRef<HTMLIFrameElement>(null)
@@ -474,16 +475,29 @@ export function VisualEditor() {
 
   async function connect(event: FormEvent) {
     event.preventDefault()
-    const credential = pass.current?.value.trim()
-    if (!credential) return
-    setBusy(true); setError("")
+    const input = event.currentTarget.querySelector<HTMLInputElement>('input[type="password"]')
+    const credential = input?.value.trim()
+    if (!credential || busy) return
+    if (input) input.value = ""
+    setBusy(true); setError(""); setPopupError(""); setNeedsToken(false)
     try {
       const data = await unlock(credential)
+      if (reconnect && snapshot && snapshot.sha !== data.sha) {
+        throw new Error("Someone else published changes while this draft was open. Back up your draft before reopening the builder so you don’t overwrite their edits.")
+      }
       token.current = credential
-      if (window.innerWidth < 650) setWidth("Mobile")
-      setSnapshot(data); setHistory({ past: [], now: data.content, next: [] })
-      if (pass.current) pass.current.value = ""
-    } catch (error) { setError(errorText(error)) }
+      if (reconnect) {
+        setReconnect(false)
+        setNotice("GitHub reconnected. Your draft is still open. Select Publish to GitHub to retry.")
+      } else {
+        if (window.innerWidth < 650) setWidth("Mobile")
+        setSnapshot(data); setHistory({ past: [], now: data.content, next: [] })
+      }
+    } catch (error) {
+      if (reconnect) setPopupError(errorText(error))
+      else setError(errorText(error))
+      setNeedsToken(error instanceof GitHubAccessError && error.needsToken)
+    }
     finally { setBusy(false) }
   }
   function startDemo() {
@@ -493,12 +507,15 @@ export function VisualEditor() {
   }
   async function save() {
     if (!snapshot || !changed || previewOnly) return
-    setConfirmPublish(false); setBusy(true); setError(""); setNotice("")
+    setConfirmPublish(false); setBusy(true); setError(""); setNotice(""); setNeedsToken(false)
     try {
       const result = await publish(token.current, snapshot, content, uploads.current)
       setCommit(result.commit); setSnapshot(result.snapshot)
       setNotice("Committed to GitHub. GitHub Pages is rebuilding the public website.")
-    } catch (error) { setError(errorText(error)) }
+    } catch (error) {
+      setError(errorText(error))
+      setNeedsToken(error instanceof GitHubAccessError && error.needsToken)
+    }
     finally { setBusy(false) }
   }
   function backup() {
@@ -513,7 +530,7 @@ export function VisualEditor() {
     if (document.fullscreenElement === app.current) void document.exitFullscreen().catch(() => {})
     close(); setCanvas(null); setEntries([]); setPosition(null); setSnapshot(null); setPreviewOnly(false)
     setHistory({ past: [], now: emptyContent, next: [] })
-    setPage("home"); setConfirmPublish(false); setNotice(""); setCommit(""); setClean(false)
+    setPage("home"); setConfirmPublish(false); setReconnect(false); setNeedsToken(false); setNotice(""); setCommit(""); setClean(false); setError("")
   }
 
   const currentRow = target?.type === "columns" ? rowsAt(layout, target.position).find(row => row.id === target.position.row) : undefined
@@ -531,18 +548,19 @@ export function VisualEditor() {
       </div>
     </header>
     {notice && <div className="editor-message" role="status">{notice} {commit && <a href={`${repoUrl}/actions?query=sha%3A${commit}`} target="_blank" rel="noopener noreferrer">Check deployment ↗</a>}</div>}
-    {error && <div className="editor-message editor-error" role="alert">{error}</div>}
+    {error && <div className="editor-message editor-error" role="alert">{error} {needsToken && snapshot &&
+      <button type="button" disabled={busy} onClick={() => { setPopupError(""); setReconnect(true) }}>Reconnect GitHub without losing draft</button>}</div>}
     {!editorOpen ? <section className="editor-lock">
       <span className="editor-kicker">SITE ADMIN</span>
       <h2>Unlock the website builder</h2>
       <p>Edit your pages visually and publish directly to GitHub.</p>
       <form onSubmit={connect}>
         <label htmlFor="editor-pass">Editor password (GitHub token)</label>
-        <input id="editor-pass" ref={pass} type="password" autoComplete="off" required spellCheck={false} />
+        <input id="editor-pass" type="password" autoComplete="off" required spellCheck={false} disabled={busy} />
         <button className="editor-primary" disabled={busy}>{busy ? "Checking access…" : "Unlock editor"}</button>
       </form>
-      <p className="editor-muted">Use a fine-grained token restricted to Newcitywellness with Contents read and write. The token stays in this tab and is sent only to GitHub. Upload only material intended for the public website.</p>
-      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a GitHub token ↗</a>
+      <p className="editor-muted">On GitHub, choose <strong>Only select repositories → Newcitywellness</strong> and confirm <strong>Contents → Read and write</strong>. Paste the token here only. It stays in this tab and is sent only to GitHub.</p>
+      <a href={tokenSetupUrl} target="_blank" rel="noopener noreferrer">Set up a Newcitywellness GitHub token ↗</a>
       <button type="button" onClick={startDemo} disabled={busy}>Try the builder without publishing</button>
     </section> : <>
       <div className="editor-toolbar builder-toolbar">
@@ -569,6 +587,7 @@ export function VisualEditor() {
             <button type="button" disabled={!canvas || busy} aria-pressed={clean} onClick={() => setClean(!clean)}><Eye size={15} /> {clean ? "Back to editing" : "Preview"}</button>
             <details className="editor-more"><summary>More</summary><div>
               <button type="button" disabled={busy} onClick={backup}>Download draft JSON</button>
+              {!previewOnly && <button type="button" disabled={busy} onClick={() => { setPopupError(""); setReconnect(true) }}>Reconnect GitHub</button>}
               <button type="button" disabled={busy} onClick={() => { setCanvas(null); setRevision(revision + 1) }}>Reload preview</button>
             </div></details>
           </div>
@@ -585,6 +604,15 @@ export function VisualEditor() {
         add={position => open({ type: "palette", position })} addSection={before => open({ type: "section", before })}
         edit={item => open({ type: "item", kind: item.type, itemId: item.id })} columns={position => open({ type: "columns", position })}
         sectionSettings={section => open({ type: "section", section })} moveSection={sectionMove} place={placeDragged} />}
+      {reconnect && <EditorDialog title="Reconnect GitHub" close={() => setReconnect(false)} busy={busy}>
+        <form className="editor-dialog-body" onSubmit={connect}>
+          <p>Your current draft and selected uploads stay in this tab.</p>
+          {popupError && <p className="editor-popup-error" role="alert">{popupError}</p>}
+          <label>New GitHub token<input type="password" autoComplete="off" spellCheck={false} required disabled={busy} /></label>
+          <a href={tokenSetupUrl} target="_blank" rel="noopener noreferrer">Set up a Newcitywellness GitHub token ↗</a>
+          <div className="editor-dialog-actions"><button type="button" onClick={() => setReconnect(false)} disabled={busy}>Cancel</button><button className="editor-primary" type="submit" disabled={busy}>{busy ? "Checking access…" : "Reconnect GitHub"}</button></div>
+        </form>
+      </EditorDialog>}
       {target && <EditorDialog key={dialogKey} title={popupTitle} subtitle={active[2]} close={close} busy={busy}>
         {popupError && <p className="editor-popup-error builder-dialog-error" role="alert">{popupError}</p>}
         {target.type === "find" ? <div className="editor-dialog-body">

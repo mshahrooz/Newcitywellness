@@ -16,6 +16,8 @@ Create a fine-grained GitHub personal access token restricted to **Newcitywellne
 
 Choose **Publish to GitHub**, then confirm. One Git commit contains the changes and any attached public assets. GitHub Pages rebuilds the static site. A concurrent content edit is rejected rather than overwritten. To roll back a published change, revert that commit in GitHub.
 
+If a token expires or GitHub denies access while publishing, use **More → Reconnect GitHub** with a new token. Keep the same tab open so the draft and uploads remain available. Select **Only select repositories → Newcitywellness** and confirm **Contents → Read and write** when creating the token. The editor reports whether GitHub rejected the token, denied a repository operation, limited requests, or blocked a branch update.
+
 ## Uploads
 
 - Photos are resized and compressed to WebP before uploading.

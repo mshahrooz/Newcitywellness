@@ -26,15 +26,19 @@ const draft = { version: 1, pages: { home: {
   ],
 } } }
 
-function mockGitHub(snapshotSha = "original-blob") {
+function mockGitHub(snapshotSha = "original-blob", { fail, push = true } = {}) {
   const calls = []
   let blob = 0
   async function fetch(url, options) {
     const route = new URL(url).pathname
     const body = options.body ? JSON.parse(options.body) : undefined
     calls.push({ route, options, body })
+    if (fail && fail.route === route) {
+      return { ok: false, status: fail.status, headers: { get: name => fail.headers?.[name] ?? null }, json: async () => ({ message: fail.message }) }
+    }
     let value
     if (route === "/user") value = { login: "editor-test" }
+    else if (route === "/repos/mshahrooz/Newcitywellness") value = { full_name: "mshahrooz/Newcitywellness", permissions: { push } }
     else if (route.endsWith("/git/ref/heads/main")) value = { object: { sha: "parent-commit" } }
     else if (route.endsWith("/contents/src/content/editor-content.json")) {
       assert.equal(new URL(url).searchParams.get("ref"), "parent-commit")
@@ -51,6 +55,35 @@ function mockGitHub(snapshotSha = "original-blob") {
   const store = transpile("src/app/admin/github-store.ts", { "../../content/editor-model": model, "../../content/builder-model": builder }, { fetch })
   return { calls, store }
 }
+
+test("reports a revoked token without attempting repository access or echoing GitHub's response", async () => {
+  const { calls, store } = mockGitHub(undefined, { fail: { route: "/user", status: 401, message: "private diagnostic" } })
+  await assert.rejects(() => store.unlock("mock-only"), error => error.needsToken && /expired, revoked/.test(error.message) && !error.message.includes("private diagnostic"))
+  assert.equal(calls.length, 1)
+})
+
+test("rejects read-only repository access before opening the publishing editor", async () => {
+  const { calls, store } = mockGitHub(undefined, { push: false })
+  await assert.rejects(() => store.unlock("mock-only"), error => error.needsToken && /did not report write access/.test(error.message))
+  assert.equal(calls.length, 2)
+})
+
+test("explains exactly where GitHub denies access and distinguishes a rate limit", async () => {
+  const route = "/repos/mshahrooz/Newcitywellness/git/ref/heads/main"
+  const denied = mockGitHub(undefined, { fail: { route, status: 404 } }).store
+  const limited = mockGitHub(undefined, { fail: { route, status: 403, headers: { "x-ratelimit-remaining": "0" } } }).store
+  await assert.rejects(() => denied.unlock("mock-only"), error => error.needsToken && /404 while reading the main branch/.test(error.message))
+  await assert.rejects(() => limited.unlock("mock-only"), error => !error.needsToken && /rate limiting/.test(error.message))
+})
+
+test("identifies protected-branch and token-scope errors separately at publishing", async () => {
+  const route = "/repos/mshahrooz/Newcitywellness/git/refs/heads/main"
+  const access = mockGitHub(undefined, { fail: { route, status: 403, message: "Resource not accessible by personal access token" } }).store
+  const protectedBranch = mockGitHub(undefined, { fail: { route, status: 422, message: "GH013: Repository rule violations found" } }).store
+  const saved = { sha: "original-blob", content: blank }
+  await assert.rejects(() => access.publish("mock-only", saved, draft, new Map()), error => error.needsToken && /403 while updating the main branch/.test(error.message))
+  await assert.rejects(() => protectedBranch.publish("mock-only", saved, draft, new Map()), error => !error.needsToken && /branch rules blocked/.test(error.message))
+})
 
 test("validates page keys, filenames, image dimensions and block identities", () => {
   assert.equal(model.pages.length, 15)
