@@ -1615,16 +1615,20 @@
    Reveal-on-scroll
    ========================================================= */
 /* Use separate timing for reveals so CTA hovers never inherit a delay. */
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-left { --reveal-x: -9px; }
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-right { --reveal-x: 9px; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-left { --reveal-x: -18px; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-right { --reveal-x: 18px; }
 .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-1 { --reveal-delay: 20ms; }
 .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-2 { --reveal-delay: 40ms; }
 .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-3 { --reveal-delay: 60ms; }
 .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-4 { --reveal-delay: 80ms; }
 @media (prefers-reduced-motion: no-preference) {
-  .ncw [data-reveal="pending"]:not(:focus-within) { opacity: .55; }
+  @media (max-width: 760px) {
+    .ncw [data-reveal] { --reveal-y: 22px; }
+    .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal)[data-reveal] { --reveal-x: 0px; }
+  }
+  .ncw [data-reveal="pending"]:not(:focus-within) { opacity: .18; }
   .ncw [data-reveal="shown"] {
-    animation: ncwSectionReveal 760ms var(--motion-reveal-ease) var(--reveal-delay, 0ms) backwards;
+    animation: ncwSectionReveal 900ms cubic-bezier(.22, .61, .36, 1) var(--reveal-delay, 0ms) backwards;
   }
   .ncw [data-reveal]:focus-within, .ncw .is-searching [data-reveal] {
     opacity: 1;
@@ -1642,7 +1646,7 @@
   to { opacity: 1; translate: 0 0; }
 }
 @keyframes ncwSectionReveal {
-  from { opacity: .55; translate: var(--reveal-x, 0px) 8px; }
+  from { opacity: .18; translate: var(--reveal-x, 0px) var(--reveal-y, 28px); }
   to { opacity: 1; translate: 0 0; }
 }
 /* Keep existing hero entrances independent from scroll reveals. */
