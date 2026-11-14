@@ -1,5 +1,6 @@
 "use client"
 
+import { SiteCopy, copyText } from "../builder-page"
 import { useState } from "react"
 
 type Story = { topic: string; initials: string; quote: string; excerpt?: boolean }
@@ -23,12 +24,14 @@ function previewOf(quote: string) {
 }
 
 function ReviewCard({ story }: { story: Story }) {
-  const preview = previewOf(story.quote)
   const titleId = `story-${story.initials.replace(/[^A-Z]/g, "").toLowerCase()}`
+  const quoteId = "reviews-quote-" + titleId
+  const quote = copyText("testimonials", quoteId, story.quote)
+  const preview = previewOf(quote)
   return (
     <article className="reviews-card" aria-labelledby={titleId}>
       <div className="reviews-card-header">
-        <h3 id={titleId}>{story.topic}</h3>
+        <h3 id={titleId}><SiteCopy scope={"testimonials"} id={"reviews-h3" + "-" + story.initials.toLowerCase().replace(/[^a-z]/g, "")}>{story.topic}</SiteCopy></h3>
         <svg className="reviews-quote-mark" viewBox="0 0 32 24" fill="none" aria-hidden="true">
           <path d="M13 2C5 5 2 10 2 16a5 5 0 1 0 5-5c.8-2.5 3-4.8 6-6.2L13 2ZM29 2c-8 3-11 8-11 14a5 5 0 1 0 5-5c.8-2.5 3-4.8 6-6.2L29 2Z" fill="currentColor" />
         </svg>
@@ -36,19 +39,19 @@ function ReviewCard({ story }: { story: Story }) {
       <figure>
         {preview ? (
           <div className="reviews-expandable">
-            <blockquote className="reviews-preview"><p>{preview}</p></blockquote>
+            <blockquote className="reviews-preview"><p data-builder-copy={quoteId} data-builder-proxy>{preview}</p></blockquote>
             <details className="reviews-disclosure">
               <summary aria-describedby={titleId}>
-                <span className="reviews-toggle reviews-toggle-open">Read {story.excerpt ? "excerpt" : "full story"} <span aria-hidden="true">+</span></span>
-                <span className="reviews-toggle reviews-toggle-close">Show less <span aria-hidden="true">−</span></span>
+                <span className="reviews-toggle reviews-toggle-open"><SiteCopy scope={"testimonials"} id={"reviews-reviews-toggle" + "-" + story.initials.toLowerCase().replace(/[^a-z]/g, "")}>Read </SiteCopy>{story.excerpt ? "excerpt" : "full story"} <span aria-hidden="true">+</span></span>
+                <span className="reviews-toggle reviews-toggle-close"><SiteCopy scope={"testimonials"} id={"reviews-reviews-toggle-2" + "-" + story.initials.toLowerCase().replace(/[^a-z]/g, "")}>Show less </SiteCopy><span aria-hidden="true">−</span></span>
               </summary>
-              <blockquote className="reviews-full"><p>{story.quote}</p></blockquote>
+              <blockquote className="reviews-full"><p><SiteCopy scope={"testimonials"} id={quoteId}>{quote}</SiteCopy></p></blockquote>
             </details>
           </div>
         ) : (
-          <blockquote className="reviews-short"><p>{story.quote}</p></blockquote>
+          <blockquote className="reviews-short"><p><SiteCopy scope={"testimonials"} id={quoteId}>{quote}</SiteCopy></p></blockquote>
         )}
-        <figcaption><span className="reviews-initials" aria-hidden="true">{story.initials.replace(/[^A-Z]/g, "")}</span><strong>{story.initials}</strong>{story.excerpt && <small>Excerpt</small>}</figcaption>
+        <figcaption><span className="reviews-initials" aria-hidden="true">{story.initials.replace(/[^A-Z]/g, "")}</span><strong><SiteCopy scope={"testimonials"} id={"reviews-strong" + "-" + story.initials.toLowerCase().replace(/[^a-z]/g, "")}>{story.initials}</SiteCopy></strong>{story.excerpt && <small><SiteCopy scope={"testimonials"} id={"reviews-small" + "-" + story.initials.toLowerCase().replace(/[^a-z]/g, "")}>Excerpt</SiteCopy></small>}</figcaption>
       </figure>
     </article>
   )
@@ -63,10 +66,10 @@ export function ReviewCollection({ stories }: { stories: Story[] }) {
     <>
       <div className="reviews-filters" role="group" aria-label="Filter testimonials by topic">
         {(Object.keys(topics) as Topic[]).map((label) => (
-          <button key={label} type="button" aria-pressed={label === active} aria-controls="review-results" onClick={() => setActive(label)}>{label}</button>
+          <button key={label} type="button" aria-pressed={label === active} aria-controls="review-results" onClick={() => setActive(label)}><SiteCopy scope={"testimonials"} id={"reviews-filter-" + Object.keys(topics).indexOf(label)}>{label}</SiteCopy></button>
         ))}
       </div>
-      <p className="reviews-count" role="status">{filtered.length} {filtered.length === 1 ? "story" : "stories"}</p>
+      <p className="reviews-count" role="status">{filtered.length} <SiteCopy scope="testimonials" id={filtered.length === 1 ? "reviews-singular" : "reviews-plural"}>{filtered.length === 1 ? "story" : "stories"}</SiteCopy></p>
       <div className="reviews-grid" id="review-results">
         {filtered.map((story) => <ReviewCard key={story.initials} story={story} />)}
       </div>

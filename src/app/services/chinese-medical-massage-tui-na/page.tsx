@@ -1,3 +1,4 @@
+import { BuilderAnchor, SiteCopy } from "../../builder-page"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ServiceDetailPage } from "../service-detail-page"
@@ -33,9 +34,9 @@ export default function TuiNaPage() {
       bookingCopy="Have a question about Tui-Na? Call the center or book your visit online."
       intro={
         <>
-          <p>Tui-Na is a hands-on form of traditional Chinese medicine with roots in the Ming Dynasty. Its name means “pushing and grasping,” two of the movements that distinguish it from other styles of massage.</p>
-          <p>A practitioner may roll, knead, press, or tap areas of the body, adjusting the pressure from gentle to firm. In the traditional framework, these movements work with acupuncture points and pathways called meridians, through which <em>qi</em> is understood to flow. The clinic may offer Tui-Na on its own or alongside <Link href="/services/acupuncture/">acupuncture</Link>.</p>
-          <p>People may ask about Tui-Na for muscle tension or discomfort in areas such as the neck, shoulders, or back. Tell your practitioner what you’re experiencing so they can discuss whether this type of massage suits your needs. <a href="https://www.nccih.nih.gov/health/massage-therapy-what-you-need-to-know">Read the NIH overview of massage therapy.</a></p>
+          <BuilderAnchor page="chinese-medical-massage-tui-na" section="practice" id="intro-after-1"><p><SiteCopy scope="chinese-medical-massage-tui-na" id="intro-copy-1">Tui-Na is a hands-on form of traditional Chinese medicine with roots in the Ming Dynasty. Its name means “pushing and grasping,” two of the movements that distinguish it from other styles of massage.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="chinese-medical-massage-tui-na" section="practice" id="intro-after-2"><p><SiteCopy scope="chinese-medical-massage-tui-na" id="intro-copy-2">A practitioner may roll, knead, press, or tap areas of the body, adjusting the pressure from gentle to firm. In the traditional framework, these movements work with acupuncture points and pathways called meridians, through which </SiteCopy><em>qi</em><SiteCopy scope="chinese-medical-massage-tui-na" id="intro-copy-3"> is understood to flow. The clinic may offer Tui-Na on its own or alongside </SiteCopy><Link href="/services/acupuncture/"><SiteCopy scope="chinese-medical-massage-tui-na" id="intro-acupuncture-link">acupuncture</SiteCopy></Link><SiteCopy scope="chinese-medical-massage-tui-na" id="intro-copy-4">.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="chinese-medical-massage-tui-na" section="practice" id="intro-after-3"><p><SiteCopy scope="chinese-medical-massage-tui-na" id="intro-copy-5">People may ask about Tui-Na for muscle tension or discomfort in areas such as the neck, shoulders, or back. Tell your practitioner what you’re experiencing so they can discuss whether this type of massage suits your needs. </SiteCopy><a href="https://www.nccih.nih.gov/health/massage-therapy-what-you-need-to-know"><SiteCopy scope="chinese-medical-massage-tui-na" id="intro-copy-6">Read the NIH overview of massage therapy.</SiteCopy></a></p></BuilderAnchor>
         </>
       }
     />

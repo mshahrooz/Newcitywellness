@@ -1,3 +1,4 @@
+import { BuilderAnchor, SiteCopy } from "../../builder-page"
 import type { Metadata } from "next"
 import { ServiceDetailPage } from "../service-detail-page"
 
@@ -32,9 +33,9 @@ export default function AcupuncturePage() {
       bookingCopy="Have a question about acupuncture? Call the center or book your visit online."
       intro={
         <>
-          <p>Acupuncture has been part of traditional Chinese medicine for more than 2,000 years. Early descriptions appear in the <em>Huang Di Nei Jing</em>, also known as the <em>Yellow Emperor’s Classic of Internal Medicine</em>. Today, acupuncture is practiced around the world.</p>
-          <p>In the traditional framework, <em>qi</em> (pronounced “chee”) is often described as vital energy. It is understood to move through pathways called meridians. Traditional Chinese medicine describes 12 primary meridians, with specific points along them that practitioners select based on the individual.</p>
-          <p>Modern researchers study acupuncture from a different perspective, including how it affects the nervous system and pain signaling. Evidence varies by condition. <a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety">Read the NIH overview of acupuncture.</a></p>
+          <BuilderAnchor page="acupuncture" section="practice" id="intro-after-1"><p><SiteCopy scope="acupuncture" id="intro-copy-1">Acupuncture has been part of traditional Chinese medicine for more than 2,000 years. Early descriptions appear in the <em>Huang Di Nei Jing</em>, also known as the <em>Yellow Emperor’s Classic of Internal Medicine</em>. Today, acupuncture is practiced around the world.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="acupuncture" section="practice" id="intro-after-2"><p><SiteCopy scope="acupuncture" id="intro-copy-2">In the traditional framework, <em>qi</em> (pronounced “chee”) is often described as vital energy. It is understood to move through pathways called meridians. Traditional Chinese medicine describes 12 primary meridians, with specific points along them that practitioners select based on the individual.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="acupuncture" section="practice" id="intro-after-3"><p><SiteCopy scope="acupuncture" id="intro-copy-3">Modern researchers study acupuncture from a different perspective, including how it affects the nervous system and pain signaling. Evidence varies by condition. </SiteCopy><a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety"><SiteCopy scope="acupuncture" id="intro-copy-4">Read the NIH overview of acupuncture.</SiteCopy></a></p></BuilderAnchor>
         </>
       }
     />

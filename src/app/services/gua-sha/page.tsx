@@ -1,3 +1,4 @@
+import { BuilderAnchor, SiteCopy } from "../../builder-page"
 import type { Metadata } from "next"
 import { ServiceDetailPage } from "../service-detail-page"
 
@@ -32,8 +33,8 @@ export default function GuaShaPage() {
       bookingCopy="Curious about Gua-Sha? Call the center to ask whether it’s right for you, or book your visit online."
       intro={
         <>
-          <p>Gua-Sha is a hands-on practice in traditional Chinese medicine. A practitioner moves a smooth tool, sometimes shaped like a spoon, across the skin in short strokes. The clinic offers it as an option for people with muscle tightness or soreness.</p>
-          <p>The strokes can leave tiny spots called petechiae. The marks range from pink or red to purple and typically fade over a few days. Your practitioner can explain where marks might appear and adjust the pressure during the session.</p>
+          <BuilderAnchor page="gua-sha" section="practice" id="intro-after-1"><p><SiteCopy scope="gua-sha" id="intro-copy-1">Gua-Sha is a hands-on practice in traditional Chinese medicine. A practitioner moves a smooth tool, sometimes shaped like a spoon, across the skin in short strokes. The clinic offers it as an option for people with muscle tightness or soreness.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="gua-sha" section="practice" id="intro-after-2"><p><SiteCopy scope="gua-sha" id="intro-copy-2">The strokes can leave tiny spots called petechiae. The marks range from pink or red to purple and typically fade over a few days. Your practitioner can explain where marks might appear and adjust the pressure during the session.</SiteCopy></p></BuilderAnchor>
         </>
       }
     />

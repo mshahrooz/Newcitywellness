@@ -1,5 +1,6 @@
 "use client"
 
+import { SiteCopy } from "./builder-page"
 import { Children, useRef, useState, type ReactNode } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
@@ -40,7 +41,7 @@ export function TestimonialSlider({ children }: { children: ReactNode }) {
           <button type="button" aria-label="Previous patient experience" aria-controls="home-testimonial-cards" aria-disabled={active === 0} onClick={() => move(-1)}>
             <ChevronLeft size={20} aria-hidden="true" />
           </button>
-          <span className="testimonial-slider-count" aria-live="polite" aria-atomic="true">{active + 1} / {count}</span>
+          <span className="testimonial-slider-count" aria-live="polite" aria-atomic="true">{active + 1}<SiteCopy scope={"home"} id={"testimonial-slider-testimonial-slider-count"}> / </SiteCopy>{count}</span>
           <button type="button" aria-label="Next patient experience" aria-controls="home-testimonial-cards" aria-disabled={active >= count - 1} onClick={() => move(1)}>
             <ChevronRight size={20} aria-hidden="true" />
           </button>

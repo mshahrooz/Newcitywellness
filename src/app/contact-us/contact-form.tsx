@@ -1,5 +1,6 @@
 "use client"
 
+import { SiteCopy } from "../builder-page"
 import { useState, type FormEvent } from "react"
 
 export function ContactForm({ email }: { email: string }) {
@@ -24,18 +25,18 @@ export function ContactForm({ email }: { email: string }) {
   return (
     <form className="contact-page-form" method="post" onSubmit={prepareDraft} aria-describedby="contact-form-note">
       <div className="contact-page-fields">
-        <label>First name<input name="firstName" autoComplete="given-name" maxLength={80} /></label>
-        <label>Last name<input name="lastName" autoComplete="family-name" maxLength={80} /></label>
-        <label>Email <span aria-hidden="true">*</span><input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
-        <label>Phone <span aria-hidden="true">*</span><input name="phone" type="tel" autoComplete="tel" maxLength={40} required /></label>
-        <label className="contact-message">Message <span aria-hidden="true">*</span><textarea name="message" rows={5} maxLength={1000} required /></label>
+        <label><SiteCopy scope="contact" id="contact-form-first">First name</SiteCopy><input name="firstName" autoComplete="given-name" maxLength={80} /></label>
+        <label><SiteCopy scope="contact" id="contact-form-last">Last name</SiteCopy><input name="lastName" autoComplete="family-name" maxLength={80} /></label>
+        <label><SiteCopy scope="contact" id="contact-form-email">Email </SiteCopy><span aria-hidden="true">*</span><input name="email" type="email" autoComplete="email" maxLength={254} required /></label>
+        <label><SiteCopy scope="contact" id="contact-form-phone">Phone </SiteCopy><span aria-hidden="true">*</span><input name="phone" type="tel" autoComplete="tel" maxLength={40} required /></label>
+        <label className="contact-message"><SiteCopy scope="contact" id="contact-form-message">Message </SiteCopy><span aria-hidden="true">*</span><textarea name="message" rows={5} maxLength={1000} required /></label>
       </div>
       <div className="contact-form-actions">
-        <button className="btn btn-gold" type="submit">Open Email Draft <span className="arrow" aria-hidden="true">→</span></button>
-        <p id="contact-form-note">Opens a draft in your email app. Nothing is sent until you send it there.</p>
+        <button className="btn btn-gold" type="submit"><SiteCopy scope="contact" id="contact-form-button">Open Email Draft </SiteCopy><span className="arrow" aria-hidden="true">→</span></button>
+        <p id="contact-form-note"><SiteCopy scope="contact" id="contact-form-note">Opens a draft in your email app. Nothing is sent until you send it there.</SiteCopy></p>
       </div>
       <p className="contact-draft-status" role="status">{draftOpened ? <>If your email app didn’t open, write to <a href={`mailto:${email}`}>{email}</a>.</> : ""}</p>
-      <noscript><p>JavaScript is off. <a href={`mailto:${email}`}>Email the clinic directly</a> instead.</p></noscript>
+      <noscript><p><SiteCopy scope="contact" id="contact-form-noscript">JavaScript is off. </SiteCopy><a href={`mailto:${email}`}><SiteCopy scope="contact" id="contact-form-noscript-link">Email the clinic directly</SiteCopy></a> instead.</p></noscript>
     </form>
   )
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { SiteCopy, copyText } from "../builder-page"
 import { useState, type FormEvent } from "react"
 
 export function QuestionForm() {
@@ -25,16 +26,16 @@ export function QuestionForm() {
   return (
     <form className="faq-form" id="question-form" method="post" onSubmit={prepareEmail}>
       <div className="faq-fields">
-        <label>First Name<input name="first_name" autoComplete="given-name" placeholder="First name" /></label>
-        <label>Last Name<input name="last_name" autoComplete="family-name" placeholder="Last name" /></label>
-        <label>Email <span aria-hidden="true">*</span><input name="email" type="email" autoComplete="email" placeholder="you@example.com" required /></label>
-        <label>Phone <span aria-hidden="true">*</span><input name="phone" type="tel" autoComplete="tel" placeholder="845-000-0000" required /></label>
-        <label className="faq-field-full">Message<textarea name="message" rows={5} placeholder="How can we help?" required /></label>
+        <label><SiteCopy scope={"faqs"} id={"question-form-label"}>First Name</SiteCopy><input data-builder-copy={"question-form-placeholder-first-name"} data-builder-attr="placeholder" name="first_name" autoComplete="given-name" placeholder={copyText("faqs", "question-form-placeholder-first-name", "First name")} /></label>
+        <label><SiteCopy scope={"faqs"} id={"question-form-label-2"}>Last Name</SiteCopy><input data-builder-copy={"question-form-placeholder-last-name"} data-builder-attr="placeholder" name="last_name" autoComplete="family-name" placeholder={copyText("faqs", "question-form-placeholder-last-name", "Last name")} /></label>
+        <label><SiteCopy scope={"faqs"} id={"question-form-label-3"}>Email </SiteCopy><span aria-hidden="true">*</span><input data-builder-copy={"question-form-placeholder-email"} data-builder-attr="placeholder" name="email" type="email" autoComplete="email" placeholder={copyText("faqs", "question-form-placeholder-email", "you@example.com")} required /></label>
+        <label><SiteCopy scope={"faqs"} id={"question-form-label-4"}>Phone </SiteCopy><span aria-hidden="true">*</span><input data-builder-copy={"question-form-placeholder-phone"} data-builder-attr="placeholder" name="phone" type="tel" autoComplete="tel" placeholder={copyText("faqs", "question-form-placeholder-phone", "845-000-0000")} required /></label>
+        <label className="faq-field-full"><SiteCopy scope={"faqs"} id={"question-form-faq-field-full"}>Message</SiteCopy><textarea data-builder-copy="question-form-placeholder-message" data-builder-attr="placeholder" name="message" rows={5} placeholder={copyText("faqs", "question-form-placeholder-message", "How can we help?")} required /></label>
         <label className="faq-honeypot" aria-hidden="true">Leave blank<input name="website" tabIndex={-1} autoComplete="off" /></label>
       </div>
       <div className="faq-form-actions">
-        <button type="submit" className="btn">Send Message <span className="arrow" aria-hidden="true">→</span></button>
-        <p>Opens your email app with a draft. Nothing is sent until you send it there.</p>
+        <button type="submit" className="btn"><SiteCopy scope={"faqs"} id={"question-form-btn"}>Send Message </SiteCopy><span className="arrow" aria-hidden="true">→</span></button>
+        <p><SiteCopy scope={"faqs"} id={"question-form-p"}>Opens your email app with a draft. Nothing is sent until you send it there.</SiteCopy></p>
       </div>
       <p className="faq-form-status" role="status">{status}</p>
     </form>

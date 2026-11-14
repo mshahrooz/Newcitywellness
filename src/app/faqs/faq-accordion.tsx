@@ -1,5 +1,6 @@
 "use client"
 
+import { SiteCopy } from "../builder-page"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 type Question = { id: string; title: string; answer: ReactNode }
@@ -35,15 +36,15 @@ export function FaqAccordion({ questions, photos }: { questions: readonly Questi
             ))}
           </figure>
           <div className="aside-card">
-            <strong>Ready to begin?</strong>
-            <p>Book your appointment online with Mordechai Genut, MS, L.Ac.</p>
-            <a className="btn btn-gold" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener noreferrer">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
+            <strong><SiteCopy scope={"faqs"} id={"accordion-strong"}>Ready to begin?</SiteCopy></strong>
+            <p><SiteCopy scope={"faqs"} id={"accordion-p"}>Book your appointment online with Mordechai Genut, MS, L.Ac.</SiteCopy></p>
+            <a className="btn btn-gold" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener noreferrer"><SiteCopy scope={"faqs"} id={"accordion-btn"}>Book Appointment </SiteCopy><span className="arrow" aria-hidden="true">→</span></a>
           </div>
         </aside>
         <div className="faq-main">
           <div className="faq-head copy">
-            <span className="eyebrow">Acupuncture</span>
-            <h2 className="section-title" id="questions-title">Frequently Asked Questions</h2>
+            <span className="eyebrow"><SiteCopy scope={"faqs"} id={"accordion-eyebrow"}>Acupuncture</SiteCopy></span>
+            <h2 className="section-title" id="questions-title"><SiteCopy scope={"faqs"} id={"accordion-questions-title"}>Frequently Asked Questions</SiteCopy></h2>
             <div className="gold-rule" aria-hidden="true" />
           </div>
           <div className="faq-list" ref={list}>
@@ -51,7 +52,7 @@ export function FaqAccordion({ questions, photos }: { questions: readonly Questi
               <details className="faq-item" key={question.id} id={question.id} name="acupuncture-faq" open={index === 0 ? true : undefined} onToggle={(event) => {
                 if (event.currentTarget.open) setPhotoIndex(index)
               }}>
-                <summary><span className="faq-q">{question.title}</span><span className="faq-icon" aria-hidden="true" /></summary>
+                <summary><span className="faq-q"><SiteCopy scope={"faqs"} id={"accordion-q-" + question.id}>{question.title}</SiteCopy></span><span className="faq-icon" aria-hidden="true" /></summary>
                 <div className="faq-answer copy">
                   <figure className="faq-thumb" aria-hidden="true">
                     <img src={photos[index].src} width={photos[index].width} height={photos[index].height} loading="lazy" decoding="async" alt="" />

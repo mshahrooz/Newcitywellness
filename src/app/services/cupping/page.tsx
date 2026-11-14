@@ -1,3 +1,4 @@
+import { BuilderAnchor, SiteCopy } from "../../builder-page"
 import type { Metadata } from "next"
 import { ServiceDetailPage } from "../service-detail-page"
 
@@ -32,9 +33,9 @@ export default function CuppingPage() {
       bookingCopy="Have a question about cupping? Call the center or book your visit online."
       intro={
         <>
-          <p>Cupping is a traditional therapy that uses suction to gently draw the skin into cups placed on the body. People often ask about it for sore or stiff muscles, including after exercise.</p>
-          <p>There are two common ways to create the suction. Traditional heated cupping uses warmth to create a partial vacuum inside the cup, while air cupping uses a pump without heat. Both can leave temporary round marks where the cups were placed.</p>
-          <p>Some people find cupping relaxing. Research suggests it may help with pain, but the evidence is limited. If you’re unsure whether it’s right for you, ask the clinic what to expect. <a href="https://www.nccih.nih.gov/health/cupping">Read the NIH overview of cupping.</a></p>
+          <BuilderAnchor page="cupping" section="practice" id="intro-after-1"><p><SiteCopy scope="cupping" id="intro-copy-1">Cupping is a traditional therapy that uses suction to gently draw the skin into cups placed on the body. People often ask about it for sore or stiff muscles, including after exercise.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="cupping" section="practice" id="intro-after-2"><p><SiteCopy scope="cupping" id="intro-copy-2">There are two common ways to create the suction. Traditional heated cupping uses warmth to create a partial vacuum inside the cup, while air cupping uses a pump without heat. Both can leave temporary round marks where the cups were placed.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="cupping" section="practice" id="intro-after-3"><p><SiteCopy scope="cupping" id="intro-copy-3">Some people find cupping relaxing. Research suggests it may help with pain, but the evidence is limited. If you’re unsure whether it’s right for you, ask the clinic what to expect. </SiteCopy><a href="https://www.nccih.nih.gov/health/cupping"><SiteCopy scope="cupping" id="intro-copy-4">Read the NIH overview of cupping.</SiteCopy></a></p></BuilderAnchor>
         </>
       }
     />

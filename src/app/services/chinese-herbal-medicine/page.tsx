@@ -1,3 +1,4 @@
+import { BuilderAnchor, SiteCopy } from "../../builder-page"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ServiceDetailPage } from "../service-detail-page"
@@ -33,9 +34,9 @@ export default function ChineseHerbalMedicinePage() {
       bookingCopy="Have a question about Chinese herbal medicine? Call the center or book your visit online."
       intro={
         <>
-          <p>Chinese herbal medicine has been part of traditional Chinese medicine for more than 2,000 years. At New City Acupuncture &amp; Wellness Center, the practitioner considers your health history and goals when deciding whether to recommend a formula. Herbal medicine may also be discussed alongside <Link href="/services/acupuncture/">acupuncture</Link>.</p>
-          <p>Formulas often combine several ingredients, primarily from plants. These can include roots, seeds, leaves, and bark. Depending on the formula, preparations may include dried ingredients, powders, capsules, tinctures, or products applied to the skin.</p>
-          <p>Evidence varies by formula and condition. Herbal products can also interact with medicines, so it’s worth reviewing the ingredients with your doctor or pharmacist before you start. <a href="https://www.nccih.nih.gov/health/traditional-chinese-medicine-what-you-need-to-know/">Read the NIH overview of traditional Chinese medicine.</a></p>
+          <BuilderAnchor page="chinese-herbal-medicine" section="practice" id="intro-after-1"><p><SiteCopy scope="chinese-herbal-medicine" id="intro-copy-1">Chinese herbal medicine has been part of traditional Chinese medicine for more than 2,000 years. At New City Acupuncture &amp; Wellness Center, the practitioner considers your health history and goals when deciding whether to recommend a formula. Herbal medicine may also be discussed alongside </SiteCopy><Link href="/services/acupuncture/"><SiteCopy scope="chinese-herbal-medicine" id="intro-acupuncture-link">acupuncture</SiteCopy></Link><SiteCopy scope="chinese-herbal-medicine" id="intro-copy-2">.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="chinese-herbal-medicine" section="practice" id="intro-after-2"><p><SiteCopy scope="chinese-herbal-medicine" id="intro-copy-3">Formulas often combine several ingredients, primarily from plants. These can include roots, seeds, leaves, and bark. Depending on the formula, preparations may include dried ingredients, powders, capsules, tinctures, or products applied to the skin.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="chinese-herbal-medicine" section="practice" id="intro-after-3"><p><SiteCopy scope="chinese-herbal-medicine" id="intro-copy-4">Evidence varies by formula and condition. Herbal products can also interact with medicines, so it’s worth reviewing the ingredients with your doctor or pharmacist before you start. </SiteCopy><a href="https://www.nccih.nih.gov/health/traditional-chinese-medicine-what-you-need-to-know/"><SiteCopy scope="chinese-herbal-medicine" id="intro-copy-5">Read the NIH overview of traditional Chinese medicine.</SiteCopy></a></p></BuilderAnchor>
         </>
       }
     />

@@ -1,3 +1,4 @@
+import { BuilderAnchor, SiteCopy } from "../../builder-page"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { ServiceDetailPage } from "../service-detail-page"
@@ -33,9 +34,9 @@ export default function MoxibustionPage() {
       bookingCopy="Have a question about moxibustion? Call the center or book your visit online."
       intro={
         <>
-          <p>Moxibustion is a traditional Chinese medicine technique that uses heat from dried mugwort, called <em>moxa</em>, to warm selected points on the body. In traditional Chinese medicine, that warmth is understood in terms of <em>qi</em> and the pathways known as meridians.</p>
-          <p>In an indirect treatment, the practitioner holds a smoldering moxa stick close to the skin without touching it. Some techniques combine moxa with <Link href="/services/acupuncture/">acupuncture</Link> by warming a needle. The practitioner can explain which technique they plan to use.</p>
-          <p>People may ask about moxibustion for muscle or joint discomfort, and some find the warmth relaxing. Evidence varies by condition, and the treatment isn’t appropriate for everyone. <a href="https://health.clevelandclinic.org/moxibustion">Read Cleveland Clinic’s overview of moxibustion.</a></p>
+          <BuilderAnchor page="moxibustion" section="practice" id="intro-after-1"><p><SiteCopy scope="moxibustion" id="intro-copy-1">Moxibustion is a traditional Chinese medicine technique that uses heat from dried mugwort, called <em>moxa</em>, to warm selected points on the body. In traditional Chinese medicine, that warmth is understood in terms of <em>qi</em> and the pathways known as meridians.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="moxibustion" section="practice" id="intro-after-2"><p><SiteCopy scope="moxibustion" id="intro-copy-2">In an indirect treatment, the practitioner holds a smoldering moxa stick close to the skin without touching it. Some techniques combine moxa with </SiteCopy><Link href="/services/acupuncture/"><SiteCopy scope="moxibustion" id="intro-acupuncture-link">acupuncture</SiteCopy></Link><SiteCopy scope="moxibustion" id="intro-copy-3"> by warming a needle. The practitioner can explain which technique they plan to use.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="moxibustion" section="practice" id="intro-after-3"><p><SiteCopy scope="moxibustion" id="intro-copy-4">People may ask about moxibustion for muscle or joint discomfort, and some find the warmth relaxing. Evidence varies by condition, and the treatment isn’t appropriate for everyone. </SiteCopy><a href="https://health.clevelandclinic.org/moxibustion"><SiteCopy scope="moxibustion" id="intro-copy-5">Read Cleveland Clinic’s overview of moxibustion.</SiteCopy></a></p></BuilderAnchor>
         </>
       }
     />

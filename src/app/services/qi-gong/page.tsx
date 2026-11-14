@@ -1,3 +1,4 @@
+import { BuilderAnchor, SiteCopy } from "../../builder-page"
 import type { Metadata } from "next"
 import { ServiceDetailPage } from "../service-detail-page"
 
@@ -32,9 +33,9 @@ export default function QiGongPage() {
       bookingCopy="New to Qi-Gong? Call the center to ask about guided practice, or book a visit online."
       intro={
         <>
-          <p>Qi-Gong, also spelled qigong, is a traditional Chinese practice that brings together gentle movement, breathing, and meditation. <em>Qi</em> is often translated as “life energy,” and <em>gong</em> refers to the work of cultivating it through practice.</p>
-          <p>At New City Acupuncture &amp; Wellness Center, the focus is on learning simple movements with attention to posture and breathing. Some forms are practiced standing or walking, while others can be done sitting or lying down.</p>
-          <p>People often practice Qi-Gong for relaxation or to work on balance and ease of movement. <a href="https://www.nccih.nih.gov/health/qigong-what-you-need-to-know">Learn more about Qi-Gong from the NIH.</a></p>
+          <BuilderAnchor page="qi-gong" section="practice" id="intro-after-1"><p><SiteCopy scope="qi-gong" id="intro-copy-1">Qi-Gong, also spelled qigong, is a traditional Chinese practice that brings together gentle movement, breathing, and meditation. <em>Qi</em> is often translated as “life energy,” and <em>gong</em> refers to the work of cultivating it through practice.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="qi-gong" section="practice" id="intro-after-2"><p><SiteCopy scope="qi-gong" id="intro-copy-2">At New City Acupuncture &amp; Wellness Center, the focus is on learning simple movements with attention to posture and breathing. Some forms are practiced standing or walking, while others can be done sitting or lying down.</SiteCopy></p></BuilderAnchor>
+          <BuilderAnchor page="qi-gong" section="practice" id="intro-after-3"><p><SiteCopy scope="qi-gong" id="intro-copy-3">People often practice Qi-Gong for relaxation or to work on balance and ease of movement. </SiteCopy><a href="https://www.nccih.nih.gov/health/qigong-what-you-need-to-know"><SiteCopy scope="qi-gong" id="intro-copy-4">Learn more about Qi-Gong from the NIH.</SiteCopy></a></p></BuilderAnchor>
         </>
       }
     />

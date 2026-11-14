@@ -1,21 +1,24 @@
-# New City Wellness visual editor
+# New City Wellness website builder
 
-The editor is at `/admin/` under the website's base path. It edits designated content slots without rewriting the page layout, navigation, booking links, or forms. Each of the 15 public pages has a preview, editable hero text, other designated copy, and an additional block area. The homepage, overview pages and individual service pages also support selected photo replacements. The public site receives static HTML on deployment and does not request content from the GitHub API.
+Open `/admin/` under the GitHub Pages site path. Choose **Try the builder without publishing** to practice on the current site in a temporary draft, or unlock it with a GitHub token to publish. No external dashboard backend is required.
 
-## Unlock and publish
+## Build a page
 
-1. On GitHub, create a fine-grained personal access token restricted to the **Newcitywellness** repository. Set **Repository permissions → Contents → Read and write** and an expiration.
-2. Enter the token in the editor's single password field. The token is sent only to GitHub's API and kept in tab memory. It is not stored in the repository, local storage, preview iframe, or draft download. Use a token you control and lock the editor when finished.
-3. Choose a page and preview size. Click a heading, paragraph, or supported photo to open its edit popup, then choose **Apply to draft**. Use **Show editable areas** or **Find item** to locate content. The preview fills the workspace, and **Fullscreen** can hide the browser chrome. Use **Add / manage blocks** for headings, paragraphs, and public PDF/DOCX downloads. Drag blocks into order or use the arrow buttons.
-4. Select **Publish to GitHub**, then confirm. This commits the content and assets atomically to `main` and starts the existing Pages workflow. The content is public once published. Check Actions if the deployment takes longer than expected.
-5. For rollback, revert the publishing commit in GitHub and let Pages redeploy.
+1. Pick one of the 15 pages and choose Desktop, Tablet or Mobile. Use **Fullscreen** for more workspace. **Preview** hides editing controls.
+2. Drag a title, paragraph, photo, button, file download, YouTube video or uploaded video from the toolbar onto a dotted slot. On touchscreens or with a keyboard, click the slot instead and pick an element. Fill in the popup and select **Apply to draft**.
+3. Use **Section** or a section divider to insert a new section. Drag section handles to divider lines or use the up/down buttons. Open section settings to name it or set background and text colors.
+4. Use **Add row** to create one to four columns, then drag elements between rows, columns or sections. The columns stack on mobile. **Move to…** in an element’s popup provides a non-drag alternative. Undo and Redo work across the draft.
+5. Click existing text or supported photos to edit them. **Find text** is useful for text inside closed menus and accordions, including shared header and footer labels. Existing forms and interactive templates stay in place. Use the surrounding drop zones and inline slots to add new content without replacing those features.
 
-GitHub Pages serves the login screen as a public static page. This is not a private admin URL or a custom-password server. GitHub validates the token and enforces repository writes. No Supabase, database, or additional service is needed. A token with Contents write can edit other files in the same repository, so do not share a personal token or grant unnecessary permissions.
+## Publish
 
-## Uploads and drafts
+Create a fine-grained GitHub personal access token restricted to **Newcitywellness**, with **Contents: Read and write** and an expiration. Paste it directly into the builder’s password field. It is kept in tab memory, sent only to GitHub, and never written to content or drafts. The demo cannot publish.
 
-- Photos are converted to WebP on-device and resized before upload. Uploaded photos and files are stored in the repository, never hotlinked.
-- Public PDF and DOCX files up to 4 MB can be published. Never upload patient information, filled-in insurance forms, or other private data.
-- JSON draft backups contain copy and references, not the actual files. Keep originals until publication is verified. Unpublished changes are held in the editor tab and are not stored remotely.
-- Removing a document block removes the link from the page, not the previously published file or its Git history.
-- Concurrent changes are rejected rather than overwritten. Copy or download your edits before reopening the editor if GitHub reports a conflict.
+Choose **Publish to GitHub**, then confirm. One Git commit contains the changes and any attached public assets. GitHub Pages rebuilds the static site. A concurrent content edit is rejected rather than overwritten. To roll back a published change, revert that commit in GitHub.
+
+## Uploads
+
+- Photos are resized and compressed to WebP before uploading.
+- Documents support PDF, DOCX, TXT, XLSX, PPTX and CSV up to 8 MB.
+- Uploaded videos support MP4 and WebM up to 20 MB. Use a YouTube link for a larger video.
+- Upload only public website content. Removing an element removes it from the page, not from earlier commits. Draft JSON backups contain text, structure and file references, not the file bytes.

@@ -1,3 +1,4 @@
+import { SiteCopy } from "./builder-page"
 import Link from "next/link"
 import "./clinic-footer.css"
 
@@ -12,61 +13,61 @@ export function SiteFooter() {
               <img className="footer-logo-mark" src={logo} width={280} height={56} alt="" loading="lazy" decoding="async" />
               <img className="footer-logo-lettering" src={logo} width={280} height={56} alt="" loading="lazy" decoding="async" />
             </Link>
-            <p>Traditional Chinese medicine in the heart of New City, NY, serving all of Rockland County and the surrounding areas.</p>
+            <p><SiteCopy scope={"shared"} id={"site-footer-p"}>Traditional Chinese medicine in the heart of New City, NY, serving all of Rockland County and the surrounding areas.</SiteCopy></p>
           </div>
 
           <nav className="footer-col" aria-label="Quick links">
-            <h3>Quick Links</h3>
+            <h3><SiteCopy scope={"shared"} id={"site-footer-h3"}>Quick Links</SiteCopy></h3>
             <ul>
-              <li><Link href="/">Home</Link></li>
-              <li><Link href="/about-us/">About Us</Link></li>
-              <li><Link href="/services/">Services</Link></li>
-              <li><Link href="/faqs/">FAQs</Link></li>
-              <li><Link href="/conditions-treated/">Conditions Treated</Link></li>
-              <li><Link href="/testimonials/">Testimonials</Link></li>
-              <li><Link href="/insurance/">Insurance</Link></li>
-              <li><Link href="/contact-us/">Contact Us</Link></li>
+              <li><Link href="/"><SiteCopy scope={"shared"} id={"site-footer-link"}>Home</SiteCopy></Link></li>
+              <li><Link href="/about-us/"><SiteCopy scope={"shared"} id={"site-footer-link-2"}>About Us</SiteCopy></Link></li>
+              <li><Link href="/services/"><SiteCopy scope={"shared"} id={"site-footer-link-3"}>Services</SiteCopy></Link></li>
+              <li><Link href="/faqs/"><SiteCopy scope={"shared"} id={"site-footer-link-4"}>FAQs</SiteCopy></Link></li>
+              <li><Link href="/conditions-treated/"><SiteCopy scope={"shared"} id={"site-footer-link-5"}>Conditions Treated</SiteCopy></Link></li>
+              <li><Link href="/testimonials/"><SiteCopy scope={"shared"} id={"site-footer-link-6"}>Testimonials</SiteCopy></Link></li>
+              <li><Link href="/insurance/"><SiteCopy scope={"shared"} id={"site-footer-link-7"}>Insurance</SiteCopy></Link></li>
+              <li><Link href="/contact-us/"><SiteCopy scope={"shared"} id={"site-footer-link-8"}>Contact Us</SiteCopy></Link></li>
             </ul>
           </nav>
 
           <nav className="footer-col" aria-label="Our services">
-            <h3>Our Services</h3>
+            <h3><SiteCopy scope={"shared"} id={"site-footer-h3-2"}>Our Services</SiteCopy></h3>
             <ul>
-              <li><Link href="/services/acupuncture/">Acupuncture</Link></li>
-              <li><Link href="/services/chinese-medical-massage-tui-na/">Tui-Na</Link></li>
-              <li><Link href="/services/cupping/">Cupping</Link></li>
-              <li><Link href="/services/moxibustion/">Moxibustion</Link></li>
-              <li><Link href="/services/chinese-herbal-medicine/">Chinese Herbal Medicine</Link></li>
-              <li><Link href="/services/gua-sha/">Gua-Sha</Link></li>
-              <li><Link href="/services/qi-gong/">Qi-Gong</Link></li>
+              <li><Link href="/services/acupuncture/"><SiteCopy scope={"shared"} id={"site-footer-link-9"}>Acupuncture</SiteCopy></Link></li>
+              <li><Link href="/services/chinese-medical-massage-tui-na/"><SiteCopy scope={"shared"} id={"site-footer-link-10"}>Tui-Na</SiteCopy></Link></li>
+              <li><Link href="/services/cupping/"><SiteCopy scope={"shared"} id={"site-footer-link-11"}>Cupping</SiteCopy></Link></li>
+              <li><Link href="/services/moxibustion/"><SiteCopy scope={"shared"} id={"site-footer-link-12"}>Moxibustion</SiteCopy></Link></li>
+              <li><Link href="/services/chinese-herbal-medicine/"><SiteCopy scope={"shared"} id={"site-footer-link-13"}>Chinese Herbal Medicine</SiteCopy></Link></li>
+              <li><Link href="/services/gua-sha/"><SiteCopy scope={"shared"} id={"site-footer-link-14"}>Gua-Sha</SiteCopy></Link></li>
+              <li><Link href="/services/qi-gong/"><SiteCopy scope={"shared"} id={"site-footer-link-15"}>Qi-Gong</SiteCopy></Link></li>
             </ul>
           </nav>
 
           <div className="footer-col">
-            <h3>Get In Touch</h3>
+            <h3><SiteCopy scope={"shared"} id={"site-footer-h3-3"}>Get In Touch</SiteCopy></h3>
             <ul className="footer-contact">
               <li>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6.6 2.8 9.3 2c.7-.2 1.5.2 1.7.9l1.1 3.7c.2.6 0 1.2-.5 1.6l-1.8 1.4a15.4 15.4 0 0 0 4.6 4.6l1.4-1.8c.4-.5 1-.7 1.6-.5l3.7 1.1c.7.2 1.1 1 1 1.7l-.8 2.7c-.2.7-.9 1.2-1.6 1.2C10.1 18.6 5.4 13.9 5.4 4.4c0-.7.5-1.4 1.2-1.6Z" /></svg>
-                <a href="tel:+18455792428">845-579-2428</a>
+                <a href="tel:+18455792428"><SiteCopy scope={"shared"} id={"site-footer-a"}>845-579-2428</SiteCopy></a>
               </li>
               <li>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
-                <a href="mailto:newcitywellness@gmail.com">newcitywellness@gmail.com</a>
+                <a href="mailto:newcitywellness@gmail.com"><SiteCopy scope={"shared"} id={"site-footer-a-2"}>newcitywellness@gmail.com</SiteCopy></a>
               </li>
               <li>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>
-                <a href="https://www.google.com/maps/search/?api=1&amp;query=125+South+Main+Street+New+City+NY+10956" target="_blank" rel="noopener">125 South Main Street<br />New City, NY 10956</a>
+                <a href="https://www.google.com/maps/search/?api=1&amp;query=125+South+Main+Street+New+City+NY+10956" target="_blank" rel="noopener"><SiteCopy scope={"shared"} id={"site-footer-a-3"}>125 South Main Street<br />New City, NY 10956</SiteCopy></a>
               </li>
               <li>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-                <span>Sunday–Thursday: 9:00 am – 9:00 pm<br />Friday: 9:00 am – 2:00 pm<br />Saturday: Closed</span>
+                <span><SiteCopy scope={"shared"} id={"site-footer-span"}>Sunday–Thursday: 9:00 am – 9:00 pm<br />Friday: 9:00 am – 2:00 pm<br />Saturday: Closed</SiteCopy></span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <span>Copyright © 2026 New City Acupuncture &amp; Wellness Center. All Rights Reserved.</span>
+          <span><SiteCopy scope={"shared"} id={"site-footer-span-2"}>Copyright © 2026 New City Acupuncture &amp; Wellness Center. All Rights Reserved.</SiteCopy></span>
           <div className="clinic-social-row" aria-label="Social media links">
             <a className="clinic-social-link" href="https://www.facebook.com/Newcityacupuncture/" target="_blank" rel="noopener" aria-label="Facebook">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12Z" /></svg>

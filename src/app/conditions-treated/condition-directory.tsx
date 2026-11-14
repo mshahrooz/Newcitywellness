@@ -1,5 +1,6 @@
 "use client"
 
+import { SiteCopy, copyText } from "../builder-page"
 import { Fragment, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Ornament } from "../wellness-art"
@@ -24,10 +25,10 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
   const keywords = normalize(query).split(/\s+/).filter(Boolean)
   const searching = keywords.length > 0
   const results = conditionGroups.map((group) => {
-    const title = normalize(group.title)
+    const title = normalize(copyText("conditions", "directory-title-" + group.id, group.title))
     const titleHit = keywords.every((word) => title.includes(word))
     const topics = titleHit ? group.topics : group.topics.filter((topic) => {
-      const text = title + " " + normalize(topic)
+      const text = title + " " + normalize(copyText("conditions", "directory-topic-" + group.id + "-" + (group.topics as readonly string[]).indexOf(topic), topic))
       return keywords.every((word) => text.includes(word))
     })
     return { group, topics }
@@ -81,9 +82,9 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
       <section className="statement condition-finder" id="directory" aria-labelledby="directory-title">
         <div className="container statement-inner">
           <Ornament />
-          <h2 id="directory-title">Not sure if we can help? Browse by category.</h2>
+          <h2 id="directory-title"><SiteCopy scope={"conditions"} id={"directory-directory-title"}>Not sure if we can help? Browse by category.</SiteCopy></h2>
           <nav aria-labelledby="condition-jump-label">
-            <p className="condition-jump-label" id="condition-jump-label">Jump to a category</p>
+            <p className="condition-jump-label" id="condition-jump-label"><SiteCopy scope={"conditions"} id={"directory-condition-jump-label"}>Jump to a category</SiteCopy></p>
             <ul className="chips chips--center">
               {conditionGroups.map((group) => (
                 <li key={group.id}><a className="chip" href={`#${group.id}`} onClick={(event) => {
@@ -92,11 +93,11 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
                   setQuery("")
                   if (window.location.hash !== "#" + group.id) window.history.pushState(null, "", "#" + group.id)
                   setJump({ id: group.id })
-                }}>{group.title}</a></li>
+                }}><SiteCopy scope={"conditions"} id={"directory-link-" + group.id}>{group.title}</SiteCopy></a></li>
               ))}
             </ul>
           </nav>
-          <p className="condition-context-note">These are topics to discuss with a practitioner, not a list of proven treatments. Complementary care does not replace diagnosis, prescribed treatment, or emergency care.</p>
+          <p className="condition-context-note"><SiteCopy scope={"conditions"} id={"directory-condition-context-note"}>These are topics to discuss with a practitioner, not a list of proven treatments. Complementary care does not replace diagnosis, prescribed treatment, or emergency care.</SiteCopy></p>
         </div>
       </section>
 
@@ -112,16 +113,16 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
                     <img src={`${imageBase}/${group.id}.webp`} alt="" width={640} height={360} loading="lazy" decoding="async" />
                   </figure>
                   <div className="split-copy copy">
-                    <span className="eyebrow condition-count">{searching ? `${topics.length} of ${group.topics.length} topics` : `${group.topics.length} topics`}</span>
-                    <h2 className="section-title" id={`${group.id}-title`}>{group.title}</h2>
+                    <span className="eyebrow condition-count"><SiteCopy scope={"conditions"} id={"directory-topic-label-" + group.id}>{searching ? `${topics.length} of ${group.topics.length} topics` : `${group.topics.length} topics`}</SiteCopy></span>
+                    <h2 className="section-title" id={`${group.id}-title`}><SiteCopy scope={"conditions"} id={"directory-title-" + group.id}>{group.title}</SiteCopy></h2>
                     <div className="gold-rule" aria-hidden="true" />
                     <ul className="chips" aria-labelledby={`${group.id}-title`}>
                       {topics.map((topic) => {
                         const hit = searching && keywords.every((word) => normalize(topic).includes(word))
-                        return <li key={topic} className={`chip${hit ? " is-match" : ""}`}>{topic}</li>
+                        return <li key={topic} className={`chip${hit ? " is-match" : ""}`}><SiteCopy scope={"conditions"} id={"directory-topic-" + group.id + "-" + (group.topics as readonly string[]).indexOf(topic)}>{topic}</SiteCopy></li>
                       })}
                     </ul>
-                    {"note" in group && <p className="condition-section-note">{group.note}</p>}
+                    {"note" in group && <p className="condition-section-note"><SiteCopy scope={"conditions"} id={"directory-note-" + group.id}>{group.note}</SiteCopy></p>}
                   </div>
                 </div>
               </section>
@@ -129,13 +130,13 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
                 <section className="condition-dyk" id="did-you-know" aria-labelledby="dyk-title">
                   <div className="container condition-dyk-grid">
                     <div>
-                      <span className="eyebrow">Good to Know</span>
-                      <h2 id="dyk-title">Did you know that…</h2>
+                      <span className="eyebrow"><SiteCopy scope={"conditions"} id={"directory-eyebrow-2"}>Good to Know</SiteCopy></span>
+                      <h2 id="dyk-title"><SiteCopy scope={"conditions"} id={"directory-dyk-title"}>Did you know that…</SiteCopy></h2>
                       <div className="gold-rule" aria-hidden="true" />
-                      <a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety">Read the NIH guide to acupuncture <span aria-hidden="true">↗</span></a>
+                      <a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety"><SiteCopy scope={"conditions"} id={"directory-a"}>Read the NIH guide to acupuncture </SiteCopy><span aria-hidden="true">↗</span></a>
                     </div>
                     <ol>
-                      {researchNotes.map((note, i) => <li key={note}><span aria-hidden="true">{String(i + 1).padStart(2, "0")}</span><p>{note}</p></li>)}
+                      {researchNotes.map((note, i) => <li key={note}><span aria-hidden="true">{String(i + 1).padStart(2, "0")}</span><p><SiteCopy scope={"conditions"} id={"directory-research-" + i}>{note}</SiteCopy></p></li>)}
                     </ol>
                   </div>
                 </section>
@@ -145,11 +146,11 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
         })}
         {!matchCount && (
           <div className="container condition-empty">
-            <h2 className="section-title">We couldn’t find that on the list</h2>
-            <p>Try a broader term, or contact the clinic with your question.</p>
+            <h2 className="section-title"><SiteCopy scope={"conditions"} id={"directory-section-title-2"}>We couldn’t find that on the list</SiteCopy></h2>
+            <p><SiteCopy scope={"conditions"} id={"directory-p-2"}>Try a broader term, or contact the clinic with your question.</SiteCopy></p>
             <div>
-              <a className="btn" href="tel:+18455792428">Call 845-579-2428</a>
-              <Link className="btn btn-gold" href="/faqs/#ask-us">Ask a Question <span className="arrow" aria-hidden="true">→</span></Link>
+              <a className="btn" href="tel:+18455792428"><SiteCopy scope={"conditions"} id={"directory-btn"}>Call 845-579-2428</SiteCopy></a>
+              <Link className="btn btn-gold" href="/faqs/#ask-us"><SiteCopy scope={"conditions"} id={"directory-btn-2"}>Ask a Question </SiteCopy><span className="arrow" aria-hidden="true">→</span></Link>
             </div>
           </div>
         )}
@@ -172,18 +173,18 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
         </button>
         <div className="condition-search-panel" id="condition-search-panel" hidden={!searchOpen}>
           <form role="search" aria-labelledby="condition-search-label" onSubmit={(event) => { event.preventDefault(); viewResults() }}>
-            <label htmlFor="condition-query" id="condition-search-label">Search conditions</label>
+            <label htmlFor="condition-query" id="condition-search-label"><SiteCopy scope={"conditions"} id={"directory-condition-search-label"}>Search conditions</SiteCopy></label>
             <div className="condition-search-field">
-              <input id="condition-query" ref={searchInput} type="search" enterKeyHint="search" aria-controls="conditions-list" autoComplete="off" value={query}
-                onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Try back pain, IBS, or sleep" />
-              {query && <button type="button" className="condition-search-clear" onClick={() => { setQuery(""); searchInput.current?.focus() }}>Clear</button>}
+              <input data-builder-copy={"directory-placeholder-condition-que"} data-builder-attr="placeholder" id="condition-query" ref={searchInput} type="search" enterKeyHint="search" aria-controls="conditions-list" autoComplete="off" value={query}
+                onChange={(event) => setQuery(event.currentTarget.value)} placeholder={copyText("conditions", "directory-placeholder-condition-que", "Try back pain, IBS, or sleep")} />
+              {query && <button type="button" className="condition-search-clear" onClick={() => { setQuery(""); searchInput.current?.focus() }}><SiteCopy scope={"conditions"} id={"directory-condition-search-clear"}>Clear</SiteCopy></button>}
             </div>
             <div className="condition-search-actions">
               <p className="condition-result-count" role="status">
-                {!searching ? `${totalTopics} topics to explore` : !matchCount ? "No matching topics" :
-                  `${matchCount} ${matchCount === 1 ? "topic" : "topics"} in ${categoryCount} ${categoryCount === 1 ? "category" : "categories"}`}
+                <SiteCopy scope={"conditions"} id={"directory-condition-result-count"}>{!searching ? `${totalTopics} topics to explore` : !matchCount ? "No matching topics" :
+                  `${matchCount} ${matchCount === 1 ? "topic" : "topics"} in ${categoryCount} ${categoryCount === 1 ? "category" : "categories"}`}</SiteCopy>
               </p>
-              <button type="submit" className="condition-search-results">View results <span aria-hidden="true">→</span></button>
+              <button type="submit" className="condition-search-results"><SiteCopy scope={"conditions"} id={"directory-condition-search-results"}>View results </SiteCopy><span aria-hidden="true">→</span></button>
             </div>
           </form>
         </div>

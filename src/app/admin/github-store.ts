@@ -1,5 +1,7 @@
 import { validContent, type EditorContent } from "../../content/editor-model"
 
+import { assetPaths } from "../../content/builder-model"
+
 export const repo = "mshahrooz/Newcitywellness"
 export const branch = "main"
 const contentPath = "src/content/editor-content.json"
@@ -59,18 +61,21 @@ function encode(bytes: Uint8Array) {
 
 export async function publish(token: string, snapshot: Snapshot, content: EditorContent, uploads: Map<string, Blob>) {
   if (!validContent(content)) throw new Error("Fill in every block and attach a file to each document before publishing.")
+  const json = JSON.stringify(content, null, 2) + "\n"
+  if (new TextEncoder().encode(json).length > 900_000) throw new Error("The content draft is too large. Shorten or remove some content before publishing.")
   const { object: { sha: parent } } = await getHead(token)
   const current = await loadSnapshot(token, parent)
   if (current.sha !== snapshot.sha) throw new Error("Another edit was published while you were working. Download a draft backup before reloading the editor.")
   const { tree } = await request<Commit>(token, `${repoPath}/git/commits/${parent}`)
   const contentBlob = await request<GitObject>(token, `${repoPath}/git/blobs`, "POST", {
-    encoding: "utf-8", content: JSON.stringify(content, null, 2) + "\n",
+    encoding: "utf-8", content: json,
   })
   const changedFiles: { path: string; mode: "100644"; type: "blob"; sha: string }[] = [{
     path: contentPath, mode: "100644", type: "blob", sha: contentBlob.sha,
   }]
   const used = new Set(Object.values(content.pages).flatMap(page => page?.blocks?.flatMap(block => block.type === "document" ? [block.file] : []) ?? []))
   for (const page of Object.values(content.pages)) {
+    for (const path of assetPaths(page?.layout)) used.add(path)
     for (const image of Object.values(page?.images ?? {})) if (image) used.add(image.path)
   }
   for (const [path, file] of uploads) {

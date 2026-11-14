@@ -1,4 +1,5 @@
 import stored from "./editor-content.json"
+import { copyKey, validLayout, type BuilderLayout } from "./builder-model"
 
 export const pages = [
   ["home", "/", "Home"],
@@ -86,8 +87,8 @@ export type ImageKey = keyof typeof imageLabels
 export const imagePath = /^images\/editor\/[a-z0-9][a-z0-9-]{1,95}\.webp$/
 export const isImage = (key: string): key is ImageKey => Object.hasOwn(imageLabels, key)
 export type EditorImage = { path: string; alt: string; width: number; height: number }
-export type PageContent = { fields?: Partial<Record<FieldKey, string>>; images?: Partial<Record<ImageKey, EditorImage>>; blocks?: Block[] }
-export type EditorContent = { version: 1; pages: Partial<Record<PageKey, PageContent>> }
+export type PageContent = { fields?: Partial<Record<FieldKey, string>>; images?: Partial<Record<ImageKey, EditorImage>>; blocks?: Block[]; layout?: BuilderLayout; copy?: Record<string, string> }
+export type EditorContent = { version: 1; pages: Partial<Record<PageKey, PageContent>>; shared?: Record<string, string> }
 export const documentPath = /^documents\/editor\/[a-z0-9][a-z0-9-]{1,95}\.(pdf|docx)$/
 export const maxBlocks = 24
 export const isField = (key: string): key is FieldKey => Object.hasOwn(fieldLabels, key)
@@ -95,11 +96,15 @@ export const maxFieldLength = (key: FieldKey) => isHeading(key) ? 140 : 2400
 export const isHeading = (key: FieldKey) => /title|heading|button/.test(key)
 const record = (x: unknown): x is Record<string, unknown> => !!x && typeof x === "object" && !Array.isArray(x)
 
+const validCopy = (x: unknown) => record(x) && Object.keys(x).length <= 1200 && Object.entries(x).every(([key, value]) => copyKey.test(key) && typeof value === "string" && value.length <= 6000)
+
 /** Validate untrusted repo content before the dashboard reads or publishes it. */
 export function validContent(x: unknown): x is EditorContent {
-  if (!record(x) || x.version !== 1 || !record(x.pages)) return false
+  if (!record(x) || x.version !== 1 || !record(x.pages) || (x.shared !== undefined && !validCopy(x.shared))) return false
   for (const [key, page] of Object.entries(x.pages)) {
     if (!pages.some(([id]) => id === key) || !record(page)) return false
+    if (page.layout !== undefined && !validLayout(page.layout)) return false
+    if (page.copy !== undefined && !validCopy(page.copy)) return false
     if (page.fields !== undefined) {
       if (!record(page.fields)) return false
       for (const [field, value] of Object.entries(page.fields)) {
