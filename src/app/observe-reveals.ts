@@ -1,103 +1,101 @@
-const explicit = ".motion-reveal, .clinic-reveal, .service-reveal"
-const groupParts = [
-  ".faq-grid .faq-head", ".faq-grid .faq-item",
-  ".reviews-intro", ".reviews-filters", ".reviews-card",
-  ".insurance-form-header", ".insurance-frame",
-  ".contact-map-header", ".contact-map-frame",
-  ".acu-visit-heading", ".acu-steps > li",
-].join(", ")
-
-/** Observe content, not section backgrounds, sticky wrappers, or the page hero. */
+/** Older browsers follow the same viewport progress if CSS view timelines aren't available. */
 export function observeReveals(root: Document) {
-  const main = root.querySelector(".ncw main")
-  if (!main) return
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
-  const tracked = new Set<HTMLElement>()
+  if (CSS.supports("animation-timeline: view()") && CSS.supports("animation-range: entry 0px entry 220px")) return
+
+  const site = root.querySelector(".ncw")
+  if (!site) return
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)")
+  const candidates = new Map<HTMLElement, { distance: number; offset: number; rest?: number }>()
   let frame: number | undefined
+
+  function clear(element: HTMLElement) {
+    delete element.dataset.scrollRevealFallback
+    element.style.removeProperty("--reveal-rest")
+  }
 
   function update() {
     frame = undefined
-    if (reducedMotion.matches) {
-      tracked.forEach((target) => { delete target.dataset.reveal })
-      return
-    }
-
     const height = window.innerHeight
-    // Wait until the first part of a section is visible so the motion isn't missed
-    // below the fold. Read all positions before changing any styles.
-    const revealLine = height - Math.min(96, height * .12)
-    const changes: [HTMLElement, "pending" | "shown" | undefined][] = []
-    for (const target of tracked) {
-      const state = target.dataset.reveal
-      if (target.matches(":focus-within") || target.closest(".is-searching")) {
-        if (state) changes.push([target, undefined])
+    const compact = window.matchMedia("(max-width: 760px)").matches
+    const changes: [HTMLElement, { distance: number; offset: number; rest?: number }, number][] = []
+    for (const [element, state] of candidates) {
+      if (element.matches(":focus-within, .is-searching *")) {
+        if (state.rest !== undefined) changes.push([element, state, 0])
         continue
       }
-
-      // Transforms from the reveal itself must not change the trigger point.
-      const top = target.getBoundingClientRect().top
-      if (top > height + 36 || (!state && top > revealLine)) {
-        if (state !== "pending") changes.push([target, "pending"])
-      } else if (state === "pending" && top <= revealLine) {
-        changes.push([target, "shown"])
-      }
+      const top = element.getBoundingClientRect().top - state.offset
+      const progress = Math.max(0, Math.min(1, (height - top) / state.distance))
+      const rest = 1 - progress
+      if (rest !== state.rest || (rest > 0 && state.offset !== rest * (compact ? 28 : 38))) changes.push([element, state, rest])
     }
-    for (const [target, state] of changes) {
-      if (state) target.dataset.reveal = state
-      else delete target.dataset.reveal
+    for (const [element, state, rest] of changes) {
+      state.rest = rest
+      state.offset = rest * (compact ? 28 : 38)
+      if (rest === 0) clear(element)
+      else {
+        element.dataset.scrollRevealFallback = ""
+        element.style.setProperty("--reveal-rest", String(rest))
+      }
     }
   }
 
   function schedule() {
-    if (frame === undefined) frame = window.requestAnimationFrame(update)
+    if (!reduced.matches && frame === undefined) frame = window.requestAnimationFrame(update)
   }
 
-  const refresh = () => {
-    const candidates = new Set(main.querySelectorAll<HTMLElement>(explicit))
-    main.querySelectorAll<HTMLElement>("section:not(.hero, .page-hero)").forEach((section) => {
-      if (section.closest(".hero, .page-hero")) return
-      const inner = section.querySelector<HTMLElement>(":scope > .container")
-      if (!inner || inner.matches(explicit) || inner.querySelector(explicit)) return
-      const parts = inner.querySelectorAll<HTMLElement>(groupParts)
-      if (parts.length) parts.forEach((part) => candidates.add(part))
-      else candidates.add(inner)
+  function refresh() {
+    for (const element of candidates.keys()) {
+      if (element.isConnected && !reduced.matches) continue
+      clear(element)
+      candidates.delete(element)
+    }
+    if (reduced.matches) return
+    site.querySelectorAll<HTMLElement>("main .container, main .motion-reveal, main .clinic-reveal, main .service-reveal, main .faq-head, main .faq-item, main .reviews-intro, main .reviews-filters, main .reviews-card, main .insurance-form-header, main .insurance-frame, main .contact-map-header, main .contact-map-frame, main .acu-visit-heading, main .acu-steps > li, .footer-grid").forEach((element) => {
+      if (candidates.has(element)) return
+      const style = getComputedStyle(element)
+      if (style.getPropertyValue("--ncw-scroll-reveal").trim() !== "1") return
+      // The marker is inherited. Do not register a descendant of another reveal.
+      const parent = element.parentElement
+      if (parent && getComputedStyle(parent).getPropertyValue("--ncw-scroll-reveal").trim() === "1") return
+      candidates.set(element, { distance: parseFloat(style.getPropertyValue("--reveal-distance")) || 220, offset: 0 })
     })
-    const footer = root.querySelector<HTMLElement>(".ncw .clinic-footer .footer-grid")
-    if (footer) candidates.add(footer)
-
-    tracked.forEach((target) => {
-      if (!target.isConnected) tracked.delete(target)
-    })
-    candidates.forEach((target) => tracked.add(target))
     schedule()
   }
 
-  function revealFocused(event: FocusEvent) {
-    if (!(event.target instanceof Element)) return
-    for (const target of tracked) {
-      if (target.dataset.reveal && target.contains(event.target)) delete target.dataset.reveal
+  function preferenceChanged() {
+    if (frame !== undefined) window.cancelAnimationFrame(frame)
+    frame = undefined
+    refresh()
+  }
+
+  function focusChanged() {
+    for (const [element, state] of candidates) {
+      if (!element.matches(":focus-within")) continue
+      clear(element)
+      state.offset = 0
+      state.rest = undefined
     }
+    refresh()
   }
 
   refresh()
-  root.addEventListener("focusin", revealFocused)
-  root.addEventListener("load", schedule, true)
+  const changes = new MutationObserver(refresh)
+  changes.observe(site, { childList: true, subtree: true })
+  reduced.addEventListener("change", preferenceChanged)
   window.addEventListener("scroll", schedule, { passive: true })
   window.addEventListener("resize", schedule)
-  reducedMotion.addEventListener?.("change", schedule)
-  // The condition and testimonial directories can replace content after a filter.
-  const changes = new MutationObserver(refresh)
-  for (const directory of main.querySelectorAll("#conditions-list, #review-results")) {
-    changes.observe(directory, { childList: true, subtree: true })
-  }
+  root.addEventListener("load", schedule, true)
+  root.addEventListener("focusin", focusChanged)
+  root.addEventListener("focusout", schedule)
   return () => {
-    root.removeEventListener("focusin", revealFocused)
     changes.disconnect()
-    root.removeEventListener("load", schedule, true)
+    reduced.removeEventListener("change", preferenceChanged)
     window.removeEventListener("scroll", schedule)
     window.removeEventListener("resize", schedule)
-    reducedMotion.removeEventListener?.("change", schedule)
+    root.removeEventListener("load", schedule, true)
+    root.removeEventListener("focusin", focusChanged)
+    root.removeEventListener("focusout", schedule)
     if (frame !== undefined) window.cancelAnimationFrame(frame)
-    tracked.forEach((target) => { delete target.dataset.reveal })
+    candidates.forEach((_, element) => clear(element))
   }
 }
