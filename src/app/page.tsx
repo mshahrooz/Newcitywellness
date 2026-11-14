@@ -164,7 +164,7 @@ export default function Home() {
                 <span className="eyebrow">Begin Your Journey</span>
                 <h2 id="first-visit-title">Your First Visit</h2>
                 <p>What can you expect at your first session?</p>
-                <a className="text-link" href="https://newcitywellness.com/faqs/">Learn More <span>→</span></a>
+                <Link className="text-link" href="/faqs/#first-session">Learn More <span>→</span></Link>
               </div>
             </div>
           </div>

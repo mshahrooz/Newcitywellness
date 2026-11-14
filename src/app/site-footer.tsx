@@ -25,7 +25,7 @@ export function SiteFooter() {
               <li><Link href="/">Home</Link></li>
               <li><Link href="/about-us/">About Us</Link></li>
               <li><Link href="/services/">Services</Link></li>
-              <li><a href="https://newcitywellness.com/faqs/">FAQs</a></li>
+              <li><Link href="/faqs/">FAQs</Link></li>
               <li><a href="https://newcitywellness.com/conditions-treated/">Conditions Treated</a></li>
               <li><a href="https://newcitywellness.com/testimonials/">Testimonials</a></li>
               <li><a href="https://newcitywellness.com/insurance/">Insurance</a></li>

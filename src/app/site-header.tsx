@@ -8,7 +8,7 @@ function HeaderLogo() {
   return <img className="header-logo-image" src={`${process.env.BASE_PATH || ""}/images/new-city-logo.webp`} width={280} height={56} alt="" />
 }
 
-export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services"; currentService?: PublishedService }) {
+export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services" | "faqs"; currentService?: PublishedService }) {
   const [scrolled, setScrolled] = useState(false)
   const [navPinned, setNavPinned] = useState(false)
   const header = useRef<HTMLElement>(null)
@@ -95,7 +95,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
                 <Link href="/services/qi-gong/" aria-current={currentService === "qi-gong" ? "page" : undefined} onClick={closeMenus}>Qi-Gong</Link>
               </div>
             </div>
-            <a className="nav-link" href="https://newcitywellness.com/faqs/">FAQs</a>
+            <Link className={current === "faqs" ? "nav-link active" : "nav-link"} aria-current={current === "faqs" ? "page" : undefined} href="/faqs/" onClick={closeMenus}>FAQs</Link>
             <a className="nav-link" href="https://newcitywellness.com/conditions-treated/">Conditions</a>
             <a className="nav-link" href="https://newcitywellness.com/testimonials/">Testimonials</a>
             <a className="nav-link" href="https://newcitywellness.com/insurance/">Insurance</a>

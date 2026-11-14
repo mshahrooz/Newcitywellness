@@ -1,0 +1,48 @@
+.ncw-faqs .page-hero-copy { max-width: none; }
+.ncw-faqs .page-hero h1 { max-width: 760px; text-wrap: balance; }
+.ncw-faqs .faq-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: clamp(32px, 6vw, 88px);
+  align-items: start;
+}
+.ncw-faqs .faq-accordion { margin-top: 28px; border-top: 1px solid var(--line); }
+.ncw-faqs .faq-accordion details { border-bottom: 1px solid var(--line); scroll-margin-top: var(--section-scroll-offset); }
+.ncw-faqs .faq-accordion summary {
+  display: grid;
+  grid-template-columns: 2ch minmax(0, 1fr) 1.75rem;
+  align-items: center;
+  column-gap: clamp(12px, 2vw, 24px);
+  min-height: 70px;
+  padding-block: 14px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--forest-deep);
+  font-weight: 700;
+  font-size: clamp(1rem, 1.4vw, 1.14rem);
+}
+.ncw-faqs summary::-webkit-details-marker { display: none; }
+.ncw-faqs summary:focus-visible { outline: 2px solid var(--forest); outline-offset: 4px; border-radius: 4px; }
+.ncw-faqs .faq-number { color: var(--forest-soft); font-size: .75rem; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+.ncw-faqs .faq-toggle-icon { position: relative; display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: var(--cream); }
+.ncw-faqs .faq-toggle-icon::before,
+.ncw-faqs .faq-toggle-icon::after { content: ""; position: absolute; width: 10px; height: 1.5px; border-radius: 2px; background: var(--forest); }
+.ncw-faqs .faq-toggle-icon::after { transform: rotate(90deg); }
+.ncw-faqs details[open] .faq-toggle-icon::after { transform: none; }
+.ncw-faqs .faq-answer { padding: 0 0 20px calc(2ch + clamp(12px, 2vw, 24px)); color: var(--ink-soft); }
+.ncw-faqs .faq-answer p { margin: 0 0 .7rem; }
+.ncw-faqs .faq-answer p:last-child { margin-bottom: 0; }
+.ncw-faqs .faq-answer a { color: var(--forest); text-decoration: underline; text-underline-offset: .18em; }
+.ncw-faqs .faq-aside { display: grid; gap: 28px; min-width: 0; }
+.ncw-faqs .faq-photo { margin: 0; }
+.ncw-faqs .faq-photo img { width: 100%; height: auto; }
+.ncw-faqs .faq-visit { padding: 20px 0 0; border-top: 1px solid var(--line); }
+.ncw-faqs .faq-visit h2 { margin: 5px 0 8px; font: 700 clamp(1.65rem, 2.6vw, 2.25rem)/1.1 var(--serif); color: var(--forest-deep); }
+.ncw-faqs .faq-visit p { margin: 0 0 12px; color: var(--muted); }
+.ncw-faqs .faq-visit a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; color: var(--forest); font-size: .9rem; font-weight: 700; border-bottom: 1px solid var(--line); }
+.ncw-faqs .faq-visit a:hover { text-decoration: underline; text-underline-offset: .18em; }
+@media (max-width: 760px) {
+  .ncw-faqs .faq-grid { grid-template-columns: minmax(0, 1fr); }
+  .ncw-faqs .faq-aside { width: min(100%, 520px); }
+  .ncw-faqs .faq-accordion summary { min-height: 62px; }
+}
