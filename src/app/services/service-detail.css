@@ -194,3 +194,17 @@
       linear-gradient(120deg, rgba(13,42,30,.94), rgba(21,58,43,.85) 55%, rgba(44,87,66,.72));
   }
 }
+
+/* On Gua-Sha, the jade roller photo takes priority over the flower. */
+.ncw-service-detail .page-hero[aria-labelledby="gua-sha-title"] .page-hero-art {
+  width: clamp(160px, 21vw, 280px);
+  right: clamp(18px, 5vw, 80px);
+  opacity: .075;
+}
+@media (max-width: 760px) {
+  .ncw-service-detail .page-hero[aria-labelledby="gua-sha-title"] .page-hero-art {
+    width: clamp(120px, 32vw, 170px);
+    right: 8px;
+    opacity: .055;
+  }
+}
