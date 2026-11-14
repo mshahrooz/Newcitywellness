@@ -667,6 +667,17 @@
   letter-spacing: -0.035em;
 }
 
+/* Keep the hero headline in three readable phrases on laptop and desktop.
+   On mobile the spans remain inline and wrap exactly as ordinary text. */
+@media (min-width: 901px) {
+  .ncw .hero h1 {
+    font-size: clamp(2.85rem, 4.35vw, 3.8rem);
+    line-height: 1.02;
+  }
+
+  .ncw .hero h1 > span { display: block; }
+}
+
 .ncw .hero h1 em {
   font-style: italic;
   font-weight: 500;

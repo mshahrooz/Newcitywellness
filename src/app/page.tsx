@@ -59,7 +59,11 @@ export default function Home() {
           </div>
           <div className="hero-content">
             <div className="hero-copy motion-reveal from-left">
-              <h1 id="hero-title">Personalized Acupuncture &amp; Holistic Care for Pain, Stress, &amp; Better Health</h1>
+              <h1 id="hero-title">
+                <span>Personalized Acupuncture</span>{" "}
+                <span>&amp; Holistic Care for Pain,</span>{" "}
+                <span>Stress, &amp; Better Health</span>
+              </h1>
               <p>We take the time to listen and understand your concerns, considering your symptoms, lifestyle, nutrition, and overall health to provide thoughtful, individualized care focused on helping you feel better.</p>
               <div className="hero-actions">
                 <a className="btn" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener">Book Appointment <span className="arrow">→</span></a>
