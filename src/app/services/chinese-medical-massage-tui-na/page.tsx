@@ -26,6 +26,7 @@ export default function TuiNaPage() {
       title="Chinese Medical Massage (Tui-Na)"
       shortTitle="Tui-Na"
       description="Traditional hands-on massage in New City, NY, with pressure and techniques tailored to your comfort."
+      heroPhoto={{ path: "chinese-medical-massage-tui-na/hero-palm-massage.webp", width: 1500, height: 844 }}
       photo={{ path: "chinese-medical-massage-tui-na/treatment", height: 665, alt: "A practitioner’s hands positioned above a patient’s upper back" }}
       visitSteps={visitSteps}
       questions={questions}
