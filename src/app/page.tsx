@@ -66,7 +66,7 @@ export default function Home() {
               </h1>
               <p>We take the time to listen and understand your concerns, considering your symptoms, lifestyle, nutrition, and overall health to provide thoughtful, individualized care focused on helping you feel better.</p>
               <div className="hero-actions">
-                <a className="btn" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener">Book Appointment <span className="arrow">→</span></a>
+                <a className="btn btn-gold" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener">Book Appointment <span className="arrow">→</span></a>
                 <a className="btn btn-outline" href="#therapies">Explore Services <span className="arrow">→</span></a>
               </div>
             </div>
