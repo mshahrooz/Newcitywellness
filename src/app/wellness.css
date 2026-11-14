@@ -31,6 +31,7 @@
   --max: 1320px;
   --header-main-height: 92px;
   --header-nav-height: 50px;
+  --section-scroll-offset: 16px;
 
   /* base */
   background: var(--paper);
@@ -100,7 +101,7 @@
 
 /* Smooth scroll + anchor offset handled via scroll-margin on sections */
 .ncw section[id] {
-  scroll-margin-top: calc(var(--header-main-height) + var(--header-nav-height) + 14px);
+  scroll-margin-top: var(--section-scroll-offset);
 }
 
 /* ---------- Typography helpers ---------- */
@@ -294,8 +295,7 @@
    Header
    ========================================================= */
 .ncw .site-header {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 60;
   background: var(--paper);
   border-bottom: 1px solid var(--line-soft);
@@ -1617,7 +1617,12 @@
 }
 
 @media (max-width: 900px) {
-  .ncw { --header-main-height: 78px; --header-nav-height: 0px; }
+  .ncw {
+    --header-main-height: 78px;
+    --header-nav-height: 0px;
+    --section-scroll-offset: calc(var(--header-main-height) + 14px);
+  }
+  .ncw .site-header { position: sticky; top: 0; }
   .ncw .container { width: min(100% - 40px, var(--max)); }
   .ncw .header-contact { display: none; }
   .ncw .mobile-toggle { display: inline-grid; place-items: center; }

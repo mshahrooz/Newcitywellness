@@ -183,7 +183,6 @@
   transform: translateY(-2px);
 }
 
-.ncw-services section.service[id] { scroll-margin-top: 146px; }
 .ncw-services .service .chip-label {
   margin: 24px 0 12px;
   color: var(--forest-soft);
@@ -209,7 +208,6 @@
 @media (max-width: 900px) {
   .ncw-services .container { width: calc(100% - 40px); }
   .ncw-services .page-hero-art { opacity: .12; right: -40px; }
-  .ncw-services section.service[id] { scroll-margin-top: 90px; }
   .ncw-services .split { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .ncw-services .split--reverse .split-media { order: 0; }
   .ncw-services .split-media.frame { min-height: 0; height: auto; aspect-ratio: 16 / 10; }

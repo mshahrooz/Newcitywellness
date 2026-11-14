@@ -29,7 +29,6 @@
 .ncw-service-detail .acu-faq-layout .copy a:hover { text-decoration-thickness: 2px; }
 .ncw-service-detail .acu-index a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .ncw-service-detail .acu-index .acu-all-services { color: var(--forest-soft); }
-.ncw-service-detail section.acu-section[id] { scroll-margin-top: 144px; }
 
 .ncw-service-detail .acu-editorial,
 .ncw-service-detail .acu-faq-layout {
@@ -141,10 +140,6 @@
 .ncw-service-detail .acu-related a:hover strong { text-decoration: underline; text-underline-offset: 3px; }
 .ncw-service-detail .acu-related-copy { display: block; color: var(--muted); font-size: .85rem; }
 .ncw-service-detail .acu-related-arrow { font-size: 1.15rem; }
-
-@media (max-width: 900px) {
-  .ncw-service-detail section.acu-section[id] { scroll-margin-top: 90px; }
-}
 
 @media (max-width: 760px) {
   .ncw-service-detail .acu-editorial,
