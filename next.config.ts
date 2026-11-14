@@ -18,6 +18,8 @@ const basePath = process.env.BASE_PATH || "";
 const nextConfig: NextConfig = {
   output: isPagesBuild ? "export" : "standalone",
   trailingSlash: isPagesBuild,
+  // Keep public asset URLs identical in prerendered HTML and browser navigation.
+  env: { BASE_PATH: basePath },
   // basePath/assetPrefix make Next-emitted assets (_next/*, fonts) resolve
   // correctly under a GitHub Pages project subpath.
   ...(basePath ? { basePath, assetPrefix: basePath } : {}),
