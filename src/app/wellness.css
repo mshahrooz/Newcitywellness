@@ -510,8 +510,7 @@
   box-shadow: var(--shadow);
   opacity: 0;
   visibility: hidden;
-  transform: translateY(10px);
-  transition: opacity 0.26s ease, transform 0.26s ease, visibility 0.26s ease;
+  transition: opacity 0.15s ease, visibility 0s linear 0.15s;
 }
 
 .ncw .nav-dropdown:hover .dropdown-menu,
@@ -519,7 +518,23 @@
 .ncw .nav-dropdown.open .dropdown-menu {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transition-delay: 0s;
+}
+
+@media (min-width: 901px) and (hover: hover) and (pointer: fine) {
+  /* Bridge the gap so crossing from Services to the panel does not end hover. */
+  .ncw .dropdown-menu::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    inset-inline: -1px;
+    height: 8px;
+  }
+
+  /* Allow diagonal travel to a link before closing the menu. */
+  .ncw .nav-dropdown:not(:hover):not(:focus-within):not(.open) .dropdown-menu {
+    transition-delay: 0.22s, 0.37s;
+  }
 }
 
 .ncw .dropdown-menu a {

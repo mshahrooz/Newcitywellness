@@ -73,7 +73,11 @@ export default function ServicesPage() {
       <SiteHeader current="services" />
       <ServicesMotion />
       <main id="main-content">
-        <section className="page-hero" aria-labelledby="services-title">
+        <section className="page-hero page-hero--photo services-overview-hero" aria-labelledby="services-title">
+          <picture className="page-hero-photo" aria-hidden="true">
+            <source media="(max-width: 600px)" srcSet={`${imageBase}/hero-botanical-mobile.webp`} />
+            <img src={`${imageBase}/hero-botanical.webp`} alt="" width={1365} height={540} fetchPriority="high" />
+          </picture>
           <svg className="page-hero-art" viewBox="0 0 84 74" fill="none" aria-hidden="true">
             <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
             <path d="M42 65C28 53 17 37 11 21C27 22 39 34 42 51C45 34 57 22 73 21C67 37 56 53 42 65Z" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />

@@ -320,3 +320,15 @@
     opacity: .055;
   }
 }
+
+/* The portrait source has separate crops for wide and narrow hero layouts. */
+.ncw-services .services-overview-hero .page-hero-photo img { object-position: center; }
+.ncw-services .services-overview-hero .page-hero-photo::after {
+  background: linear-gradient(112deg, rgba(13,42,30,.93) 0%, rgba(21,58,43,.77) 43%, rgba(13,42,30,.23) 100%);
+}
+
+@media (max-width: 600px) {
+  .ncw-services .services-overview-hero .page-hero-photo::after {
+    background: linear-gradient(115deg, rgba(13,42,30,.91), rgba(21,58,43,.72) 58%, rgba(13,42,30,.37));
+  }
+}
