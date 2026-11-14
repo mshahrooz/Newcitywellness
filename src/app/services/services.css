@@ -208,7 +208,6 @@
 
 @media (max-width: 900px) {
   .ncw-services .container { width: calc(100% - 40px); }
-  .ncw-services .header-nav.is-open { max-height: calc(100dvh - 78px); overflow-y: auto; }
   .ncw-services .page-hero-art { opacity: .12; right: -40px; }
   .ncw-services section.service[id] { scroll-margin-top: 90px; }
   .ncw-services .split { grid-template-columns: minmax(0, 1fr); gap: 40px; }

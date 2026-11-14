@@ -239,7 +239,6 @@
 .ncw-about main.clinic-motion .clinic-reveal.from-right:not(.is-visible) { transform: translateX(40px); }
 .ncw-about main.clinic-motion .clinic-reveal.is-visible { transform: none; }
 @media (max-width: 900px) {
-  .ncw-about .header-nav.is-open { max-height: calc(100dvh - 78px); overflow-y: auto; }
 
 .ncw-about .page-hero-art { opacity: 0.12; right: -40px; }
 

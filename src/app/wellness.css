@@ -29,6 +29,8 @@
   --serif: var(--font-serif), "Cormorant Garamond", Georgia, serif;
   --sans: var(--font-sans-wellness), "DM Sans", system-ui, sans-serif;
   --max: 1320px;
+  --header-main-height: 92px;
+  --header-nav-height: 50px;
 
   /* base */
   background: var(--paper);
@@ -42,7 +44,8 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow-x: hidden;
+  /* Clip sideways overflow without creating an ancestor scroll container. */
+  overflow-x: clip;
 }
 
 /* subtle paper grain for warmth */
@@ -97,7 +100,7 @@
 
 /* Smooth scroll + anchor offset handled via scroll-margin on sections */
 .ncw section[id] {
-  scroll-margin-top: 110px;
+  scroll-margin-top: calc(var(--header-main-height) + var(--header-nav-height) + 14px);
 }
 
 /* ---------- Typography helpers ---------- */
@@ -294,30 +297,22 @@
   position: sticky;
   top: 0;
   z-index: 60;
-  background: rgba(251, 248, 241, 0.9);
-  backdrop-filter: saturate(140%) blur(12px);
-  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  background: var(--paper);
   border-bottom: 1px solid var(--line-soft);
-  transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 
 .ncw .site-header.is-scrolled {
-  background: rgba(251, 248, 241, 0.97);
+  /* Scroll may change the shadow, never the header's geometry. */
   box-shadow: 0 10px 30px rgba(28, 46, 35, 0.08);
-  border-bottom-color: var(--line);
 }
 
 .ncw .header-main {
-  min-height: 92px;
+  min-height: var(--header-main-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 26px;
-  transition: min-height 0.3s ease;
-}
-
-.ncw .site-header.is-scrolled .header-main {
-  min-height: 74px;
 }
 
 .ncw .brand {
@@ -401,15 +396,10 @@
 
 .ncw .header-nav {
   border-top: 1px solid var(--line-soft);
-  transition: border-color 0.3s ease;
-}
-
-.ncw .site-header.is-scrolled .header-nav {
-  border-top-color: var(--line);
 }
 
 .ncw .nav-inner {
-  min-height: 50px;
+  min-height: var(--header-nav-height);
   display: flex;
   justify-content: flex-end;
   align-items: stretch;
@@ -1627,14 +1617,21 @@
 }
 
 @media (max-width: 900px) {
+  .ncw { --header-main-height: 78px; --header-nav-height: 0px; }
   .ncw .container { width: min(100% - 40px, var(--max)); }
-  .ncw .header-main { min-height: 78px; }
   .ncw .header-contact { display: none; }
   .ncw .mobile-toggle { display: inline-grid; place-items: center; }
   .ncw .header-nav {
+    position: absolute;
+    top: 100%;
+    inset-inline: 0;
     display: none;
+    max-height: calc(100vh - var(--header-main-height) - 1px);
+    max-height: calc(100dvh - var(--header-main-height) - 1px);
+    overflow-y: auto;
     border-top: 1px solid var(--line);
     background: var(--paper-warm);
+    box-shadow: var(--shadow-sm);
   }
   .ncw .header-nav.is-open { display: block; }
   .ncw .nav-inner {
@@ -1719,9 +1716,8 @@
 }
 
 @media (max-width: 600px) {
-  .ncw { font-size: 15px; }
+  .ncw { font-size: 15px; --header-main-height: 70px; }
   .ncw .container { width: calc(100% - 32px); }
-  .ncw .header-main { min-height: 70px; }
   .ncw .brand { gap: 10px; }
   .ncw .brand-mark { width: 46px; height: 46px; }
   .ncw .brand-name { font-size: 1.5rem; }
