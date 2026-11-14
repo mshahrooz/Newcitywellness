@@ -21,11 +21,17 @@ const bookingUrl = "https://acusimple.com/bookings/8635"
 export default function TestimonialsPage() {
   const images = `${process.env.BASE_PATH || ""}/images/about`
 
+  const heroImages = `${process.env.BASE_PATH || ""}/images/testimonials`
+
   return (
     <div className="ncw ncw-services ncw-testimonials">
       <SiteHeader current="testimonials" />
       <main id="main-content">
-        <section className="page-hero" aria-labelledby="testimonials-title">
+        <section className="page-hero page-hero--photo" aria-labelledby="testimonials-title">
+          <picture className="page-hero-photo" aria-hidden="true">
+            <source media="(max-width: 640px)" srcSet={`${heroImages}/hero-sunlit-grass-800.webp`} width={800} height={533} />
+            <img src={`${heroImages}/hero-sunlit-grass-1600.webp`} alt="" width={1600} height={1066} fetchPriority="high" />
+          </picture>
           <BrandMark className="page-hero-art" />
           <div className="container">
             <div className="page-hero-copy">

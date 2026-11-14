@@ -1,5 +1,14 @@
 .ncw-testimonials .page-hero-copy { max-width: 820px; }
-.ncw-testimonials .page-hero-art { opacity: .12; }
+.ncw-testimonials .page-hero-photo img { object-position: 54% 58%; }
+.ncw-testimonials .page-hero-photo::after {
+  background: linear-gradient(110deg, rgba(13,42,30,.94), rgba(21,58,43,.81) 54%, rgba(13,42,30,.42));
+}
+@media (max-width: 760px) {
+  .ncw-testimonials .page-hero-photo img { object-position: 48% 59%; }
+  .ncw-testimonials .page-hero-photo::after {
+    background: linear-gradient(115deg, rgba(13,42,30,.91), rgba(21,58,43,.82) 65%, rgba(13,42,30,.68));
+  }
+}
 .ncw-testimonials .reviews-hero-link { margin-top: 28px; }
 .ncw-testimonials .reviews-feature { padding: var(--section-y) 0; background: var(--paper-warm); }
 .ncw-testimonials .reviews-feature-inner {
