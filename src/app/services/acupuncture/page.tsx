@@ -25,6 +25,7 @@ export default function AcupuncturePage() {
       title="Acupuncture"
       shortTitle="Acupuncture"
       description="Personalized acupuncture in New City, NY, with Mordechai Genut, MS, L.Ac."
+      heroPhoto={{ path: "acupuncture/hero-electro-needling.webp", width: 1600, height: 1000 }}
       photo={{ path: "acupuncture/treatment", height: 667, alt: "Fine acupuncture needles being placed along a patient’s upper back" }}
       visitSteps={visitSteps}
       questions={questions}
