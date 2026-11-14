@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Ornament } from "../wellness-art"
 import { conditionGroups } from "./conditions-data"
@@ -15,6 +15,11 @@ const researchNotes = [
 
 export function ConditionDirectory({ imageBase }: { imageBase: string }) {
   const [query, setQuery] = useState("")
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchWidget = useRef<HTMLDivElement>(null)
+  const searchButton = useRef<HTMLButtonElement>(null)
+  const searchInput = useRef<HTMLInputElement>(null)
+  const searchResults = useRef<HTMLDivElement>(null)
   const [jump, setJump] = useState<{ id: string } | null>(null)
   const keywords = normalize(query).split(/\s+/).filter(Boolean)
   const searching = keywords.length > 0
@@ -45,25 +50,38 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
     if (jump) document.getElementById(jump.id)?.scrollIntoView({ block: "start", behavior: "instant" })
   }, [jump])
 
+  useEffect(() => {
+    if (!searchOpen) return
+    searchInput.current?.focus({ preventScroll: true })
+    function dismissOnOutsidePress(event: PointerEvent) {
+      if (event.target instanceof Node && !searchWidget.current?.contains(event.target)) setSearchOpen(false)
+    }
+    function dismissOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape" || event.defaultPrevented) return
+      event.preventDefault()
+      setSearchOpen(false)
+      if (searchWidget.current?.contains(document.activeElement)) searchButton.current?.focus({ preventScroll: true })
+    }
+    document.addEventListener("pointerdown", dismissOnOutsidePress)
+    document.addEventListener("keydown", dismissOnEscape)
+    return () => {
+      document.removeEventListener("pointerdown", dismissOnOutsidePress)
+      document.removeEventListener("keydown", dismissOnEscape)
+    }
+  }, [searchOpen])
+
+  function viewResults() {
+    setSearchOpen(false)
+    searchResults.current?.focus({ preventScroll: true })
+    searchResults.current?.scrollIntoView({ block: "start", behavior: "instant" })
+  }
+
   return (
     <>
       <section className="statement condition-finder" id="directory" aria-labelledby="directory-title">
         <div className="container statement-inner">
           <Ornament />
-          <h2 id="directory-title">Not sure if we can help? Search the list or browse by category.</h2>
-          <div className="condition-search" role="search" aria-label="Condition directory">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
-            <input id="condition-query" type="search" aria-label="Search conditions" aria-controls="conditions-list" autoComplete="off" value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
-              onKeyDown={(event) => { if (event.key === "Escape") setQuery("") }}
-              placeholder={`Search ${totalTopics} topics, e.g. migraine or back pain`} />
-            {query && <button type="button" onClick={() => { setQuery(""); document.getElementById("condition-query")?.focus() }}>Clear</button>}
-          </div>
-          <p className="condition-result-count" role="status">
-            {searching && (matchCount
-              ? `Showing ${matchCount} ${matchCount === 1 ? "topic" : "topics"} in ${categoryCount} ${categoryCount === 1 ? "category" : "categories"}.`
-              : "No topics match your search.")}
-          </p>
+          <h2 id="directory-title">Not sure if we can help? Browse by category.</h2>
           <nav aria-labelledby="condition-jump-label">
             <p className="condition-jump-label" id="condition-jump-label">Jump to a category</p>
             <ul className="chips chips--center">
@@ -82,7 +100,7 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
         </div>
       </section>
 
-      <div id="conditions-list" className={searching ? "conditions is-searching" : "conditions"}>
+      <div id="conditions-list" ref={searchResults} tabIndex={-1} role="region" aria-label={searching ? "Condition search results" : "Conditions by category"} className={searching ? "conditions is-searching" : "conditions"}>
         {results.map(({ group, topics }, index) => {
           if (!topics.length) return null
           const reverse = index % 2 === 1
@@ -135,6 +153,40 @@ export function ConditionDirectory({ imageBase }: { imageBase: string }) {
             </div>
           </div>
         )}
+      </div>
+      <div className="condition-search-widget" ref={searchWidget}>
+        <button
+          className="condition-search-trigger"
+          type="button"
+          ref={searchButton}
+          aria-expanded={searchOpen}
+          aria-controls="condition-search-panel"
+          aria-label={searchOpen ? "Close condition search" : searching ? "Open condition search, filter active" : "Open condition search"}
+          title={searchOpen ? "Close search" : "Search conditions"}
+          onClick={() => setSearchOpen(!searchOpen)}
+        >
+          <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            {searchOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <><circle cx="10.5" cy="10.5" r="6.25" /><path d="m15 15 4.5 4.5" /></>}
+          </svg>
+          {searching && !searchOpen && <span className="condition-search-dot" aria-hidden="true" />}
+        </button>
+        <div className="condition-search-panel" id="condition-search-panel" hidden={!searchOpen}>
+          <form role="search" aria-labelledby="condition-search-label" onSubmit={(event) => { event.preventDefault(); viewResults() }}>
+            <label htmlFor="condition-query" id="condition-search-label">Search conditions</label>
+            <div className="condition-search-field">
+              <input id="condition-query" ref={searchInput} type="search" enterKeyHint="search" aria-controls="conditions-list" autoComplete="off" value={query}
+                onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Try back pain, IBS, or sleep" />
+              {query && <button type="button" className="condition-search-clear" onClick={() => { setQuery(""); searchInput.current?.focus() }}>Clear</button>}
+            </div>
+            <div className="condition-search-actions">
+              <p className="condition-result-count" role="status">
+                {!searching ? `${totalTopics} topics to explore` : !matchCount ? "No matching topics" :
+                  `${matchCount} ${matchCount === 1 ? "topic" : "topics"} in ${categoryCount} ${categoryCount === 1 ? "category" : "categories"}`}
+              </p>
+              <button type="submit" className="condition-search-results">View results <span aria-hidden="true">→</span></button>
+            </div>
+          </form>
+        </div>
       </div>
     </>
   )
