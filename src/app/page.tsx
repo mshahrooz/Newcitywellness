@@ -143,10 +143,10 @@ export default function Home() {
                 </Link>
               </article>
               <article className="therapy-card reveal delay-3">
-                <a href="https://newcitywellness.com/services/qi-gong/" aria-label="Learn more about Qi-Gong">
+                <Link href="/services/qi-gong/" aria-label="Learn more about Qi-Gong">
                   <div className="therapy-image"><img src="images/qigong.png" alt="People practicing gentle Tai Chi movements" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Qi-Gong</h3><span className="text-link">Learn More <span>→</span></span></div>
-                </a>
+                </Link>
               </article>
             </div>
             <div className="services-overview-link"><Link className="btn btn-outline" href="/services/">View All Services <span className="arrow" aria-hidden="true">→</span></Link></div>

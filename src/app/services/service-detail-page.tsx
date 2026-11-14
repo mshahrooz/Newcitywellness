@@ -18,7 +18,7 @@ type ServiceDetailProps = {
   shortTitle: string
   description: string
   intro: ReactNode
-  heroPhoto?: string
+  heroPhoto?: { path: string; width: number; height: number }
   photo: { path: string; height: number; alt: string }
   visitSteps: readonly TextItem[]
   questions: readonly TextItem[]
@@ -48,10 +48,10 @@ export function ServiceDetailPage({ id, title, shortTitle, description, intro, h
     <div className="ncw ncw-services ncw-service-detail">
       <SiteHeader current="services" currentService={id} />
       <main id="main-content">
-        <section className="page-hero" aria-labelledby={`${id}-title`}>
+        <section className={heroPhoto ? "page-hero page-hero--photo" : "page-hero"} aria-labelledby={`${id}-title`}>
           {heroPhoto && (
             <div className="page-hero-photo" aria-hidden="true">
-              <img src={`${process.env.BASE_PATH || ""}/images/services/${heroPhoto}`} alt="" width={1000} height={435} fetchPriority="high" />
+              <img src={`${process.env.BASE_PATH || ""}/images/services/${heroPhoto.path}`} alt="" width={heroPhoto.width} height={heroPhoto.height} fetchPriority="high" />
             </div>
           )}
           <svg className="page-hero-art" viewBox="0 0 84 74" fill="none" aria-hidden="true">

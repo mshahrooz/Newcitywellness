@@ -42,7 +42,7 @@ export function SiteFooter() {
               <li><Link href="/services/moxibustion/">Moxibustion</Link></li>
               <li><Link href="/services/chinese-herbal-medicine/">Chinese Herbal Medicine</Link></li>
               <li><Link href="/services/gua-sha/">Gua-Sha</Link></li>
-              <li><a href="https://newcitywellness.com/services/qi-gong/">Qi-Gong</a></li>
+              <li><Link href="/services/qi-gong/">Qi-Gong</Link></li>
             </ul>
           </nav>
 
