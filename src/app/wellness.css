@@ -1843,7 +1843,7 @@
     min-height: 600px;
     align-items: flex-start;
   }
-  .ncw .hero-media img { object-position: 19% center; }
+  .ncw .hero-media img { object-position: right center; }
   .ncw .hero-media::after {
     background: linear-gradient(180deg,
       rgba(13, 42, 30, .95) 0%,
