@@ -26,6 +26,7 @@ export default function MoxibustionPage() {
       title="Moxibustion"
       shortTitle="Moxibustion"
       description="A traditional warming therapy in New City, NY. Learn how moxa is used and what to expect during a visit."
+      heroPhoto={{ path: "moxibustion/hero-moxa-stick.webp", width: 1500, height: 358 }}
       photo={{ path: "moxibustion/treatment", height: 667, alt: "A practitioner holding a moxa stick near a patient during moxibustion" }}
       visitSteps={visitSteps}
       questions={questions}
