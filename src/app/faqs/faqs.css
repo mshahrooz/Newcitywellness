@@ -1,48 +1,98 @@
-.ncw-faqs .page-hero-copy { max-width: none; }
-.ncw-faqs .page-hero h1 { max-width: 760px; text-wrap: balance; }
+.ncw-faqs .faq-section {
+  padding: var(--section-y) 0;
+  background: linear-gradient(180deg, var(--paper), #f9f5ec);
+}
 .ncw-faqs .faq-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
-  gap: clamp(32px, 6vw, 88px);
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: var(--gap);
   align-items: start;
 }
-.ncw-faqs .faq-accordion { margin-top: 28px; border-top: 1px solid var(--line); }
-.ncw-faqs .faq-accordion details { border-bottom: 1px solid var(--line); scroll-margin-top: var(--section-scroll-offset); }
-.ncw-faqs .faq-accordion summary {
+.ncw-faqs .faq-aside {
+  position: sticky;
+  top: calc(var(--header-nav-height) + 24px);
   display: grid;
-  grid-template-columns: 2ch minmax(0, 1fr) 1.75rem;
-  align-items: center;
-  column-gap: clamp(12px, 2vw, 24px);
-  min-height: 70px;
-  padding-block: 14px;
-  cursor: pointer;
-  list-style: none;
-  color: var(--forest-deep);
-  font-weight: 700;
-  font-size: clamp(1rem, 1.4vw, 1.14rem);
+  gap: 24px;
 }
-.ncw-faqs summary::-webkit-details-marker { display: none; }
-.ncw-faqs summary:focus-visible { outline: 2px solid var(--forest); outline-offset: 4px; border-radius: 4px; }
-.ncw-faqs .faq-number { color: var(--forest-soft); font-size: .75rem; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
-.ncw-faqs .faq-toggle-icon { position: relative; display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: var(--cream); }
-.ncw-faqs .faq-toggle-icon::before,
-.ncw-faqs .faq-toggle-icon::after { content: ""; position: absolute; width: 10px; height: 1.5px; border-radius: 2px; background: var(--forest); }
-.ncw-faqs .faq-toggle-icon::after { transform: rotate(90deg); }
-.ncw-faqs details[open] .faq-toggle-icon::after { transform: none; }
-.ncw-faqs .faq-answer { padding: 0 0 20px calc(2ch + clamp(12px, 2vw, 24px)); color: var(--ink-soft); }
-.ncw-faqs .faq-answer p { margin: 0 0 .7rem; }
-.ncw-faqs .faq-answer p:last-child { margin-bottom: 0; }
-.ncw-faqs .faq-answer a { color: var(--forest); text-decoration: underline; text-underline-offset: .18em; }
-.ncw-faqs .faq-aside { display: grid; gap: 28px; min-width: 0; }
-.ncw-faqs .faq-photo { margin: 0; }
-.ncw-faqs .faq-photo img { width: 100%; height: auto; }
-.ncw-faqs .faq-visit { padding: 20px 0 0; border-top: 1px solid var(--line); }
-.ncw-faqs .faq-visit h2 { margin: 5px 0 8px; font: 700 clamp(1.65rem, 2.6vw, 2.25rem)/1.1 var(--serif); color: var(--forest-deep); }
-.ncw-faqs .faq-visit p { margin: 0 0 12px; color: var(--muted); }
-.ncw-faqs .faq-visit a { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; color: var(--forest); font-size: .9rem; font-weight: 700; border-bottom: 1px solid var(--line); }
-.ncw-faqs .faq-visit a:hover { text-decoration: underline; text-underline-offset: .18em; }
-@media (max-width: 760px) {
-  .ncw-faqs .faq-grid { grid-template-columns: minmax(0, 1fr); }
-  .ncw-faqs .faq-aside { width: min(100%, 520px); }
-  .ncw-faqs .faq-accordion summary { min-height: 62px; }
+.ncw-faqs .faq-media { aspect-ratio: 1 / 1.1; }
+.ncw-faqs .faq-media img { position: absolute; inset: 0; opacity: 0; transition: opacity .55s ease; }
+.ncw-faqs .faq-media img.is-active { opacity: 1; }
+.ncw-faqs .aside-card { padding: 24px 26px; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); }
+.ncw-faqs .aside-card strong { display: block; color: var(--forest); font: 600 1.45rem/1.15 var(--serif); }
+.ncw-faqs .aside-card p { margin: 8px 0 18px; color: var(--muted); font-size: .88rem; }
+.ncw-faqs .aside-card .btn { width: 100%; }
+.ncw-faqs .faq-head { margin-bottom: 28px; }
+.ncw-faqs .faq-list { display: grid; gap: 14px; }
+.ncw-faqs .faq-item {
+  background: #fff;
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .3s ease, box-shadow .3s ease;
+  scroll-margin-top: var(--section-scroll-offset);
+}
+.ncw-faqs .faq-item:hover { border-color: rgba(184,146,79,.4); }
+.ncw-faqs .faq-item[open] { border-color: rgba(184,146,79,.55); box-shadow: var(--shadow); }
+.ncw-faqs .faq-item summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 26px; cursor: pointer; list-style: none; border-radius: 16px; }
+.ncw-faqs .faq-item summary::-webkit-details-marker { display: none; }
+.ncw-faqs .faq-item summary:focus-visible { outline: 2px solid var(--forest); outline-offset: 3px; }
+.ncw-faqs .faq-q { color: var(--forest); font: 600 clamp(1.3rem, 2vw, 1.6rem)/1.2 var(--serif); letter-spacing: -.01em; }
+.ncw-faqs .faq-icon { position: relative; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(184,146,79,.55); background: var(--paper-warm); }
+.ncw-faqs .faq-icon::before,
+.ncw-faqs .faq-icon::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 2px; margin: -1px 0 0 -6px; border-radius: 2px; background: var(--forest); }
+.ncw-faqs .faq-icon::after { transform: rotate(90deg); }
+.ncw-faqs .faq-item[open] .faq-icon { background: var(--forest); border-color: var(--forest); }
+.ncw-faqs .faq-item[open] .faq-icon::before { background: var(--gold-pale); }
+.ncw-faqs .faq-item[open] .faq-icon::after { opacity: 0; }
+.ncw-faqs .faq-answer { padding: 0 26px 28px; }
+.ncw-faqs .faq-answer a { text-decoration: underline; text-underline-offset: .18em; }
+.ncw-faqs .faq-answer .faq-chip-label { margin: 18px 0 10px; color: var(--forest-soft); font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.ncw-faqs .faq-thumb { display: none; margin: 0 0 20px; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px; background: var(--cream-2); }
+.ncw-faqs .faq-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ncw-faqs .faq-facts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin: 18px 0; }
+.ncw-faqs .faq-facts div { padding: 14px; background: var(--cream); border: 1px solid rgba(184,146,79,.25); border-radius: 14px; }
+.ncw-faqs .faq-facts dt { color: var(--forest-soft); font-size: .68rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.ncw-faqs .faq-facts dd { margin: 6px 0 0; color: var(--forest); font: 600 1.2rem/1.2 var(--serif); }
+.ncw-faqs .faq-ask { padding: var(--section-y) 0; background: linear-gradient(180deg, #f9f5ec, var(--cream)); border-top: 1px solid rgba(184,146,79,.22); }
+.ncw-faqs .faq-ask-grid { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); gap: var(--gap); align-items: start; }
+.ncw-faqs .faq-contact-list { display: grid; gap: 14px; margin: 24px 0 0; }
+.ncw-faqs .faq-contact-list div { padding: 10px 0 10px 15px; border-left: 2px solid var(--gold-soft); }
+.ncw-faqs .faq-contact-list dt { color: var(--forest); font-weight: 700; }
+.ncw-faqs .faq-contact-list dd { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+.ncw-faqs .faq-contact-list a:hover { text-decoration: underline; }
+.ncw-faqs .faq-form { padding: clamp(22px, 3.4vw, 40px); background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
+.ncw-faqs .faq-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px 16px; }
+.ncw-faqs .faq-fields label { display: block; color: var(--forest); font-size: .8rem; font-weight: 700; }
+.ncw-faqs .faq-fields label span { color: var(--forest-soft); }
+.ncw-faqs .faq-field-full { grid-column: 1 / -1; }
+.ncw-faqs .faq-fields input,
+.ncw-faqs .faq-fields textarea { display: block; width: 100%; min-height: 50px; margin-top: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-warm); color: var(--ink); font-size: 1rem; font-weight: 400; }
+.ncw-faqs .faq-fields textarea { resize: vertical; }
+.ncw-faqs .faq-fields input:focus-visible,
+.ncw-faqs .faq-fields textarea:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.ncw-faqs .faq-honeypot { position: absolute; inset-inline-start: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.ncw-faqs .faq-form-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; margin-top: 22px; }
+.ncw-faqs .faq-form-actions p,
+.ncw-faqs .faq-form-status { margin: 0; color: var(--muted); font-size: .8rem; }
+.ncw-faqs .faq-form-status:not(:empty) { margin-top: 14px; }
+@media (max-width: 900px) {
+  .ncw-faqs .faq-grid, .ncw-faqs .faq-ask-grid { grid-template-columns: minmax(0,1fr); }
+  .ncw-faqs .faq-aside { display: none; }
+  .ncw-faqs .faq-thumb { display: block; }
+}
+@media (max-width: 600px) {
+  .ncw-faqs .faq-item summary { padding: 18px; }
+  .ncw-faqs .faq-answer { padding: 0 18px 22px; }
+  .ncw-faqs .faq-fields, .ncw-faqs .faq-facts { grid-template-columns: minmax(0,1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ncw-faqs .faq-item, .ncw-faqs .faq-media img { transition: none; }
+}
+
+.ncw-faqs .faq-check-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px 18px; padding: 0; margin: 0 0 18px; list-style: none; }
+.ncw-faqs .faq-check-list li { padding-left: 23px; position: relative; color: var(--ink-soft); }
+.ncw-faqs .faq-check-list li::before { content: "✓"; position: absolute; left: 0; color: var(--forest-soft); font-weight: 700; }
+.ncw-faqs .faq-answer .faq-answer-button { margin-top: 8px; text-decoration: none; }
+@media (max-width: 600px) {
+  .ncw-faqs .faq-check-list { grid-template-columns: minmax(0,1fr); }
 }
