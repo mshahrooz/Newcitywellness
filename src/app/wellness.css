@@ -205,16 +205,27 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
+  --cta-hover-fill: var(--forest-soft);
+  --cta-hover-line: rgb(205 176 117 / 68%);
+  --cta-hover-shadow: 0 11px 26px rgb(15 42 30 / 22%);
   transition: background-color var(--motion-color) var(--motion-ease),
-    box-shadow var(--motion-surface) var(--motion-ease),
+    box-shadow 460ms var(--motion-ease),
     color var(--motion-color) var(--motion-ease),
     border-color var(--motion-color) var(--motion-ease);
   box-shadow: 0 8px 20px rgba(18, 55, 36, 0.16);
 }
 
-.ncw .btn:hover {
-  background: var(--forest-deep);
-  box-shadow: 0 16px 34px rgba(15, 42, 30, 0.28);
+.ncw .btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 0%, rgb(255 241 199 / 22%), transparent 76%);
+  opacity: 0;
+  transition: opacity 460ms var(--motion-ease);
 }
 
 .ncw .btn-outline {
@@ -222,24 +233,32 @@
   border-color: rgba(21, 56, 42, 0.4);
   background: rgba(255, 253, 247, 0.18);
   box-shadow: none;
-}
-
-.ncw .btn-outline:hover {
-  color: #fff;
-  border-color: var(--forest);
-  background: var(--forest);
-  box-shadow: 0 14px 30px rgba(15, 42, 30, 0.22);
+  --cta-hover-fill: #f3ecd9;
+  --cta-hover-line: var(--forest-soft);
+  --cta-hover-shadow: 0 8px 20px rgb(15 42 30 / 14%);
 }
 
 .ncw .btn-gold {
   background: var(--gold);
   color: #1a261f;
   box-shadow: 0 8px 20px rgba(184, 146, 79, 0.3);
+  --cta-hover-fill: var(--gold-soft);
+  --cta-hover-line: var(--gold-pale);
+  --cta-hover-shadow: 0 11px 26px rgb(184 146 79 / 32%);
 }
 
-.ncw .btn-gold:hover {
-  background: var(--gold-soft);
-  box-shadow: 0 16px 34px rgba(184, 146, 79, 0.42);
+.ncw .btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.ncw .btn:focus-visible:not(:disabled, [aria-disabled="true"]) {
+  background-color: var(--cta-hover-fill);
+  border-color: var(--cta-hover-line);
+}
+
+.ncw .btn:active:not(:disabled, [aria-disabled="true"])::before {
+  opacity: .4;
 }
 
 .ncw .btn .arrow {
@@ -249,10 +268,23 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .ncw .btn:hover .arrow { transform: translateX(2px); }
-  .ncw .reviews-hero-link:hover .arrow { transform: translateY(2px); }
+  .ncw .btn:hover:not(:disabled, [aria-disabled="true"]) {
+    background-color: var(--cta-hover-fill);
+    border-color: var(--cta-hover-line);
+    box-shadow: var(--cta-hover-shadow);
+  }
+  .ncw .btn:hover:not(:disabled, [aria-disabled="true"])::before { opacity: 1; }
+  .ncw .btn:hover:not(:disabled, [aria-disabled="true"]) .arrow {
+    transform: translate(var(--cta-arrow-x, 3px), var(--cta-arrow-y, 0px));
+  }
   .ncw .text-link:hover span { transform: translateX(2px); }
 }
+
+.ncw :is(.reviews-hero-link, .insurance-hero-link, .condition-hero-link, .contact-hero-link) {
+  --cta-arrow-x: 0px;
+  --cta-arrow-y: 3px;
+}
+.ncw .insurance-direct, .ncw .contact-map-header .btn { --cta-arrow-y: -2px; }
 
 .ncw .text-link {
   display: inline-flex;
@@ -1582,22 +1614,40 @@
 /* =========================================================
    Reveal-on-scroll
    ========================================================= */
-/* Separate scroll reveals from hover transitions, including their stagger. */
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-left { --reveal-x: -16px; }
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-right { --reveal-x: 16px; }
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-1 { --reveal-delay: 25ms; }
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-2 { --reveal-delay: 50ms; }
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-3 { --reveal-delay: 75ms; }
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-4 { --reveal-delay: 100ms; }
+/* Use separate timing for reveals so CTA hovers never inherit a delay. */
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-left { --reveal-x: -9px; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-right { --reveal-x: 9px; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-1 { --reveal-delay: 20ms; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-2 { --reveal-delay: 40ms; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-3 { --reveal-delay: 60ms; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-4 { --reveal-delay: 80ms; }
 @media (prefers-reduced-motion: no-preference) {
-  .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal)[data-reveal="pending"]:not(:focus-within) { opacity: 0; }
-  .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal)[data-reveal="shown"] {
-    animation: ncwReveal var(--motion-reveal) var(--motion-reveal-ease) var(--reveal-delay, 0ms) backwards;
+  .ncw [data-reveal="pending"]:not(:focus-within) { opacity: .55; }
+  .ncw [data-reveal="shown"] {
+    animation: ncwSectionReveal 760ms var(--motion-reveal-ease) var(--reveal-delay, 0ms) backwards;
   }
-  .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal):focus-within { animation-duration: 1ms; animation-delay: 0ms; }
+  .ncw [data-reveal]:focus-within, .ncw .is-searching [data-reveal] {
+    opacity: 1;
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+  }
 }
+/* Ease in the hero copy without hiding it during hydration or slowing the image. */
+.ncw .hero-copy,
+.ncw:not(.ncw-about) .page-hero-copy:not(:has(.rise)) {
+  animation: ncwHeroCopy 700ms var(--motion-reveal-ease) both;
+}
+@keyframes ncwHeroCopy {
+  from { opacity: .82; translate: 0 5px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes ncwSectionReveal {
+  from { opacity: .55; translate: var(--reveal-x, 0px) 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+/* Keep existing hero entrances independent from scroll reveals. */
 @keyframes ncwReveal {
-  from { opacity: 0; translate: var(--reveal-x, 0px) 10px; }
+  from { opacity: 0; translate: 0 8px; }
   to { opacity: 1; translate: 0 0; }
 }
 @keyframes ncwFadeIn {
@@ -1829,8 +1879,7 @@
     animation: none !important;
     transition: none !important;
   }
-  .ncw .reviews-hero-link:hover .arrow,
-  .ncw .btn:hover .arrow,
+  .ncw .btn:hover:not(:disabled, [aria-disabled="true"]) .arrow,
   .ncw .text-link:hover span,
   .ncw .brand:hover .brand-mark,
   .ncw .therapy-card:hover .therapy-image img,

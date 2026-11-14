@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { PageLoadIndicator } from "./page-load-indicator";
+import { SiteReveals } from "./site-reveals";
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
@@ -68,6 +69,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} ${dmSans.variable} antialiased bg-background text-foreground`}
       >
         <PageLoadIndicator />
+        <SiteReveals />
         {children}
         <Toaster />
       </body>

@@ -5,7 +5,6 @@ import Link from "next/link"
 import { SiteHeader } from "./site-header"
 import { SiteFooter } from "./site-footer"
 import { BranchWatermark, Ornament } from "./wellness-art"
-import { observeReveals } from "./observe-reveals"
 import "./wellness.css"
 
 function LeafArt({ className }: { className?: string }) {
@@ -18,8 +17,6 @@ function LeafArt({ className }: { className?: string }) {
 
 export default function Home() {
   useEffect(() => {
-    const stopReveals = observeReveals(document)
-
     /* Contact form — mailto fallback (matches source behavior) */
     const contactForm = document.getElementById("contactForm") as HTMLFormElement | null
     const onContactSubmit = (event: SubmitEvent) => {
@@ -38,7 +35,6 @@ export default function Home() {
     contactForm?.addEventListener("submit", onContactSubmit)
 
     return () => {
-      stopReveals?.()
       contactForm?.removeEventListener("submit", onContactSubmit)
     }
   }, [])

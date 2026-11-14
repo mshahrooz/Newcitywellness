@@ -3,7 +3,6 @@ import Link from "next/link"
 import { SiteHeader } from "../site-header"
 import { SiteFooter } from "../site-footer"
 import { Ornament } from "../wellness-art"
-import { ServicesMotion } from "./services-motion"
 import { therapies } from "./content"
 import { serviceDetailHref } from "./service-links"
 import "../wellness.css"
@@ -71,7 +70,6 @@ export default function ServicesPage() {
   return (
     <div className="ncw ncw-services">
       <SiteHeader current="services" />
-      <ServicesMotion />
       <main id="main-content">
         <section className="page-hero page-hero--photo services-overview-hero" aria-labelledby="services-title">
           <picture className="page-hero-photo" aria-hidden="true">

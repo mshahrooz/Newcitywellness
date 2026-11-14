@@ -2,7 +2,6 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { SiteHeader } from "../site-header"
 import { SiteFooter } from "../site-footer"
-import { AboutMotion } from "./about-motion"
 import { about } from "./content"
 import "../wellness.css"
 import "./about.css"
@@ -16,7 +15,6 @@ export default function AboutPage() {
   return (
     <div className="ncw ncw-about">
       <SiteHeader current="about" />
-      <AboutMotion />
       <main id="main-content">
 
       <section className="page-hero page-hero--photo" aria-labelledby="about-title">
