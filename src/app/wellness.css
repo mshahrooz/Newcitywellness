@@ -423,9 +423,12 @@
   visibility: visible;
 }
 
-.ncw .nav-brand .brand-mark { width: 32px; height: 30px; }
-.ncw .nav-brand .brand-name { font-size: 1.14rem; }
-.ncw .nav-brand .brand-tag { margin-top: 4px; font-size: 0.35rem; letter-spacing: 0.1em; }
+.ncw .nav-brand .header-logo-image {
+  width: clamp(156px, 17vw, 190px);
+}
+
+.ncw .header-logo-image { height: auto; }
+.ncw .site-header .header-logo-image { width: 280px; }
 
 .ncw .nav-inner {
   min-height: var(--header-nav-height);
@@ -1653,6 +1656,7 @@
   }
   .ncw .site-header { position: sticky; top: 0; border-bottom: 1px solid var(--line-soft); }
   .ncw .nav-brand { display: none; }
+  .ncw .site-header .header-logo-image { width: min(245px, 62vw); }
   .ncw .container { width: min(100% - 40px, var(--max)); }
   .ncw .header-contact { display: none; }
   .ncw .mobile-toggle { display: inline-grid; place-items: center; }

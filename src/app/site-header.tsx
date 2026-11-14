@@ -2,8 +2,11 @@
 
 import Link from "next/link"
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
-import { BrandMark } from "./wellness-art"
 import type { PublishedService } from "./services/service-links"
+
+function HeaderLogo() {
+  return <img className="header-logo-image" src={`${process.env.BASE_PATH || ""}/images/new-city-logo.webp`} width={280} height={56} alt="" />
+}
 
 export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services"; currentService?: PublishedService }) {
   const [scrolled, setScrolled] = useState(false)
@@ -50,11 +53,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
       <header ref={header} className={scrolled ? "site-header is-scrolled" : "site-header"} onKeyDown={onKeyDown}>
         <div className="container header-main">
           <Link className="brand" href="/" aria-label="New City Acupuncture and Wellness Center home">
-            <BrandMark className="brand-mark" />
-            <span className="brand-copy">
-              <span className="brand-name">NEW CITY</span>
-              <span className="brand-tag">ACUPUNCTURE &amp; WELLNESS CENTER</span>
-            </span>
+            <HeaderLogo />
           </Link>
 
           <div className="header-contact">
@@ -79,11 +78,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
       <nav className={`header-nav${menuOpen ? " is-open" : ""}${navPinned ? " is-pinned" : ""}`} id="primary-navigation" aria-label="Main navigation" onKeyDown={onKeyDown}>
           <div className="container nav-inner">
             <Link className="brand nav-brand" href="/" aria-label="New City Acupuncture and Wellness Center home" onClick={closeMenus}>
-              <BrandMark className="brand-mark" />
-              <span className="brand-copy">
-                <span className="brand-name">NEW CITY</span>
-                <span className="brand-tag">ACUPUNCTURE &amp; WELLNESS CENTER</span>
-              </span>
+              <HeaderLogo />
             </Link>
             <Link className={current === "home" ? "nav-link active" : "nav-link"} aria-current={current === "home" ? "page" : undefined} href="/" onClick={closeMenus}>Home</Link>
             <Link className={current === "about" ? "nav-link active" : "nav-link"} aria-current={current === "about" ? "page" : undefined} href="/about-us/" onClick={closeMenus}>About</Link>
