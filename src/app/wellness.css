@@ -1614,53 +1614,6 @@
 /* =========================================================
    Reveal-on-scroll
    ========================================================= */
-/* The browser drives the reveal from the element's position in the viewport.
-   No timers, scroll listeners, or hydration are needed in supporting browsers. */
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-left { --reveal-x: -20px; }
-.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-right { --reveal-x: 20px; }
-
-@media (prefers-reduced-motion: no-preference) {
-  .ncw :is(
-    main :is(.motion-reveal, .clinic-reveal, .service-reveal):not(.hero-copy),
-    main section:not(.hero, .page-hero) > .container:not(:has(:is(
-      .motion-reveal, .clinic-reveal, .service-reveal,
-      .faq-head, .reviews-intro, .insurance-form-header, .contact-map-header, .acu-visit-heading
-    ))),
-    main :is(.faq-head, .faq-item, .reviews-intro, .reviews-filters, .reviews-card,
-      .insurance-form-header, .insurance-frame, .contact-map-header, .contact-map-frame,
-      .acu-visit-heading, .acu-steps > li),
-    .clinic-footer .footer-grid
-  ):not(:focus-within, .is-searching *) {
-    --ncw-scroll-reveal: 1;
-    --reveal-start: .22;
-    --reveal-y: 38px;
-    @supports (animation-timeline: view()) and (animation-range: entry 0px entry 220px) {
-      animation: ncwScrollEntrance 1ms linear both;
-      animation-timeline: view(block);
-      animation-range: entry 0px entry 220px;
-    }
-  }
-
-  .ncw [data-scroll-reveal-fallback]:not(:focus-within, .is-searching *) {
-    opacity: calc(1 - (1 - var(--reveal-start, .22)) * var(--reveal-rest, 0));
-    translate: calc(var(--reveal-x, 0px) * var(--reveal-rest, 0))
-      calc(var(--reveal-mobile-y, var(--reveal-y, 38px)) * var(--reveal-rest, 0));
-  }
-
-  @media (max-width: 760px) {
-    .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal):is(.from-left, .from-right) { --reveal-x: 0px; }
-    .ncw { --reveal-mobile-y: 28px; }
-  }
-
-  /* Keep the footer reachable and fully readable even at the end of a short page. */
-  .ncw .clinic-footer .footer-grid { animation-range: entry 0px entry 115px; --reveal-distance: 115px; }
-}
-
-@keyframes ncwScrollEntrance {
-  from { opacity: var(--reveal-start, .22); translate: var(--reveal-x, 0px) var(--reveal-mobile-y, var(--reveal-y, 38px)); }
-  to { opacity: 1; translate: 0 0; }
-}
-
 /* Ease in the hero copy without hiding it during hydration or slowing the image. */
 .ncw .hero-copy,
 .ncw:not(.ncw-about) .page-hero-copy:not(:has(.rise)) {
