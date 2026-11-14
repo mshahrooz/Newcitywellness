@@ -26,6 +26,7 @@ export default function ChineseHerbalMedicinePage() {
       title="Chinese Herbal Medicine"
       shortTitle="Chinese Herbal Medicine"
       description="An individualized approach to traditional herbal formulas in New City, NY."
+      heroPhoto={{ path: "chinese-herbal-medicine/hero-herbal-tea.webp", width: 1320, height: 880 }}
       photo={{ path: "chinese-herbal-medicine/treatment", height: 750, alt: "Ginger, dried botanicals, and other ingredients arranged on a table" }}
       visitSteps={visitSteps}
       questions={questions}
