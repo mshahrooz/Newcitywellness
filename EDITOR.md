@@ -6,7 +6,7 @@ The editor is at `/admin/` under the website's base path. It edits designated co
 
 1. On GitHub, create a fine-grained personal access token restricted to the **Newcitywellness** repository. Set **Repository permissions → Contents → Read and write** and an expiration.
 2. Enter the token in the editor's single password field. The token is sent only to GitHub's API and kept in tab memory. It is not stored in the repository, local storage, preview iframe, or draft download. Use a token you control and lock the editor when finished.
-3. Choose a page and preview size. Click highlighted text or supported photos, or edit with the sidebar. Add headings, paragraphs, and public PDF/DOCX downloads, then drag blocks into order or use the arrow buttons.
+3. Choose a page and preview size. Click a heading, paragraph, or supported photo to open its edit popup, then choose **Apply to draft**. Use **Show editable areas** or **Find item** to locate content. The preview fills the workspace, and **Fullscreen** can hide the browser chrome. Use **Add / manage blocks** for headings, paragraphs, and public PDF/DOCX downloads. Drag blocks into order or use the arrow buttons.
 4. Select **Publish to GitHub**, then confirm. This commits the content and assets atomically to `main` and starts the existing Pages workflow. The content is public once published. Check Actions if the deployment takes longer than expected.
 5. For rollback, revert the publishing commit in GitHub and let Pages redeploy.
 
