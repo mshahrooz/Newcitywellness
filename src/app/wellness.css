@@ -620,8 +620,6 @@
   height: 100%;
   object-fit: cover;
   object-position: 42% 50%;
-  /* The patient is on the left in the original, where the headline sits. */
-  scale: -1 1;
   transform: scale(1.04);
   animation: heroZoom 5s ease-in-out both;
 }
