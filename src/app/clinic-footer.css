@@ -1,9 +1,9 @@
 
 .ncw .clinic-social-row { display: flex; justify-content: center; gap: 14px; margin: 0 0 30px; }
 
-.ncw .clinic-social-link { width: 46px; height: 46px; display: grid; place-content: center; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(230,214,171,0.3); color: var(--gold-pale); transition: all .3s ease; }
+.ncw .clinic-social-link { width: 46px; height: 46px; display: grid; place-content: center; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(230,214,171,0.3); color: var(--gold-pale); transition: background-color var(--motion-color) var(--motion-ease), border-color var(--motion-color) var(--motion-ease), color var(--motion-color) var(--motion-ease); }
 
-.ncw .clinic-social-link:hover { background: var(--gold); color: var(--forest-deep); border-color: var(--gold); transform: translateY(-3px); }
+.ncw .clinic-social-link:hover { background: var(--gold); color: var(--forest-deep); border-color: var(--gold); }
 
 .ncw .clinic-social-link svg { width: 20px; height: 20px; }
 
@@ -44,7 +44,7 @@
 
 .ncw .clinic-footer .footer-col li { margin: 0 0 9px; color: rgba(255,253,245,0.85); font-size: 0.84rem; line-height: 1.5; }
 
-.ncw .clinic-footer .footer-col a { transition: color .22s ease; }
+.ncw .clinic-footer .footer-col a { transition: color var(--motion-color) var(--motion-ease); }
 
 .ncw .clinic-footer .footer-col a:hover { color: var(--gold-pale); }
 

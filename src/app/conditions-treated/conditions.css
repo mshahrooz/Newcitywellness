@@ -97,7 +97,7 @@
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   pointer-events: auto;
-  transition: background .2s ease, box-shadow .2s ease;
+  transition: background-color var(--motion-color) var(--motion-ease), box-shadow var(--motion-surface) var(--motion-ease);
 }
 .ncw-conditions .condition-search-trigger:hover { background: var(--forest-soft); box-shadow: var(--shadow); }
 .ncw-conditions .condition-search-dot {
@@ -124,6 +124,7 @@
   pointer-events: auto;
 }
 .ncw-conditions .condition-search-panel[hidden] { display: none; }
+.ncw-conditions .condition-search-panel:not([hidden]) { animation: ncwFadeIn var(--motion-color) var(--motion-ease) both; }
 .ncw-conditions .condition-search-panel label { display: block; margin-bottom: 6px; color: var(--forest); font-size: .86rem; font-weight: 700; }
 .ncw-conditions .condition-search-field {
   display: flex;

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { SiteHeader } from "./site-header"
 import { SiteFooter } from "./site-footer"
 import { BranchWatermark, Ornament } from "./wellness-art"
+import { observeReveals } from "./observe-reveals"
 import "./wellness.css"
 
 function LeafArt({ className }: { className?: string }) {
@@ -17,27 +18,7 @@ function LeafArt({ className }: { className?: string }) {
 
 export default function Home() {
   useEffect(() => {
-    /* Reveal on scroll — reveal once, then unobserve (robust: content stays visible) */
-    const revealItems = document.querySelectorAll<HTMLElement>(".ncw .reveal")
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    let revealObserver: IntersectionObserver | undefined
-    if ("IntersectionObserver" in window && !reducedMotion) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add("is-visible")
-              observer.unobserve(entry.target)
-            }
-          })
-        },
-        { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
-      )
-      revealObserver = observer
-      revealItems.forEach((item) => observer.observe(item))
-    } else {
-      revealItems.forEach((item) => item.classList.add("is-visible"))
-    }
+    const stopReveals = observeReveals(document)
 
     /* Contact form — mailto fallback (matches source behavior) */
     const contactForm = document.getElementById("contactForm") as HTMLFormElement | null
@@ -57,7 +38,7 @@ export default function Home() {
     contactForm?.addEventListener("submit", onContactSubmit)
 
     return () => {
-      revealObserver?.disconnect()
+      stopReveals?.()
       contactForm?.removeEventListener("submit", onContactSubmit)
     }
   }, [])
@@ -81,7 +62,7 @@ export default function Home() {
             />
           </div>
           <div className="hero-content">
-            <div className="hero-copy reveal from-left">
+            <div className="hero-copy motion-reveal from-left">
               <h1 id="hero-title">Personalized Acupuncture &amp; Holistic Care for Pain, Stress, &amp; Better Health</h1>
               <p>We take the time to listen and understand your concerns, considering your symptoms, lifestyle, nutrition, and overall health to provide thoughtful, individualized care focused on helping you feel better.</p>
               <div className="hero-actions">
@@ -102,50 +83,50 @@ export default function Home() {
         {/* ===================== Therapies ===================== */}
         <section className="therapies" id="therapies" aria-labelledby="therapy-title">
           <div className="container">
-            <div className="section-heading reveal">
+            <div className="section-heading motion-reveal">
               <span className="eyebrow">Our Therapies</span>
               <h2 id="therapy-title">Explore Our Therapies</h2>
               <Ornament />
               <p>Traditional practices, thoughtfully personalized</p>
             </div>
             <div className="therapy-grid">
-              <article className="therapy-card reveal delay-1">
+              <article className="therapy-card motion-reveal delay-1">
                 <Link href="/services/acupuncture/" aria-label="Learn more about Acupuncture">
                   <div className="therapy-image"><img src="images/acupuncture.png" alt="A patient receiving acupuncture treatment" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Acupuncture</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
-              <article className="therapy-card reveal delay-2">
+              <article className="therapy-card motion-reveal delay-2">
                 <Link href="/services/chinese-medical-massage-tui-na/" aria-label="Learn more about Chinese Medical Massage (Tui-Na)">
                   <div className="therapy-image"><img src="images/tuina.png" alt="Chinese medical massage treatment" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Chinese Medical Massage (Tui-Na)</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
-              <article className="therapy-card reveal delay-3">
+              <article className="therapy-card motion-reveal delay-3">
                 <Link href="/services/cupping/" aria-label="Learn more about Cupping">
                   <div className="therapy-image"><img src="images/cupping.png" alt="Cupping therapy in progress" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Cupping</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
-              <article className="therapy-card reveal delay-4">
+              <article className="therapy-card motion-reveal delay-4">
                 <Link href="/services/moxibustion/" aria-label="Learn more about Moxibustion">
                   <div className="therapy-image"><img src="images/moxibustion.png" alt="Moxibustion warming therapy" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Moxibustion</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
-              <article className="therapy-card reveal delay-1">
+              <article className="therapy-card motion-reveal delay-1">
                 <Link href="/services/chinese-herbal-medicine/" aria-label="Learn more about Chinese Herbal Medicine">
                   <div className="therapy-image"><img src="images/herbal.png" alt="Natural herbs and ingredients used in Chinese herbal medicine" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Chinese Herbal Medicine</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
-              <article className="therapy-card reveal delay-2">
+              <article className="therapy-card motion-reveal delay-2">
                 <Link href="/services/gua-sha/" aria-label="Learn more about Gua-Sha">
                   <div className="therapy-image"><img src="images/guasha.png" alt="Traditional hands-on therapy session" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Gua-Sha</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
-              <article className="therapy-card reveal delay-3">
+              <article className="therapy-card motion-reveal delay-3">
                 <Link href="/services/qi-gong/" aria-label="Learn more about Qi-Gong">
                   <div className="therapy-image"><img src="images/qigong.png" alt="People practicing gentle Tai Chi movements" loading="lazy" /></div>
                   <div className="therapy-body"><h3>Qi-Gong</h3><span className="text-link">Learn More <span>→</span></span></div>
@@ -159,7 +140,7 @@ export default function Home() {
         {/* ===================== First Visit ===================== */}
         <section className="first-visit-wrap" aria-labelledby="first-visit-title">
           <div className="container">
-            <div className="first-visit reveal">
+            <div className="first-visit motion-reveal">
               <div className="first-visit-media">
                 <img src="images/first-visit.png" alt="Welcoming clinic interior for your first visit" loading="lazy" />
               </div>
@@ -177,10 +158,10 @@ export default function Home() {
         <section className="practitioner" aria-labelledby="practitioner-title">
           <BranchWatermark className="practitioner-art" />
           <div className="container practitioner-grid">
-            <div className="practitioner-photo reveal from-left">
+            <div className="practitioner-photo motion-reveal from-left">
               <img src="images/home/practitioner-portrait.webp" width={411} height={410} alt="Mordechai Genut, New City Acupuncture and Wellness Center practitioner" loading="lazy" decoding="async" />
             </div>
-            <div className="practitioner-copy reveal from-right">
+            <div className="practitioner-copy motion-reveal from-right">
               <span className="eyebrow">Your Practitioner</span>
               <h2 id="practitioner-title">Meet the Practitioner</h2>
               <h3>Mordechai Genut, MS, L.Ac.</h3>
@@ -195,49 +176,49 @@ export default function Home() {
         {/* ===================== Conditions ===================== */}
         <section className="conditions" aria-labelledby="conditions-title">
           <div className="container">
-            <div className="section-heading reveal">
+            <div className="section-heading motion-reveal">
               <span className="eyebrow">Whole-Person Care</span>
               <h2 id="conditions-title">Areas We Support</h2>
               <Ornament />
             </div>
             <div className="condition-grid">
-              <Link className="condition-card reveal delay-1" href="/conditions-treated/#digestive" aria-label="Digestive Issues">
+              <Link className="condition-card motion-reveal delay-1" href="/conditions-treated/#digestive" aria-label="Digestive Issues">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 5c-3 4-2 9 2 12 2 2 2 4 0 6-3 3-8 3-9 8-1 6 3 11 10 11 7 0 12-5 12-12 0-5-3-8-6-10-3-2-3-5-1-8" /><path d="M22 16c-1 4 1 7 5 8 4 1 7 4 7 8M12 28c3 2 6 2 9 0" /></svg>
                 <span>Digestive<br />Issues</span>
               </Link>
-              <Link className="condition-card reveal delay-2" href="/conditions-treated/#prenatal" aria-label="Prenatal Care">
+              <Link className="condition-card motion-reveal delay-2" href="/conditions-treated/#prenatal" aria-label="Prenatal Care">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M25 8c-5 0-8 4-8 9 0 4 2 6 5 8-4 2-7 6-7 12M24 25c8-1 13 4 13 12M24 25c-4 0-6-3-6-7 0-3 3-5 6-5 5 0 8 4 8 9 0 5-3 8-8 8" /><path d="M17 14c-2-2-5-1-6 2-1 3 1 6 4 7M15 37l-4 4M36 36l3 4" /></svg>
                 <span>Prenatal<br />Care</span>
               </Link>
-              <Link className="condition-card reveal delay-3" href="/conditions-treated/#general-wellness" aria-label="General Wellness">
+              <Link className="condition-card motion-reveal delay-3" href="/conditions-treated/#general-wellness" aria-label="General Wellness">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 41C11 33 8 23 13 15c6 0 10 5 11 11 1-7 5-12 11-12 5 9 1 20-11 27Z" /><path d="M24 41V18M24 29c-5-5-9-7-14-7M24 33c5-6 9-9 14-10" /></svg>
                 <span>General<br />Wellness</span>
               </Link>
-              <Link className="condition-card reveal delay-4" href="/conditions-treated/#postpartum" aria-label="Postpartum">
+              <Link className="condition-card motion-reveal delay-4" href="/conditions-treated/#postpartum" aria-label="Postpartum">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 7c-4 3-5 8-3 12 2 4 5 6 9 6 5 0 8-4 8-9 0-4-3-8-7-9M24 25c-5 2-8 6-8 12M24 25c6 1 10 6 10 13M15 37h-4M36 38h4" /><path d="M24 14c2 0 4 2 4 4" /></svg>
                 <span>Postpartum</span>
               </Link>
-              <Link className="condition-card reveal delay-1" href="/conditions-treated/#musculoskeletal" aria-label="Musculoskeletal">
+              <Link className="condition-card motion-reveal delay-1" href="/conditions-treated/#musculoskeletal" aria-label="Musculoskeletal">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 5c-3 5-2 9 1 12l-1 14c-3 3-4 7-1 12M30 5c3 5 2 9-1 12l1 14c3 3 4 7 1 12" /><path d="M17 16h14M16 31h16M20 10h8M20 38h8" /></svg>
                 <span>Musculoskeletal</span>
               </Link>
-              <Link className="condition-card reveal delay-2" href="/conditions-treated/#respiratory" aria-label="Respiratory">
+              <Link className="condition-card motion-reveal delay-2" href="/conditions-treated/#respiratory" aria-label="Respiratory">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M23 7v16c-4-6-8-7-11-3-4 5-5 14-3 20 5 2 10 0 13-5l1-12M25 7v16c4-6 8-7 11-3 4 5 5 14 3 20-5 2-10 0-13-5l-1-12" /></svg>
                 <span>Respiratory</span>
               </Link>
-              <Link className="condition-card reveal delay-3" href="/conditions-treated/#womens-health" aria-label="Women's Health">
+              <Link className="condition-card motion-reveal delay-3" href="/conditions-treated/#womens-health" aria-label="Women's Health">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="15" r="10" /><path d="M24 25v17M18 35h12" /></svg>
                 <span>Women&apos;s<br />Health</span>
               </Link>
-              <Link className="condition-card reveal delay-4" href="/conditions-treated/#emotional" aria-label="Psychological and Emotional">
+              <Link className="condition-card motion-reveal delay-4" href="/conditions-treated/#emotional" aria-label="Psychological and Emotional">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 7c-9 0-16 6-16 15 0 6 4 10 9 12v7h14v-8c5-3 9-7 9-13C40 12 33 7 24 7Z" /><path d="M18 19c2-4 10-4 12 0M18 25c2 4 10 4 12 0M24 18v12" /></svg>
                 <span>Psychological &amp;<br />Emotional</span>
               </Link>
-              <Link className="condition-card reveal delay-1" href="/conditions-treated/#neurological" aria-label="Neurological">
+              <Link className="condition-card motion-reveal delay-1" href="/conditions-treated/#neurological" aria-label="Neurological">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 7c-5-4-11 0-10 6-5 1-7 7-3 11-3 5 0 10 5 10 0 6 6 8 9 4M24 7c5-4 11 0 10 6 5 1 7 7 3 11 3 5 0 10-5 10 0 6-6 8-9 4M24 8v34M14 18l7 2M34 18l-7 2M14 29l7-2M34 29l-7-2" /></svg>
                 <span>Neurological</span>
               </Link>
-              <Link className="condition-card reveal delay-2" href="/conditions-treated/#urogenital" aria-label="Urogenital">
+              <Link className="condition-card motion-reveal delay-2" href="/conditions-treated/#urogenital" aria-label="Urogenital">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8c-5 0-8 4-8 9s3 8 8 8c4 0 6-3 6-7V8M33 8c5 0 8 4 8 9s-3 8-8 8c-4 0-6-3-6-7V8M24 24v18M18 37c2-3 4-4 6-4s4 1 6 4" /></svg>
                 <span>Urogenital</span>
               </Link>
@@ -248,13 +229,13 @@ export default function Home() {
         {/* ===================== Testimonials ===================== */}
         <section className="testimonials" aria-labelledby="testimonials-title">
           <div className="container">
-            <div className="section-heading reveal">
+            <div className="section-heading motion-reveal">
               <span className="eyebrow">Patient Experiences</span>
               <h2 id="testimonials-title">Patient Experiences</h2>
               <Ornament />
             </div>
             <div className="testimonial-grid">
-              <article className="testimonial-card reveal from-left">
+              <article className="testimonial-card motion-reveal from-left">
                 <div className="leaf-art"><LeafArt /></div>
                 <div className="testimonial-copy">
                   <h3>Hip &amp; Knee Pain</h3>
@@ -262,7 +243,7 @@ export default function Home() {
                   <div className="reviewer">A. B.</div>
                 </div>
               </article>
-              <article className="testimonial-card reveal">
+              <article className="testimonial-card motion-reveal">
                 <div className="leaf-art"><LeafArt /></div>
                 <div className="testimonial-copy">
                   <h3>IBS &amp; Headache</h3>
@@ -270,7 +251,7 @@ export default function Home() {
                   <div className="reviewer">S. B.</div>
                 </div>
               </article>
-              <article className="testimonial-card reveal from-right">
+              <article className="testimonial-card motion-reveal from-right">
                 <div className="leaf-art"><LeafArt /></div>
                 <div className="testimonial-copy">
                   <h3>Anxiety &amp; Depression</h3>
@@ -287,7 +268,7 @@ export default function Home() {
         <section className="contact-section" id="contact" aria-labelledby="contact-title">
           <BranchWatermark className="contact-art" />
           <div className="container contact-grid">
-            <div className="contact-intro reveal from-left">
+            <div className="contact-intro motion-reveal from-left">
               <span className="eyebrow">Get In Touch</span>
               <h2 id="contact-title">Let’s Connect</h2>
               <p>Contact us to make an appointment or find out what acupuncture can do for you.</p>
@@ -298,7 +279,7 @@ export default function Home() {
                 <a href="https://www.google.com/maps/search/?api=1&amp;query=125+South+Main+Street+New+City+NY+10956" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" stroke="currentColor" strokeWidth="2" /><circle cx="12" cy="10" r="2.5" fill="currentColor" /></svg>125 South Main Street, New City, NY 10956</a>
               </div>
             </div>
-            <div className="clinic-hours reveal">
+            <div className="clinic-hours motion-reveal">
               <h3>
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.6" /><path d="M12 7v5l3.5 2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 Clinic Hours
@@ -307,7 +288,7 @@ export default function Home() {
               <div className="hours-row"><strong>Friday</strong><span>9:00 am – 2:00 pm</span></div>
               <div className="hours-row"><strong>Saturday</strong><span>Closed</span></div>
             </div>
-            <div className="contact-form-wrap reveal from-right">
+            <div className="contact-form-wrap motion-reveal from-right">
               <h3>Send a Message</h3>
               <p>We&apos;ll reply within one business day.</p>
               <form className="contact-form" id="contactForm">

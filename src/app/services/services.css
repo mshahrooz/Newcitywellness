@@ -41,7 +41,7 @@
 
 .ncw-services .crumbs { display: flex; align-items: center; gap: 10px; margin: 0 0 22px; padding: 0; list-style: none; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,253,245,0.7); }
 
-.ncw-services .crumbs a { transition: color .22s ease; }
+.ncw-services .crumbs a { transition: color var(--motion-color) var(--motion-ease); }
 
 .ncw-services .crumbs a:hover { color: var(--gold-pale); }
 
@@ -55,13 +55,13 @@
 
 .ncw-services .page-hero .gold-rule { margin: 0 0 22px; }
 
-.ncw-services .rise { opacity: 0; transform: translateY(24px); animation: servicesRise .9s cubic-bezier(.2,.7,.2,1) forwards; }
+.ncw-services .rise { --reveal-x: 0px; animation: ncwReveal var(--motion-reveal) var(--motion-reveal-ease) backwards; }
 
-.ncw-services .rise.d1 { animation-delay: .1s; }
+.ncw-services .rise.d1 { animation-delay: 55ms; }
 
-.ncw-services .rise.d2 { animation-delay: .2s; }
+.ncw-services .rise.d2 { animation-delay: 110ms; }
 
-.ncw-services .rise.d3 { animation-delay: .3s; }
+.ncw-services .rise.d3 { animation-delay: 165ms; }
 
 .ncw-services .frame { position: relative; margin: 0; border-radius: var(--radius); background: var(--cream-2); box-shadow: var(--shadow-lg); }
 
@@ -152,13 +152,12 @@
       background: rgba(255,255,255,0.08); border: 1px solid rgba(230,214,171,0.3);
       color: #fffdf5; font-family: var(--serif); font-weight: 600;
       font-size: clamp(1.5rem, 2.4vw, 2rem); letter-spacing: 0.01em;
-      transition: all .3s ease; }
+      transition: background-color var(--motion-color) var(--motion-ease), color var(--motion-color) var(--motion-ease), border-color var(--motion-color) var(--motion-ease); }
 
-.ncw-services .cta-phone:hover { background: rgba(184,146,79,0.18); border-color: var(--gold-soft); transform: translateY(-2px); }
+.ncw-services .cta-phone:hover { background: rgba(184,146,79,0.18); border-color: var(--gold-soft); }
 
 .ncw-services .cta-phone svg { width: 24px; height: 24px; color: var(--gold-pale); }
 
-@keyframes servicesRise { to { opacity: 1; transform: none; } }
 
 .ncw-services .statement-inner > p { text-wrap: pretty; }
 .ncw-services .statement .jump-label {
@@ -174,13 +173,12 @@
   align-items: center;
   min-height: 36px;
   color: var(--forest);
-  transition: background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease;
+  transition: background-color var(--motion-color) var(--motion-ease), color var(--motion-color) var(--motion-ease), border-color var(--motion-color) var(--motion-ease);
 }
 .ncw-services a.chip:hover {
   background: var(--forest);
   border-color: var(--forest);
   color: #fffdf5;
-  transform: translateY(-2px);
 }
 
 .ncw-services .service .chip-label {
@@ -194,16 +192,6 @@
 }
 .ncw-services .service-btn { margin-top: 30px; }
 .ncw-services #gua-sha .split-media img { object-position: center 75%; }
-
-.ncw-services .service-reveal {
-  transition: opacity .9s cubic-bezier(.2,.7,.2,1), transform .9s cubic-bezier(.2,.7,.2,1);
-}
-.ncw-services main.service-motion .service-reveal:not(.is-visible):not(:focus-within) {
-  opacity: 0;
-  transform: translateY(30px);
-}
-.ncw-services main.service-motion .service-reveal.from-left:not(.is-visible):not(:focus-within) { transform: translateX(-40px); }
-.ncw-services main.service-motion .service-reveal.from-right:not(.is-visible):not(:focus-within) { transform: translateX(40px); }
 
 @media (max-width: 900px) {
   .ncw-services .container { width: calc(100% - 40px); }
@@ -223,7 +211,7 @@
   .ncw-services a.chip { min-height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ncw-services .rise, .ncw-services main .service-reveal { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
+  .ncw-services .rise { animation: none !important; }
 }
 
 /* Services closing invitation — matches the supplied reference */

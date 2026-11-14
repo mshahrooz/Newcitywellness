@@ -15,7 +15,7 @@
   gap: 24px;
 }
 .ncw-faqs .faq-media { aspect-ratio: 1 / 1.1; }
-.ncw-faqs .faq-media img { position: absolute; inset: 0; opacity: 0; transition: opacity .55s ease; }
+.ncw-faqs .faq-media img { position: absolute; inset: 0; opacity: 0; transition: opacity var(--motion-image) var(--motion-ease); }
 .ncw-faqs .faq-media img.is-active { opacity: 1; }
 .ncw-faqs .aside-card { padding: 24px 26px; background: #fff; border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-sm); }
 .ncw-faqs .aside-card strong { display: block; color: var(--forest); font: 600 1.45rem/1.15 var(--serif); }
@@ -28,7 +28,7 @@
   border: 1px solid var(--line-soft);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
-  transition: border-color .3s ease, box-shadow .3s ease;
+  transition: border-color var(--motion-color) var(--motion-ease), box-shadow var(--motion-surface) var(--motion-ease);
   scroll-margin-top: var(--section-scroll-offset);
 }
 .ncw-faqs .faq-item:hover { border-color: rgba(184,146,79,.4); }
@@ -37,9 +37,9 @@
 .ncw-faqs .faq-item summary::-webkit-details-marker { display: none; }
 .ncw-faqs .faq-item summary:focus-visible { outline: 2px solid var(--forest); outline-offset: 3px; }
 .ncw-faqs .faq-q { color: var(--forest); font: 600 clamp(1.3rem, 2vw, 1.6rem)/1.2 var(--serif); letter-spacing: -.01em; }
-.ncw-faqs .faq-icon { position: relative; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(184,146,79,.55); background: var(--paper-warm); }
+.ncw-faqs .faq-icon { position: relative; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(184,146,79,.55); background: var(--paper-warm); transition: background-color var(--motion-color) var(--motion-ease), border-color var(--motion-color) var(--motion-ease); }
 .ncw-faqs .faq-icon::before,
-.ncw-faqs .faq-icon::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 2px; margin: -1px 0 0 -6px; border-radius: 2px; background: var(--forest); }
+.ncw-faqs .faq-icon::after { content: ""; position: absolute; left: 50%; top: 50%; width: 12px; height: 2px; margin: -1px 0 0 -6px; border-radius: 2px; background: var(--forest); transition: opacity var(--motion-color) var(--motion-ease), background-color var(--motion-color) var(--motion-ease); }
 .ncw-faqs .faq-icon::after { transform: rotate(90deg); }
 .ncw-faqs .faq-item[open] .faq-icon { background: var(--forest); border-color: var(--forest); }
 .ncw-faqs .faq-item[open] .faq-icon::before { background: var(--gold-pale); }

@@ -68,6 +68,7 @@
   border: 1px solid rgba(139,107,52,.35); border-radius: 999px;
   background: var(--paper-warm); color: var(--forest);
   font: 600 .84rem/1.35 var(--sans); cursor: pointer;
+  transition: background-color var(--motion-color) var(--motion-ease), color var(--motion-color) var(--motion-ease), border-color var(--motion-color) var(--motion-ease);
 }
 .ncw-testimonials .reviews-filters button:hover { background: var(--cream-2); }
 .ncw-testimonials .reviews-filters button[aria-pressed="true"] { background: var(--forest); color: var(--paper-warm); border-color: var(--forest); }

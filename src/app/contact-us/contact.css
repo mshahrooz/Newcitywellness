@@ -21,7 +21,7 @@
 .ncw-contact .contact-page-list dd, .ncw-contact .contact-hours dd { margin: 0; }
 .ncw-contact .contact-page-list a,
 .ncw-contact .contact-page-panel > p a,
-.ncw-contact .contact-draft-status a { overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+.ncw-contact .contact-draft-status a { overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; transition: color var(--motion-color) var(--motion-ease), text-decoration-color var(--motion-color) var(--motion-ease); }
 .ncw-contact .contact-page-list a:hover,
 .ncw-contact .contact-page-panel > p a:hover { color: var(--forest-soft); text-decoration-color: currentColor; }
 .ncw-contact .contact-hours-title { margin: 0 0 8px; color: var(--forest); font: 700 1.55rem/1.2 var(--serif); }

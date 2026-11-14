@@ -33,6 +33,14 @@
   --header-nav-height: 50px;
   --section-scroll-offset: calc(var(--header-nav-height) + 16px);
 
+  /* Shared motion — quick feedback, gentler visual movement. */
+  --motion-ease: cubic-bezier(.33, 0, .25, 1);
+  --motion-reveal-ease: cubic-bezier(.25, .46, .35, 1);
+  --motion-color: 260ms;
+  --motion-surface: 380ms;
+  --motion-image: 640ms;
+  --motion-reveal: 680ms;
+
   /* base */
   background: var(--paper);
   color: var(--ink);
@@ -197,33 +205,16 @@
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1),
-    background 0.3s ease, box-shadow 0.3s ease, color 0.3s ease,
-    border-color 0.3s ease;
+  transition: background-color var(--motion-color) var(--motion-ease),
+    box-shadow var(--motion-surface) var(--motion-ease),
+    color var(--motion-color) var(--motion-ease),
+    border-color var(--motion-color) var(--motion-ease);
   box-shadow: 0 8px 20px rgba(18, 55, 36, 0.16);
 }
 
-.ncw .btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
-  transform: translateX(-120%);
-  transition: transform 0.7s ease;
-}
-
 .ncw .btn:hover {
-  transform: translateY(-3px);
   background: var(--forest-deep);
   box-shadow: 0 16px 34px rgba(15, 42, 30, 0.28);
-}
-
-.ncw .btn:hover::after {
-  transform: translateX(120%);
-}
-
-.ncw .btn:active {
-  transform: translateY(-1px);
 }
 
 .ncw .btn-outline {
@@ -254,11 +245,13 @@
 .ncw .btn .arrow {
   font-size: 1.05rem;
   line-height: 1;
-  transition: transform 0.3s ease;
+  transition: transform var(--motion-surface) var(--motion-ease);
 }
 
-.ncw .btn:hover .arrow {
-  transform: translateX(4px);
+@media (hover: hover) and (pointer: fine) {
+  .ncw .btn:hover .arrow { transform: translateX(2px); }
+  .ncw .reviews-hero-link:hover .arrow { transform: translateY(2px); }
+  .ncw .text-link:hover span { transform: translateX(2px); }
 }
 
 .ncw .text-link {
@@ -273,15 +266,11 @@
 }
 
 .ncw .text-link span {
-  transition: transform 0.3s ease;
+  transition: transform var(--motion-surface) var(--motion-ease);
 }
 
 .ncw .text-link:hover {
   color: var(--forest-deep);
-}
-
-.ncw .text-link:hover span {
-  transform: translateX(5px);
 }
 
 .ncw .gold-rule {
@@ -298,7 +287,7 @@
   position: relative;
   z-index: 60;
   background: var(--paper);
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow var(--motion-surface) var(--motion-ease);
 }
 
 .ncw .site-header.is-scrolled {
@@ -325,7 +314,7 @@
   width: 60px;
   height: 54px;
   flex: 0 0 auto;
-  transition: transform 0.4s ease;
+  transition: transform var(--motion-surface) var(--motion-ease);
 }
 
 .ncw .brand:hover .brand-mark {
@@ -372,7 +361,7 @@
   font-size: 0.76rem;
   font-weight: 600;
   white-space: nowrap;
-  transition: color 0.25s ease;
+  transition: color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .contact-chip:hover {
@@ -400,7 +389,7 @@
   flex: 0 0 auto;
   background: var(--paper);
   border-block: 1px solid var(--line-soft);
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow var(--motion-surface) var(--motion-ease);
 }
 
 .ncw .header-nav.is-pinned {
@@ -415,12 +404,14 @@
   gap: 7px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.22s ease;
+  transition: opacity var(--motion-color) var(--motion-ease),
+    visibility 0s linear var(--motion-color);
 }
 
 .ncw .header-nav.is-pinned .nav-brand {
   opacity: 1;
   visibility: visible;
+  transition-delay: 0s;
 }
 
 .ncw .nav-brand .header-logo-image {
@@ -452,7 +443,7 @@
   font-weight: 600;
   cursor: pointer;
   letter-spacing: 0.03em;
-  transition: color 0.22s ease;
+  transition: color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .nav-link::after,
@@ -466,7 +457,7 @@
   background: linear-gradient(90deg, var(--gold), var(--gold-soft));
   transform: scaleX(0);
   transform-origin: left;
-  transition: transform 0.3s ease;
+  transition: transform var(--motion-surface) var(--motion-ease);
 }
 
 .ncw .nav-link:hover,
@@ -490,7 +481,7 @@
 .ncw .nav-dropdown-toggle svg {
   width: 12px;
   height: 12px;
-  transition: transform 0.3s ease;
+  transition: transform var(--motion-surface) var(--motion-ease);
 }
 
 .ncw .nav-dropdown:hover .nav-dropdown-toggle svg,
@@ -510,7 +501,8 @@
   box-shadow: var(--shadow);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.15s ease, visibility 0s linear 0.15s;
+  transition: opacity var(--motion-color) var(--motion-ease),
+    visibility 0s linear var(--motion-color);
 }
 
 .ncw .nav-dropdown:hover .dropdown-menu,
@@ -533,7 +525,7 @@
 
   /* Allow diagonal travel to a link before closing the menu. */
   .ncw .nav-dropdown:not(:hover):not(:focus-within):not(.open) .dropdown-menu {
-    transition-delay: 0.22s, 0.37s;
+    transition-delay: 180ms, calc(180ms + var(--motion-color));
   }
 }
 
@@ -544,13 +536,13 @@
   color: var(--ink);
   font-size: 0.8rem;
   font-weight: 500;
-  transition: background 0.22s ease, color 0.22s ease, padding-left 0.22s ease;
+  transition: background-color var(--motion-color) var(--motion-ease),
+    color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .dropdown-menu a:hover {
   color: var(--forest);
   background: var(--cream);
-  padding-left: 18px;
 }
 
 .ncw .mobile-toggle {
@@ -562,7 +554,7 @@
   background: transparent;
   color: var(--forest);
   cursor: pointer;
-  transition: background 0.22s ease;
+  transition: background-color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .mobile-toggle:hover {
@@ -601,12 +593,12 @@
   /* The patient is on the left in the original, where the headline sits. */
   scale: -1 1;
   transform: scale(1.04);
-  animation: heroZoom 18s ease-in-out infinite alternate;
+  animation: heroZoom 5s ease-in-out both;
 }
 
 @keyframes heroZoom {
   from { transform: scale(1.04); }
-  to   { transform: scale(1.12); }
+  to   { transform: scale(1.065); }
 }
 
 .ncw .hero-media::after {
@@ -682,7 +674,6 @@
   box-shadow: 0 24px 50px rgba(28, 46, 32, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  animation: sealFloat 6s ease-in-out infinite;
 }
 
 .ncw .hero-seal::before {
@@ -699,11 +690,6 @@
   inset: 15px;
   border-radius: 50%;
   border: 1px dashed rgba(184, 146, 79, 0.32);
-}
-
-@keyframes sealFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 .ncw .hero-seal svg {
@@ -751,12 +737,13 @@
   width: 100%;
   height: 50%;
   background: linear-gradient(180deg, transparent, var(--gold));
-  animation: cueSlide 2.2s ease-in-out infinite;
+  animation: cueSlide 4s ease-in-out both;
 }
 
 @keyframes cueSlide {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(200%); }
+  0% { transform: translateY(0); opacity: 0; }
+  35%, 65% { opacity: .8; }
+  100% { transform: translateY(200%); opacity: 0; }
 }
 
 /* =========================================================
@@ -785,11 +772,11 @@
   border: 1px solid rgba(184, 146, 79, 0.18);
   box-shadow: var(--shadow-sm);
   flex: 0 0 calc(25% - 18px);
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+  transition: box-shadow var(--motion-surface) var(--motion-ease),
+    border-color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .therapy-card:hover {
-  transform: translateY(-8px);
   box-shadow: var(--shadow);
   border-color: rgba(184, 146, 79, 0.4);
 }
@@ -807,7 +794,7 @@
   inset: 0;
   background: linear-gradient(180deg, transparent 55%, rgba(15, 42, 30, 0.45));
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity var(--motion-surface) var(--motion-ease);
 }
 
 .ncw .therapy-card:hover .therapy-image::after {
@@ -818,11 +805,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform var(--motion-image) var(--motion-ease);
 }
 
-.ncw .therapy-card:hover .therapy-image img {
-  transform: scale(1.09);
+@media (hover: hover) and (pointer: fine) {
+  .ncw .therapy-card:hover .therapy-image img { transform: scale(1.035); }
 }
 
 .ncw .therapy-body {
@@ -1030,8 +1017,8 @@
   color: var(--forest);
   box-shadow: var(--shadow-sm);
   text-align: center;
-  transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1),
-    background 0.32s ease, box-shadow 0.32s ease, border-color 0.32s ease;
+  transition: box-shadow var(--motion-surface) var(--motion-ease),
+    border-color var(--motion-color) var(--motion-ease);
   position: relative;
   overflow: hidden;
 }
@@ -1040,14 +1027,12 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 120%, rgba(184, 146, 79, 0.16), transparent 70%);
+  background: linear-gradient(180deg, #f3eedd, #ece3cb);
   opacity: 0;
-  transition: opacity 0.32s ease;
+  transition: opacity var(--motion-surface) var(--motion-ease);
 }
 
 .ncw .condition-card:hover {
-  transform: translateY(-6px);
-  background: linear-gradient(180deg, #f3eedd, #ece3cb);
   box-shadow: var(--shadow);
   border-color: rgba(184, 146, 79, 0.42);
 }
@@ -1064,16 +1049,17 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   fill: none;
-  transition: transform 0.4s ease;
+  transition: transform var(--motion-surface) var(--motion-ease);
   position: relative;
   z-index: 1;
 }
 
-.ncw .condition-card:hover svg {
-  transform: scale(1.12);
+@media (hover: hover) and (pointer: fine) {
+  .ncw .condition-card:hover svg { transform: scale(1.04); }
 }
 
 .ncw .condition-card span {
+  position: relative;
   color: var(--ink-soft);
   font-size: 0.78rem;
   line-height: 1.25;
@@ -1254,7 +1240,9 @@
   padding: 12px 26px;
   border: 1px solid rgba(230, 214, 171, 0.3);
   border-radius: 999px;
-  transition: all 0.3s ease;
+  transition: background-color var(--motion-color) var(--motion-ease),
+    border-color var(--motion-color) var(--motion-ease),
+    color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .testimonial-more a:hover {
@@ -1340,7 +1328,7 @@
   font-size: 0.86rem;
   font-weight: 500;
   line-height: 1.45;
-  transition: color 0.22s ease;
+  transition: color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .contact-details a:hover {
@@ -1451,7 +1439,9 @@
   color: var(--ink);
   font-size: 0.88rem;
   font-family: var(--sans);
-  transition: border-color 0.24s ease, box-shadow 0.24s ease, background 0.24s ease;
+  transition: border-color var(--motion-color) var(--motion-ease),
+    box-shadow var(--motion-surface) var(--motion-ease),
+    background-color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .contact-form input:focus,
@@ -1569,7 +1559,7 @@
   color: rgba(255, 253, 245, 0.85);
   font-size: 0.78rem;
   line-height: 1.5;
-  transition: color 0.22s ease;
+  transition: color var(--motion-color) var(--motion-ease);
 }
 
 .ncw .footer-links a:hover {
@@ -1592,31 +1582,28 @@
 /* =========================================================
    Reveal-on-scroll
    ========================================================= */
-.ncw .reveal {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1),
-    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+/* Separate scroll reveals from hover transitions, including their stagger. */
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-left { --reveal-x: -16px; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).from-right { --reveal-x: 16px; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-1 { --reveal-delay: 25ms; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-2 { --reveal-delay: 50ms; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-3 { --reveal-delay: 75ms; }
+.ncw :is(.motion-reveal, .clinic-reveal, .service-reveal).delay-4 { --reveal-delay: 100ms; }
+@media (prefers-reduced-motion: no-preference) {
+  .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal)[data-reveal="pending"]:not(:focus-within) { opacity: 0; }
+  .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal)[data-reveal="shown"] {
+    animation: ncwReveal var(--motion-reveal) var(--motion-reveal-ease) var(--reveal-delay, 0ms) backwards;
+  }
+  .ncw :is(.motion-reveal, .clinic-reveal, .service-reveal):focus-within { animation-duration: 1ms; animation-delay: 0ms; }
 }
-
-.ncw .reveal.from-left {
-  transform: translateX(-40px);
+@keyframes ncwReveal {
+  from { opacity: 0; translate: var(--reveal-x, 0px) 10px; }
+  to { opacity: 1; translate: 0 0; }
 }
-
-.ncw .reveal.from-right {
-  transform: translateX(40px);
+@keyframes ncwFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-
-.ncw .reveal.is-visible {
-  opacity: 1;
-  transform: translate(0, 0);
-}
-
-.ncw .delay-1 { transition-delay: 0.08s; }
-.ncw .delay-2 { transition-delay: 0.16s; }
-.ncw .delay-3 { transition-delay: 0.24s; }
-.ncw .delay-4 { transition-delay: 0.32s; }
-.ncw .delay-5 { transition-delay: 0.4s; }
 
 /* =========================================================
    Responsive
@@ -1659,7 +1646,7 @@
     background: var(--paper-warm);
     box-shadow: var(--shadow-sm);
   }
-  .ncw .header-nav.is-open { display: block; }
+  .ncw .header-nav.is-open { display: block; animation: ncwFadeIn var(--motion-color) var(--motion-ease) both; }
   .ncw .nav-inner {
     min-height: 0;
     display: flex;
@@ -1693,7 +1680,7 @@
     visibility: visible;
     transform: none;
   }
-  .ncw .nav-dropdown.open .dropdown-menu { display: block; }
+  .ncw .nav-dropdown.open .dropdown-menu { display: block; animation: ncwFadeIn var(--motion-color) var(--motion-ease) both; }
   .ncw .dropdown-menu a { padding: 10px 12px; }
 
   .ncw .hero { min-height: clamp(480px, 80vh, 640px); }
@@ -1839,15 +1826,23 @@
   .ncw *::before,
   .ncw *::after {
     scroll-behavior: auto !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
   }
-  .ncw .reveal { opacity: 1; transform: none; }
-  .ncw .hero-media img { animation: none; }
-  .ncw .hero-seal { animation: none; }
+  .ncw .reviews-hero-link:hover .arrow,
+  .ncw .btn:hover .arrow,
+  .ncw .text-link:hover span,
+  .ncw .brand:hover .brand-mark,
+  .ncw .therapy-card:hover .therapy-image img,
+  .ncw .condition-card:hover svg { transform: none; }
 }
 
 .ncw .nav-dropdown-toggle.active { color: var(--forest); }
 .ncw .nav-dropdown-toggle.active::after { transform: scaleX(1); }
 .ncw .services-overview-link { display: flex; justify-content: center; margin-top: clamp(22px, 3vw, 36px); }
+
+/* Give native disclosure controls a soft entrance without delaying layout or focus. */
+.ncw details[open] > :is(.faq-answer, .reviews-full),
+.ncw .acu-faq-list details[open] > p {
+  animation: ncwFadeIn var(--motion-surface) var(--motion-ease) both;
+}
