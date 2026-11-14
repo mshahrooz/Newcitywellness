@@ -1,12 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type KeyboardEvent } from "react"
 import { BrandMark } from "./wellness-art"
 import type { PublishedService } from "./services/service-links"
 
 export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services"; currentService?: PublishedService }) {
   const [scrolled, setScrolled] = useState(false)
+  const [navPinned, setNavPinned] = useState(false)
+  const header = useRef<HTMLElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const mobileButton = useRef<HTMLButtonElement>(null)
@@ -14,29 +16,38 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
   const closeMenus = () => { setMenuOpen(false); setDropdownOpen(false) }
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40)
+    const updateScrollState = () => {
+      const desktop = window.matchMedia("(min-width: 901px)").matches
+      setScrolled(!desktop && window.scrollY > 40)
+      setNavPinned(desktop && (header.current?.getBoundingClientRect().bottom ?? 1) <= 0)
+    }
     const onPointerDown = (event: PointerEvent) => {
-      if (!(event.target instanceof Element) || !event.target.closest(".ncw .site-header")) {
+      if (!(event.target instanceof Element) || !event.target.closest(".ncw .site-header, .ncw .header-nav")) {
         setMenuOpen(false)
         setDropdownOpen(false)
       }
     }
-    onScroll()
-    window.addEventListener("scroll", onScroll, { passive: true })
+    updateScrollState()
+    window.addEventListener("scroll", updateScrollState, { passive: true })
+    window.addEventListener("resize", updateScrollState)
     document.addEventListener("pointerdown", onPointerDown)
     return () => {
-      window.removeEventListener("scroll", onScroll)
+      window.removeEventListener("scroll", updateScrollState)
+      window.removeEventListener("resize", updateScrollState)
       document.removeEventListener("pointerdown", onPointerDown)
     }
   }, [])
 
+  function onKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Escape") {
+      if (dropdownOpen) { setDropdownOpen(false); dropdownButton.current?.focus() }
+      else if (menuOpen) { setMenuOpen(false); mobileButton.current?.focus() }
+    }
+  }
+
   return (
-      <header className={scrolled ? "site-header is-scrolled" : "site-header"} onKeyDown={(event) => {
-      if (event.key === "Escape") {
-        if (dropdownOpen) { setDropdownOpen(false); dropdownButton.current?.focus() }
-        else if (menuOpen) { setMenuOpen(false); mobileButton.current?.focus() }
-      }
-    }}>
+    <>
+      <header ref={header} className={scrolled ? "site-header is-scrolled" : "site-header"} onKeyDown={onKeyDown}>
         <div className="container header-main">
           <Link className="brand" href="/" aria-label="New City Acupuncture and Wellness Center home">
             <BrandMark className="brand-mark" />
@@ -64,8 +75,16 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d={menuOpen ? "m6 6 12 12M18 6 6 18" : "M4 7h16M4 12h16M4 17h16"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           </button>
         </div>
-        <nav className={menuOpen ? "header-nav is-open" : "header-nav"} id="primary-navigation" aria-label="Main navigation">
+      </header>
+      <nav className={`header-nav${menuOpen ? " is-open" : ""}${navPinned ? " is-pinned" : ""}`} id="primary-navigation" aria-label="Main navigation" onKeyDown={onKeyDown}>
           <div className="container nav-inner">
+            <Link className="brand nav-brand" href="/" aria-label="New City Acupuncture and Wellness Center home" onClick={closeMenus}>
+              <BrandMark className="brand-mark" />
+              <span className="brand-copy">
+                <span className="brand-name">NEW CITY</span>
+                <span className="brand-tag">ACUPUNCTURE &amp; WELLNESS CENTER</span>
+              </span>
+            </Link>
             <Link className={current === "home" ? "nav-link active" : "nav-link"} aria-current={current === "home" ? "page" : undefined} href="/" onClick={closeMenus}>Home</Link>
             <Link className={current === "about" ? "nav-link active" : "nav-link"} aria-current={current === "about" ? "page" : undefined} href="/about-us/" onClick={closeMenus}>About</Link>
             <div className={dropdownOpen ? "nav-dropdown open" : "nav-dropdown"}>
@@ -87,7 +106,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
             <a className="nav-link" href="https://newcitywellness.com/insurance/">Insurance</a>
             <a className="nav-link" href="https://newcitywellness.com/contact-us/">Contact</a>
           </div>
-        </nav>
-      </header>
+      </nav>
+    </>
   )
 }

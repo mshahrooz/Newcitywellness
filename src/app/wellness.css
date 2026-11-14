@@ -31,7 +31,7 @@
   --max: 1320px;
   --header-main-height: 92px;
   --header-nav-height: 50px;
-  --section-scroll-offset: 16px;
+  --section-scroll-offset: calc(var(--header-nav-height) + 16px);
 
   /* base */
   background: var(--paper);
@@ -298,7 +298,6 @@
   position: relative;
   z-index: 60;
   background: var(--paper);
-  border-bottom: 1px solid var(--line-soft);
   transition: box-shadow 0.3s ease;
 }
 
@@ -395,8 +394,38 @@
 }
 
 .ncw .header-nav {
-  border-top: 1px solid var(--line-soft);
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  flex: 0 0 auto;
+  background: var(--paper);
+  border-block: 1px solid var(--line-soft);
+  transition: box-shadow 0.3s ease;
 }
+
+.ncw .header-nav.is-pinned {
+  box-shadow: 0 10px 30px rgba(28, 46, 35, 0.08);
+}
+
+/* Keep the logo slot reserved so the menu links never shift on scroll. */
+.ncw .nav-brand {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-right: auto;
+  gap: 7px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.22s ease;
+}
+
+.ncw .header-nav.is-pinned .nav-brand {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ncw .nav-brand .brand-mark { width: 32px; height: 30px; }
+.ncw .nav-brand .brand-name { font-size: 1.14rem; }
+.ncw .nav-brand .brand-tag { margin-top: 4px; font-size: 0.35rem; letter-spacing: 0.1em; }
 
 .ncw .nav-inner {
   min-height: var(--header-nav-height);
@@ -1622,18 +1651,20 @@
     --header-nav-height: 0px;
     --section-scroll-offset: calc(var(--header-main-height) + 14px);
   }
-  .ncw .site-header { position: sticky; top: 0; }
+  .ncw .site-header { position: sticky; top: 0; border-bottom: 1px solid var(--line-soft); }
+  .ncw .nav-brand { display: none; }
   .ncw .container { width: min(100% - 40px, var(--max)); }
   .ncw .header-contact { display: none; }
   .ncw .mobile-toggle { display: inline-grid; place-items: center; }
   .ncw .header-nav {
-    position: absolute;
-    top: 100%;
+    position: fixed;
+    top: calc(var(--header-main-height) + 1px);
     inset-inline: 0;
     display: none;
     max-height: calc(100vh - var(--header-main-height) - 1px);
     max-height: calc(100dvh - var(--header-main-height) - 1px);
     overflow-y: auto;
+    border: 0;
     border-top: 1px solid var(--line);
     background: var(--paper-warm);
     box-shadow: var(--shadow-sm);
