@@ -163,3 +163,34 @@
 }
 
 .ncw-service-detail .page-hero h1 { text-wrap: balance; }
+
+/* Optional service hero photograph, below the existing botanical artwork. */
+.ncw-service-detail .page-hero-photo,
+.ncw-service-detail .page-hero-photo::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ncw-service-detail .page-hero-photo { z-index: -2; }
+.ncw-service-detail .page-hero-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center;
+  /* Keep the jade roller on the right and the copy on the quieter side. */
+  transform: scaleX(-1);
+}
+.ncw-service-detail .page-hero-photo::after {
+  content: "";
+  background:
+    radial-gradient(ellipse 55% 130% at 88% 10%, rgba(63,107,83,.36), transparent 62%),
+    linear-gradient(120deg, rgba(13,42,30,.96), rgba(21,58,43,.89) 55%, rgba(44,87,66,.65));
+}
+@media (max-width: 760px) {
+  .ncw-service-detail .page-hero-photo::after {
+    background:
+      radial-gradient(ellipse 55% 130% at 88% 10%, rgba(63,107,83,.30), transparent 62%),
+      linear-gradient(120deg, rgba(13,42,30,.94), rgba(21,58,43,.85) 55%, rgba(44,87,66,.72));
+  }
+}

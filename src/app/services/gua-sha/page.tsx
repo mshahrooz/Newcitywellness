@@ -25,6 +25,7 @@ export default function GuaShaPage() {
       title="Gua-Sha"
       shortTitle="Gua-Sha"
       description="A traditional Chinese medicine technique that uses a smooth-edged tool to apply pressure across the skin."
+      heroPhoto="gua-sha/hero-jade-roller.webp"
       photo={{ path: "gua-sha/treatment", height: 650, alt: "Practitioner using a smooth-edged Gua-Sha tool on a patient’s upper back" }}
       visitSteps={visitSteps}
       questions={questions}

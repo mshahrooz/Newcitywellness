@@ -18,6 +18,7 @@ type ServiceDetailProps = {
   shortTitle: string
   description: string
   intro: ReactNode
+  heroPhoto?: string
   photo: { path: string; height: number; alt: string }
   visitSteps: readonly TextItem[]
   questions: readonly TextItem[]
@@ -33,7 +34,7 @@ function BookingLink() {
   return <a className="btn btn-gold" href={bookingUrl} target="_blank" rel="noopener noreferrer">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
 }
 
-export function ServiceDetailPage({ id, title, shortTitle, description, intro, photo, visitSteps, questions, bookingCopy }: ServiceDetailProps) {
+export function ServiceDetailPage({ id, title, shortTitle, description, intro, heroPhoto, photo, visitSteps, questions, bookingCopy }: ServiceDetailProps) {
   const aboutId = `about-${id}`
   const faqId = `${id}-faq`
   const sections = [
@@ -48,6 +49,11 @@ export function ServiceDetailPage({ id, title, shortTitle, description, intro, p
       <SiteHeader current="services" currentService={id} />
       <main id="main-content">
         <section className="page-hero" aria-labelledby={`${id}-title`}>
+          {heroPhoto && (
+            <div className="page-hero-photo" aria-hidden="true">
+              <img src={`${process.env.BASE_PATH || ""}/images/services/${heroPhoto}`} alt="" width={1000} height={435} fetchPriority="high" />
+            </div>
+          )}
           <svg className="page-hero-art" viewBox="0 0 84 74" fill="none" aria-hidden="true">
             <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
             <path d="M42 65C28 53 17 37 11 21C27 22 39 34 42 51C45 34 57 22 73 21C67 37 56 53 42 65Z" stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round" />
