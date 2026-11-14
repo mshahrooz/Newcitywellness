@@ -53,16 +53,6 @@
 
 .ncw-about .page-hero .gold-rule { margin: 0 0 22px; }
 
-.ncw-about .rise { --reveal-x: 0px; animation: ncwReveal var(--motion-reveal) var(--motion-reveal-ease) backwards; }
-
-.ncw-about .rise.d1 { animation-delay: 55ms; }
-
-.ncw-about .rise.d2 { animation-delay: 110ms; }
-
-.ncw-about .rise.d3 { animation-delay: 165ms; }
-
-.ncw-about .rise.d4 { animation-delay: 220ms; }
-
 .ncw-about .frame { position: relative; margin: 0; border-radius: var(--radius); background: var(--cream-2); box-shadow: var(--shadow-lg); }
 
 .ncw-about .frame img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
@@ -297,10 +287,6 @@
 
   .ncw-about .bio-photo { width: min(76%, 340px); }
 }
-@media (prefers-reduced-motion: reduce) {
-  .ncw-about .rise { animation: none !important; }
-}
-
 /* Both source photos are square and the practitioner's face reaches their top edge.
    Let their intrinsic height set the frame, rather than cropping to a landscape box. */
 .ncw-about .split-media.frame.about-full-photo,

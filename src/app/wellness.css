@@ -35,11 +35,9 @@
 
   /* Shared motion — quick feedback, gentler visual movement. */
   --motion-ease: cubic-bezier(.33, 0, .25, 1);
-  --motion-reveal-ease: cubic-bezier(.25, .46, .35, 1);
   --motion-color: 260ms;
   --motion-surface: 380ms;
   --motion-image: 640ms;
-  --motion-reveal: 680ms;
 
   /* base */
   background: var(--paper);
@@ -1612,22 +1610,42 @@
 }
 
 /* =========================================================
-   Reveal-on-scroll
+   Page entrance — runs on first paint and on a new route's hero.
+   The background and heading are present immediately. No loader
+   or client-side script holds up the first view.
    ========================================================= */
-/* Ease in the hero copy without hiding it during hydration or slowing the image. */
-.ncw .hero-copy,
-.ncw:not(.ncw-about) .page-hero-copy:not(:has(.rise)) {
-  animation: ncwHeroCopy 700ms var(--motion-reveal-ease) both;
+@media (prefers-reduced-motion: no-preference) {
+  .ncw :is(.hero-media, .page-hero-photo) {
+    animation: ncwHeroImageEnter 1250ms ease-out backwards;
+  }
+
+  .ncw :is(.hero-copy, .page-hero-copy) > :is(nav, h1, p, .gold-rule, .hero-actions, .btn) {
+    animation: ncwHeroContentEnter 1150ms cubic-bezier(.25,.58,.34,1) var(--hero-enter-delay, 70ms) backwards;
+  }
+
+  .ncw :is(.hero-copy, .page-hero-copy) > h1 { --hero-enter-delay: 150ms; }
+  .ncw .page-hero-copy > .gold-rule { --hero-enter-delay: 220ms; }
+  .ncw :is(.hero-copy, .page-hero-copy) > p { --hero-enter-delay: 300ms; }
+  .ncw :is(.hero-copy, .page-hero-copy) > :is(.hero-actions, .btn) { --hero-enter-delay: 460ms; }
+
+  /* Keep keyboard focus fully visible even during the opening sequence. */
+  .ncw :is(.hero-copy, .page-hero-copy) > :is(:focus, :focus-within) { animation: none; }
+
+  @media (max-width: 760px) {
+    .ncw :is(.hero-copy, .page-hero-copy) { --hero-enter-rise: 20px; }
+  }
 }
-@keyframes ncwHeroCopy {
-  from { opacity: .82; translate: 0 5px; }
+
+@keyframes ncwHeroImageEnter {
+  from { opacity: .4; }
+  to { opacity: 1; }
+}
+
+@keyframes ncwHeroContentEnter {
+  from { opacity: .24; translate: 0 var(--hero-enter-rise, 32px); }
   to { opacity: 1; translate: 0 0; }
 }
-/* Keep existing hero entrances independent from scroll reveals. */
-@keyframes ncwReveal {
-  from { opacity: 0; translate: 0 8px; }
-  to { opacity: 1; translate: 0 0; }
-}
+
 @keyframes ncwFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
