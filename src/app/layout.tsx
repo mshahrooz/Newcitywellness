@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Cormorant_Garamond, DM_Sans } from "next/font/google
 import "./globals.css";
 import { PageLoadIndicator } from "./page-load-indicator";
 import { SiteReveals } from "./site-reveals";
+import { DesktopMotionControls } from "./desktop-motion-controls";
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
@@ -70,6 +71,7 @@ export default function RootLayout({
       >
         <PageLoadIndicator />
         <SiteReveals />
+        <DesktopMotionControls />
         {children}
         <Toaster />
       </body>

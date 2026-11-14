@@ -1,3 +1,5 @@
+import { desktopMotionQuery, motionIsReduced, motionPreferenceEvent, reducedMotionQuery } from "./motion-preference"
+
 const explicit = ".motion-reveal, .clinic-reveal, .service-reveal"
 const details = [
   ".faq-head", ".faq-item",
@@ -13,7 +15,8 @@ export function observeReveals(root: Document) {
   const main = root.querySelector(".ncw main")
   if (!main || !("IntersectionObserver" in window) || !("animate" in Element.prototype)) return
 
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)")
+  const reduced = window.matchMedia(reducedMotionQuery)
+  const desktop = window.matchMedia(desktopMotionQuery)
   const compact = window.matchMedia("(max-width: 760px)")
   const tracked = new Map<HTMLElement, RevealState>()
 
@@ -28,7 +31,7 @@ export function observeReveals(root: Document) {
     for (const entry of entries) {
       const target = entry.target as HTMLElement
       const state = tracked.get(target)
-      if (!state || !state.armed || !entry.isIntersecting || reduced.matches) continue
+      if (!state || !state.armed || !entry.isIntersecting || motionIsReduced(reduced, desktop)) continue
       state.armed = false
       if (target.matches(":focus-within, .is-searching *")) continue
       const x = compact.matches ? 0 : target.classList.contains("from-left") ? -26 : target.classList.contains("from-right") ? 26 : 0
@@ -96,7 +99,7 @@ export function observeReveals(root: Document) {
   }
 
   function preferenceChanged() {
-    if (reduced.matches) tracked.forEach(stop)
+    if (motionIsReduced(reduced, desktop)) tracked.forEach(stop)
   }
 
   refresh()
@@ -106,12 +109,16 @@ export function observeReveals(root: Document) {
   })
   root.addEventListener("focusin", keepFocusedVisible)
   reduced.addEventListener?.("change", preferenceChanged)
+  desktop.addEventListener?.("change", preferenceChanged)
+  window.addEventListener(motionPreferenceEvent, preferenceChanged)
   return () => {
     changes.disconnect()
     enter.disconnect()
     leave.disconnect()
     root.removeEventListener("focusin", keepFocusedVisible)
     reduced.removeEventListener?.("change", preferenceChanged)
+    desktop.removeEventListener?.("change", preferenceChanged)
+    window.removeEventListener(motionPreferenceEvent, preferenceChanged)
     tracked.forEach(stop)
   }
 }

@@ -1610,9 +1610,7 @@
 }
 
 /* =========================================================
-   Page entrance — runs on first paint and on a new route's hero.
-   The background and heading are present immediately. No loader
-   or client-side script holds up the first view.
+   Page entrance — no blocking loader or client-side startup.
    ========================================================= */
 @media (prefers-reduced-motion: no-preference) {
   .ncw :is(.hero-media, .page-hero-photo) {
@@ -1644,6 +1642,54 @@
 @keyframes ncwHeroContentEnter {
   from { opacity: .24; translate: 0 var(--hero-enter-rise, 32px); }
   to { opacity: 1; translate: 0 0; }
+}
+
+/* Desktop entrance, shared by automatic playback and the replay control. */
+@media (any-hover: hover) and (any-pointer: fine) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ncw main :is(.hero, .page-hero) { --desktop-intro: ncwDesktopIntro; --desktop-wash: ncwDesktopWash; }
+  }
+
+  /* Explicit opt-in overrides the device setting for these effects only. */
+  html[data-ncw-motion="on"] .ncw main :is(.hero, .page-hero) {
+    --desktop-intro: ncwDesktopIntro;
+    --desktop-wash: ncwDesktopWash;
+  }
+
+  .ncw main :is(.hero-media, .page-hero-photo) { animation: none; }
+
+  .ncw main :is(.hero, .page-hero) :is(.hero-media, .page-hero-photo)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(100deg, transparent 5%, rgb(223 200 146 / 26%) 45%, rgb(223 200 146 / 10%) 60%, transparent 78%);
+    opacity: 0;
+    pointer-events: none;
+    animation: var(--desktop-wash, none) 1650ms ease-out backwards !important;
+  }
+
+  .ncw main :is(.hero-copy, .page-hero-copy) > :is(nav, h1, p, .gold-rule, .hero-actions, .btn) {
+    animation: var(--desktop-intro, none) 1300ms cubic-bezier(.32,.48,.38,1) var(--desktop-intro-delay, 100ms) backwards !important;
+  }
+
+  .ncw main :is(.hero-copy, .page-hero-copy) > h1 { --desktop-intro-delay: 190ms; }
+  .ncw main .page-hero-copy > .gold-rule { --desktop-intro-delay: 290ms; }
+  .ncw main :is(.hero-copy, .page-hero-copy) > p { --desktop-intro-delay: 410ms; }
+  .ncw main :is(.hero-copy, .page-hero-copy) > :is(.hero-actions, .btn) { --desktop-intro-delay: 570ms; }
+
+  .ncw main :is(.hero-copy, .page-hero-copy) > :is(:focus, :focus-within),
+  .ncw main [data-entrance-reset] :is(.hero-copy, .page-hero-copy) > :is(nav, h1, p, .gold-rule, .hero-actions, .btn),
+  .ncw main [data-entrance-reset] :is(.hero-media, .page-hero-photo)::before { animation: none !important; }
+}
+
+@keyframes ncwDesktopIntro {
+  from { opacity: .12; translate: 0 37px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes ncwDesktopWash {
+  from { opacity: .85; transform: translateX(-24%); }
+  to { opacity: 0; transform: translateX(20%); }
 }
 
 @keyframes ncwFadeIn {

@@ -1,0 +1,31 @@
+.desktop-motion-controls { display: none; }
+
+@media (any-hover: hover) and (any-pointer: fine) {
+  .desktop-motion-controls {
+    position: fixed;
+    z-index: 58;
+    inset: auto max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: calc(100vw - 32px);
+  }
+  .desktop-motion-controls button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 5px 11px;
+    border: 1px solid #d7c59b;
+    border-radius: 999px;
+    background: #fdfbf5;
+    color: #153a2b;
+    box-shadow: 0 3px 12px rgb(13 42 30 / 10%);
+    font: 600 12px/1.2 var(--font-sans-wellness), system-ui, sans-serif;
+    cursor: pointer;
+  }
+  .desktop-motion-controls button:hover { background: #f6efe0; }
+  .desktop-motion-controls button:focus-visible { outline: 2px solid #153a2b; outline-offset: 3px; }
+  .desktop-motion-controls svg { width: 14px; height: 14px; }
+}
