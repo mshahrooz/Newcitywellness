@@ -25,6 +25,7 @@ export default function CuppingPage() {
       title="Cupping"
       shortTitle="Cupping"
       description="A traditional suction-cup therapy in New City, NY. Learn what it feels like and what to expect at your visit."
+      heroPhoto={{ path: "cupping/hero-cupping-therapy.webp", width: 1440, height: 961 }}
       photo={{ path: "cupping/treatment", height: 665, alt: "Suction cups placed on a patient’s back during cupping therapy" }}
       visitSteps={visitSteps}
       questions={questions}
