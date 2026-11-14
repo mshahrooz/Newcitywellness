@@ -17,13 +17,24 @@
 
 .ncw .clinic-footer .footer-grid { display: grid; grid-template-columns: 1.35fr 0.8fr 1fr 1.3fr; gap: clamp(28px, 4vw, 56px); align-items: start; }
 
-.ncw .clinic-footer .clinic-footer-brand .brand { color: var(--gold-pale); }
+/* Split at the transparent gap in the source logo to keep the mark in color. */
+.ncw .clinic-footer .footer-brand-logo {
+  --logo-divider: 19%;
+  display: block;
+  position: relative;
+  width: min(100%, 280px);
+}
 
-.ncw .clinic-footer .clinic-footer-brand .brand-mark { width: 52px; height: 48px; }
+.ncw .clinic-footer .footer-brand-logo img { display: block; width: 100%; height: auto; }
 
-.ncw .clinic-footer .clinic-footer-brand .brand-name { color: #fffdf5; font-size: 1.7rem; }
+.ncw .clinic-footer .footer-logo-mark { clip-path: inset(0 calc(100% - var(--logo-divider)) 0 0); }
 
-.ncw .clinic-footer .clinic-footer-brand .brand-tag { color: var(--gold-pale); font-size: 0.46rem; letter-spacing: 0.16em; }
+.ncw .clinic-footer .footer-logo-lettering {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(0 0 0 var(--logo-divider));
+  filter: brightness(0) invert(1);
+}
 
 .ncw .clinic-footer .clinic-footer-brand p { margin: 18px 0 0; max-width: 300px; color: rgba(255,253,245,0.78); font-size: 0.84rem; line-height: 1.65; }
 

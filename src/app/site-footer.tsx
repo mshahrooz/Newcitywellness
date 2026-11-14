@@ -2,19 +2,15 @@ import Link from "next/link"
 import "./clinic-footer.css"
 
 export function SiteFooter() {
+  const logo = `${process.env.BASE_PATH || ""}/images/new-city-logo.webp`
   return (
     <footer className="site-footer clinic-footer">
       <div className="container">
         <div className="footer-grid">
           <div className="clinic-footer-brand">
-            <Link className="brand" href="/" aria-label="New City Acupuncture and Wellness Center home">
-              <svg className="brand-mark" viewBox="0 0 84 74" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
-                <path d="M42 65C28 53 17 37 11 21C27 22 39 34 42 51C45 34 57 22 73 21C67 37 56 53 42 65Z" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" />
-                <path d="M42 59C30 45 29 25 42 7C55 25 54 45 42 59Z" stroke="currentColor" strokeWidth="2.1" strokeLinejoin="round" />
-                <path d="M8 43C18 55 29 63 42 68C55 63 66 55 76 43" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
-              </svg>
-              <span className="brand-copy"><span className="brand-name">NEW CITY</span><span className="brand-tag">ACUPUNCTURE &amp; WELLNESS CENTER</span></span>
+            <Link className="footer-brand-logo" href="/" aria-label="New City Acupuncture and Wellness Center home">
+              <img className="footer-logo-mark" src={logo} width={280} height={56} alt="" loading="lazy" decoding="async" />
+              <img className="footer-logo-lettering" src={logo} width={280} height={56} alt="" loading="lazy" decoding="async" />
             </Link>
             <p>Traditional Chinese medicine in the heart of New City, NY, serving all of Rockland County and the surrounding areas.</p>
           </div>
