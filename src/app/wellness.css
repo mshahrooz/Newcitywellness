@@ -1644,16 +1644,10 @@
   to { opacity: 1; translate: 0 0; }
 }
 
-/* Desktop entrance, shared by automatic playback and the replay control. */
+/* Desktop entrance plays once when the page hero is rendered. */
 @media (any-hover: hover) and (any-pointer: fine) {
   @media (prefers-reduced-motion: no-preference) {
     .ncw main :is(.hero, .page-hero) { --desktop-intro: ncwDesktopIntro; --desktop-wash: ncwDesktopWash; }
-  }
-
-  /* Explicit opt-in overrides the device setting for these effects only. */
-  html[data-ncw-motion="on"] .ncw main :is(.hero, .page-hero) {
-    --desktop-intro: ncwDesktopIntro;
-    --desktop-wash: ncwDesktopWash;
   }
 
   .ncw main :is(.hero-media, .page-hero-photo) { animation: none; }
@@ -1678,9 +1672,7 @@
   .ncw main :is(.hero-copy, .page-hero-copy) > p { --desktop-intro-delay: 410ms; }
   .ncw main :is(.hero-copy, .page-hero-copy) > :is(.hero-actions, .btn) { --desktop-intro-delay: 570ms; }
 
-  .ncw main :is(.hero-copy, .page-hero-copy) > :is(:focus, :focus-within),
-  .ncw main [data-entrance-reset] :is(.hero-copy, .page-hero-copy) > :is(nav, h1, p, .gold-rule, .hero-actions, .btn),
-  .ncw main [data-entrance-reset] :is(.hero-media, .page-hero-photo)::before { animation: none !important; }
+  .ncw main :is(.hero-copy, .page-hero-copy) > :is(:focus, :focus-within) { animation: none !important; }
 }
 
 @keyframes ncwDesktopIntro {
