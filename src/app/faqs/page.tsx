@@ -38,7 +38,7 @@ const questions = [
   {
     id: "what-it-may-help",
     title: "What can acupuncture help me with?",
-    answer: <><p>Research suggests acupuncture may help with some kinds of pain. The evidence varies by condition and includes studies on:</p><ul className="faq-check-list"><li>Chronic low-back pain</li><li>Neck pain</li><li>Knee osteoarthritis pain</li><li>Some types of headaches</li></ul><p><a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety">See what the research says</a> or <a href="tel:+18455792428">ask the clinic how acupuncture might fit alongside your current care</a>.</p><a className="btn btn-outline faq-answer-button" href="https://newcitywellness.com/conditions-treated/">Discover More <span className="arrow" aria-hidden="true">→</span></a></>,
+    answer: <><p>Research suggests acupuncture may help with some kinds of pain. The evidence varies by condition and includes studies on:</p><ul className="faq-check-list"><li>Chronic low-back pain</li><li>Neck pain</li><li>Knee osteoarthritis pain</li><li>Some types of headaches</li></ul><p><a href="https://www.nccih.nih.gov/health/acupuncture-effectiveness-and-safety">See what the research says</a> or <a href="tel:+18455792428">ask the clinic how acupuncture might fit alongside your current care</a>.</p><Link className="btn btn-outline faq-answer-button" href="/conditions-treated/">Discover More <span className="arrow" aria-hidden="true">→</span></Link></>,
   },
   {
     id: "number-of-treatments",

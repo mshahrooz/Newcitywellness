@@ -198,46 +198,46 @@ export default function Home() {
               <Ornament />
             </div>
             <div className="condition-grid">
-              <a className="condition-card reveal delay-1" href="https://newcitywellness.com/conditions-treated/" aria-label="Digestive Issues">
+              <Link className="condition-card reveal delay-1" href="/conditions-treated/#digestive" aria-label="Digestive Issues">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 5c-3 4-2 9 2 12 2 2 2 4 0 6-3 3-8 3-9 8-1 6 3 11 10 11 7 0 12-5 12-12 0-5-3-8-6-10-3-2-3-5-1-8" /><path d="M22 16c-1 4 1 7 5 8 4 1 7 4 7 8M12 28c3 2 6 2 9 0" /></svg>
                 <span>Digestive<br />Issues</span>
-              </a>
-              <a className="condition-card reveal delay-2" href="https://newcitywellness.com/conditions-treated/" aria-label="Prenatal Care">
+              </Link>
+              <Link className="condition-card reveal delay-2" href="/conditions-treated/#prenatal" aria-label="Prenatal Care">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M25 8c-5 0-8 4-8 9 0 4 2 6 5 8-4 2-7 6-7 12M24 25c8-1 13 4 13 12M24 25c-4 0-6-3-6-7 0-3 3-5 6-5 5 0 8 4 8 9 0 5-3 8-8 8" /><path d="M17 14c-2-2-5-1-6 2-1 3 1 6 4 7M15 37l-4 4M36 36l3 4" /></svg>
                 <span>Prenatal<br />Care</span>
-              </a>
-              <a className="condition-card reveal delay-3" href="https://newcitywellness.com/conditions-treated/" aria-label="General Wellness">
+              </Link>
+              <Link className="condition-card reveal delay-3" href="/conditions-treated/#general-wellness" aria-label="General Wellness">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 41C11 33 8 23 13 15c6 0 10 5 11 11 1-7 5-12 11-12 5 9 1 20-11 27Z" /><path d="M24 41V18M24 29c-5-5-9-7-14-7M24 33c5-6 9-9 14-10" /></svg>
                 <span>General<br />Wellness</span>
-              </a>
-              <a className="condition-card reveal delay-4" href="https://newcitywellness.com/conditions-treated/" aria-label="Postpartum">
+              </Link>
+              <Link className="condition-card reveal delay-4" href="/conditions-treated/#postpartum" aria-label="Postpartum">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M19 7c-4 3-5 8-3 12 2 4 5 6 9 6 5 0 8-4 8-9 0-4-3-8-7-9M24 25c-5 2-8 6-8 12M24 25c6 1 10 6 10 13M15 37h-4M36 38h4" /><path d="M24 14c2 0 4 2 4 4" /></svg>
                 <span>Postpartum</span>
-              </a>
-              <a className="condition-card reveal delay-1" href="https://newcitywellness.com/conditions-treated/" aria-label="Musculoskeletal">
+              </Link>
+              <Link className="condition-card reveal delay-1" href="/conditions-treated/#musculoskeletal" aria-label="Musculoskeletal">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M18 5c-3 5-2 9 1 12l-1 14c-3 3-4 7-1 12M30 5c3 5 2 9-1 12l1 14c3 3 4 7 1 12" /><path d="M17 16h14M16 31h16M20 10h8M20 38h8" /></svg>
                 <span>Musculoskeletal</span>
-              </a>
-              <a className="condition-card reveal delay-2" href="https://newcitywellness.com/conditions-treated/" aria-label="Respiratory">
+              </Link>
+              <Link className="condition-card reveal delay-2" href="/conditions-treated/#respiratory" aria-label="Respiratory">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M23 7v16c-4-6-8-7-11-3-4 5-5 14-3 20 5 2 10 0 13-5l1-12M25 7v16c4-6 8-7 11-3 4 5 5 14 3 20-5 2-10 0-13-5l-1-12" /></svg>
                 <span>Respiratory</span>
-              </a>
-              <a className="condition-card reveal delay-3" href="https://newcitywellness.com/conditions-treated/" aria-label="Women's Health">
+              </Link>
+              <Link className="condition-card reveal delay-3" href="/conditions-treated/#womens-health" aria-label="Women's Health">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="15" r="10" /><path d="M24 25v17M18 35h12" /></svg>
                 <span>Women&apos;s<br />Health</span>
-              </a>
-              <a className="condition-card reveal delay-4" href="https://newcitywellness.com/conditions-treated/" aria-label="Psychological and Emotional">
+              </Link>
+              <Link className="condition-card reveal delay-4" href="/conditions-treated/#emotional" aria-label="Psychological and Emotional">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 7c-9 0-16 6-16 15 0 6 4 10 9 12v7h14v-8c5-3 9-7 9-13C40 12 33 7 24 7Z" /><path d="M18 19c2-4 10-4 12 0M18 25c2 4 10 4 12 0M24 18v12" /></svg>
                 <span>Psychological &amp;<br />Emotional</span>
-              </a>
-              <a className="condition-card reveal delay-1" href="https://newcitywellness.com/conditions-treated/" aria-label="Neurological">
+              </Link>
+              <Link className="condition-card reveal delay-1" href="/conditions-treated/#neurological" aria-label="Neurological">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 7c-5-4-11 0-10 6-5 1-7 7-3 11-3 5 0 10 5 10 0 6 6 8 9 4M24 7c5-4 11 0 10 6 5 1 7 7 3 11 3 5 0 10-5 10 0 6-6 8-9 4M24 8v34M14 18l7 2M34 18l-7 2M14 29l7-2M34 29l-7-2" /></svg>
                 <span>Neurological</span>
-              </a>
-              <a className="condition-card reveal delay-2" href="https://newcitywellness.com/conditions-treated/" aria-label="Urogenital">
+              </Link>
+              <Link className="condition-card reveal delay-2" href="/conditions-treated/#urogenital" aria-label="Urogenital">
                 <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M15 8c-5 0-8 4-8 9s3 8 8 8c4 0 6-3 6-7V8M33 8c5 0 8 4 8 9s-3 8-8 8c-4 0-6-3-6-7V8M24 24v18M18 37c2-3 4-4 6-4s4 1 6 4" /></svg>
                 <span>Urogenital</span>
-              </a>
+              </Link>
             </div>
           </div>
         </section>

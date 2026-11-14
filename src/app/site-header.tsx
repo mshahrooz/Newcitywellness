@@ -8,7 +8,7 @@ function HeaderLogo() {
   return <img className="header-logo-image" src={`${process.env.BASE_PATH || ""}/images/new-city-logo.webp`} width={280} height={56} alt="" />
 }
 
-export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services" | "faqs"; currentService?: PublishedService }) {
+export function SiteHeader({ current, currentService }: { current: "home" | "about" | "services" | "faqs" | "conditions"; currentService?: PublishedService }) {
   const [scrolled, setScrolled] = useState(false)
   const [navPinned, setNavPinned] = useState(false)
   const header = useRef<HTMLElement>(null)
@@ -96,7 +96,7 @@ export function SiteHeader({ current, currentService }: { current: "home" | "abo
               </div>
             </div>
             <Link className={current === "faqs" ? "nav-link active" : "nav-link"} aria-current={current === "faqs" ? "page" : undefined} href="/faqs/" onClick={closeMenus}>FAQs</Link>
-            <a className="nav-link" href="https://newcitywellness.com/conditions-treated/">Conditions</a>
+            <Link className={current === "conditions" ? "nav-link active" : "nav-link"} aria-current={current === "conditions" ? "page" : undefined} href="/conditions-treated/" onClick={closeMenus}>Conditions</Link>
             <a className="nav-link" href="https://newcitywellness.com/testimonials/">Testimonials</a>
             <a className="nav-link" href="https://newcitywellness.com/insurance/">Insurance</a>
             <a className="nav-link" href="https://newcitywellness.com/contact-us/">Contact</a>
