@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { editorImage, editorValue, hasEditorImage } from "../../content/editor-model"
+import { EditorBlocks } from "../editor-blocks"
 import Link from "next/link"
 import { SiteHeader } from "../site-header"
 import { SiteFooter } from "../site-footer"
@@ -29,8 +31,8 @@ export default function TestimonialsPage() {
       <main id="main-content">
         <section className="page-hero page-hero--photo" aria-labelledby="testimonials-title">
           <picture className="page-hero-photo" aria-hidden="true">
-            <source media="(max-width: 640px)" srcSet={`${heroImages}/hero-sunlit-grass-800.webp`} width={800} height={533} />
-            <img src={`${heroImages}/hero-sunlit-grass-1600.webp`} alt="" width={1600} height={1066} fetchPriority="high" />
+            {!hasEditorImage("testimonials", "hero") && <source media="(max-width: 640px)" srcSet={`${heroImages}/hero-sunlit-grass-800.webp`} width={800} height={533} />}
+            <img data-editor-image="hero" {...editorImage("testimonials", "hero", { src: `${heroImages}/hero-sunlit-grass-1600.webp`, width: 1600, height: 1066, alt: "" })} fetchPriority="high" />
           </picture>
           <BrandMark className="page-hero-art" />
           <div className="container">
@@ -38,9 +40,9 @@ export default function TestimonialsPage() {
               <nav aria-label="Breadcrumb">
                 <ol className="crumbs"><li><Link href="/">Home</Link></li><li aria-current="page">Testimonials</li></ol>
               </nav>
-              <h1 id="testimonials-title">Patient Testimonials</h1>
+              <h1 id="testimonials-title" data-editor-field="hero-title">{editorValue("testimonials", "hero-title", "Patient Testimonials")}</h1>
               <div className="gold-rule" aria-hidden="true" />
-              <p>In their own words, patients share what it was like to receive care at New City Acupuncture &amp; Wellness Center.</p>
+              <p data-editor-field="hero-description">{editorValue("testimonials", "hero-description", "In their own words, patients share what it was like to receive care at New City Acupuncture & Wellness Center.")}</p>
               <a className="btn btn-gold reviews-hero-link" href="#patient-stories">Read Patient Stories <span className="arrow" aria-hidden="true">↓</span></a>
             </div>
           </div>
@@ -82,14 +84,15 @@ export default function TestimonialsPage() {
         <section className="cta-band" aria-labelledby="testimonials-contact-title">
           <div className="container cta-inner">
             <span className="eyebrow">Get In Touch</span>
-            <h2 id="testimonials-contact-title">Have questions about your first visit?</h2>
-            <p>Call the New City clinic to talk through what to expect, or book an appointment online.</p>
+            <h2 id="testimonials-contact-title" data-editor-field="closing-heading">{editorValue("testimonials", "closing-heading", "Have questions about your first visit?")}</h2>
+            <p data-editor-field="closing-copy">{editorValue("testimonials", "closing-copy", "Call the New City clinic to talk through what to expect, or book an appointment online.")}</p>
             <div className="cta-actions">
               <a className="btn btn-gold" href={bookingUrl} target="_blank" rel="noopener noreferrer">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
               <a className="cta-phone" href="tel:+18455792428">845-579-2428</a>
             </div>
           </div>
         </section>
+        <EditorBlocks page={"testimonials"} />
       </main>
       <SiteFooter />
     </div>

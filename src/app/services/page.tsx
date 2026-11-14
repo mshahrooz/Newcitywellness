@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { editorImage, editorValue, hasEditorImage } from "../../content/editor-model"
+import { EditorBlocks } from "../editor-blocks"
 import Link from "next/link"
 import { SiteHeader } from "../site-header"
 import { SiteFooter } from "../site-footer"
@@ -73,8 +75,8 @@ export default function ServicesPage() {
       <main id="main-content">
         <section className="page-hero page-hero--photo services-overview-hero" aria-labelledby="services-title">
           <picture className="page-hero-photo" aria-hidden="true">
-            <source media="(max-width: 600px)" srcSet={`${imageBase}/hero-botanical-mobile.webp`} />
-            <img src={`${imageBase}/hero-botanical.webp`} alt="" width={1365} height={540} fetchPriority="high" />
+            {!hasEditorImage("services", "hero") && <source media="(max-width: 600px)" srcSet={`${imageBase}/hero-botanical-mobile.webp`} />}
+            <img data-editor-image="hero" {...editorImage("services", "hero", { src: `${imageBase}/hero-botanical.webp`, width: 1365, height: 540, alt: "" })} fetchPriority="high" />
           </picture>
           <svg className="page-hero-art" viewBox="0 0 84 74" fill="none" aria-hidden="true">
             <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
@@ -90,9 +92,9 @@ export default function ServicesPage() {
                   <li aria-current="page">Services</li>
                 </ol>
               </nav>
-              <h1 id="services-title" className="rise d1">Services</h1>
+              <h1 id="services-title" className="rise d1" data-editor-field="hero-title">{editorValue("services", "hero-title", "Services")}</h1>
               <div className="gold-rule rise d2" aria-hidden="true" />
-              <p className="rise d3">Traditional Chinese medicine modalities for optimal health, inner peace, and an overall good quality of life.</p>
+              <p className="rise d3" data-editor-field="hero-description">{editorValue("services", "hero-description", "Traditional Chinese medicine modalities for optimal health, inner peace, and an overall good quality of life.")}</p>
             </div>
           </div>
         </section>
@@ -100,7 +102,7 @@ export default function ServicesPage() {
         <section className="statement" aria-label="Our approach to treatment">
           <div className="container statement-inner service-reveal">
             <Ornament />
-            <p>Our wellness center offers holistic treatment plans specifically tailored to your needs, balancing the emotional health, physical well-being, and lifestyle of each person.</p>
+            <p data-editor-field="secondary-copy">{editorValue("services", "secondary-copy", "Our wellness center offers holistic treatment plans specifically tailored to your needs, balancing the emotional health, physical well-being, and lifestyle of each person.")}</p>
             <nav aria-labelledby="jump-label">
               <p id="jump-label" className="jump-label">Jump to a service</p>
               <ul className="chips chips--center">
@@ -130,9 +132,9 @@ export default function ServicesPage() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>
                   Mondays · 9:30 am
                 </span>
-                <h2 id="sessions-title">Weekly Group Sessions</h2>
+                <h2 id="sessions-title" data-editor-field="session-heading">{editorValue("services", "session-heading", "Weekly Group Sessions")}</h2>
                 <div className="gold-rule" aria-hidden="true" />
-                <p>Start the week with affordable group sessions in Qigong, breathing, meditation, and relaxation. The sessions take place at our New City wellness center and focus on gentle movement, posture, and relaxation. Call the center for details before attending.</p>
+                <p data-editor-field="session-copy">{editorValue("services", "session-copy", "Start the week with affordable group sessions in Qigong, breathing, meditation, and relaxation. The sessions take place at our New City wellness center and focus on gentle movement, posture, and relaxation. Call the center for details before attending.")}</p>
                 <Chips items={sessionActivities} />
               </div>
             </div>
@@ -142,14 +144,15 @@ export default function ServicesPage() {
         <section className="cta-band" aria-labelledby="cta-title">
           <div className="container cta-inner service-reveal">
             <span className="eyebrow">Get In Touch</span>
-            <h2 id="cta-title">Let’s Talk About Your First Visit</h2>
-            <p>Have questions about a service or what to expect? Call the center or book a visit online.</p>
+            <h2 id="cta-title" data-editor-field="closing-heading">{editorValue("services", "closing-heading", "Let’s Talk About Your First Visit")}</h2>
+            <p data-editor-field="closing-copy">{editorValue("services", "closing-copy", "Have questions about a service or what to expect? Call the center or book a visit online.")}</p>
             <div className="cta-actions">
               <a className="btn btn-gold" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener noreferrer">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
               <a className="cta-phone" href="tel:+18455792428">845-579-2428</a>
             </div>
           </div>
         </section>
+        <EditorBlocks page={"services"} />
       </main>
       <SiteFooter />
     </div>

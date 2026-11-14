@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { editorImage, editorValue } from "../../content/editor-model"
+import { EditorBlocks } from "../editor-blocks"
 import Link from "next/link"
 import { SiteHeader } from "../site-header"
 import { SiteFooter } from "../site-footer"
@@ -33,7 +35,7 @@ export default function ContactPage() {
       <main id="main-content">
         <section className="page-hero page-hero--photo contact-hero" aria-labelledby="contact-title">
           <div className="page-hero-photo" aria-hidden="true">
-            <img src={hero} width={1500} height={1000} alt="" fetchPriority="high" />
+            <img data-editor-image="hero" {...editorImage("contact", "hero", { src: hero, width: 1500, height: 1000, alt: "" })} fetchPriority="high" />
           </div>
           <BrandMark className="page-hero-art" />
           <div className="container">
@@ -41,9 +43,9 @@ export default function ContactPage() {
               <nav aria-label="Breadcrumb">
                 <ol className="crumbs"><li><Link href="/">Home</Link></li><li aria-current="page">Contact</li></ol>
               </nav>
-              <h1 id="contact-title">Contact Us</h1>
+              <h1 id="contact-title" data-editor-field="hero-title">{editorValue("contact", "hero-title", "Contact Us")}</h1>
               <div className="gold-rule" aria-hidden="true" />
-              <p>Get in touch with New City Acupuncture &amp; Wellness Center to ask a question, plan your visit, or book an appointment.</p>
+              <p data-editor-field="hero-description">{editorValue("contact", "hero-description", "Get in touch with New City Acupuncture & Wellness Center to ask a question, plan your visit, or book an appointment.")}</p>
               <a className="btn btn-gold contact-hero-link" href="#contact-details">Get in Touch <span className="arrow" aria-hidden="true">↓</span></a>
             </div>
           </div>
@@ -66,7 +68,7 @@ export default function ContactPage() {
             </div>
             <div className="contact-page-panel">
               <span className="eyebrow">General Inquiries</span>
-              <h2 className="section-title">Send us a message</h2>
+              <h2 className="section-title" data-editor-field="secondary-heading">{editorValue("contact", "secondary-heading", "Send us a message")}</h2>
               <p>For help checking your acupuncture benefits, please use the <Link href="/insurance/">insurance verification form</Link>.</p>
               <ContactForm email={email} />
             </div>
@@ -92,14 +94,15 @@ export default function ContactPage() {
         <section className="cta-band" aria-labelledby="contact-book-title">
           <div className="container cta-inner">
             <span className="eyebrow">Book a Visit</span>
-            <h2 id="contact-book-title">Ready to schedule your appointment?</h2>
-            <p>Book online through AcuSimple or call the clinic if you’d prefer to schedule by phone.</p>
+            <h2 id="contact-book-title" data-editor-field="closing-heading">{editorValue("contact", "closing-heading", "Ready to schedule your appointment?")}</h2>
+            <p data-editor-field="closing-copy">{editorValue("contact", "closing-copy", "Book online through AcuSimple or call the clinic if you’d prefer to schedule by phone.")}</p>
             <div className="cta-actions">
               <a className="btn btn-gold" href={booking} target="_blank" rel="noopener noreferrer">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
               <a className="cta-phone" href={phone}>845-579-2428</a>
             </div>
           </div>
         </section>
+        <EditorBlocks page={"contact"} />
       </main>
       <SiteFooter />
     </div>

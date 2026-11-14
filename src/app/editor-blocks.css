@@ -1,0 +1,8 @@
+.ncw .editor-blocks { background: var(--paper-warm); padding: clamp(38px, 6vw, 86px) 0; border-top: 1px solid var(--line-soft); }
+.ncw .editor-blocks[hidden] { display: none; }
+.ncw .editor-blocks .editor-blocks-inner { max-width: 900px; display: grid; gap: 16px; }
+.ncw .editor-blocks h2 { margin: 0; color: var(--forest); font: 700 clamp(1.7rem, 3.4vw, 2.5rem)/1.1 var(--serif); }
+.ncw .editor-blocks p { margin: 0; white-space: pre-line; color: var(--ink-soft); }
+.ncw .editor-document { display: inline-flex; gap: 9px; align-items: center; justify-self: start; color: var(--forest); padding: 10px 16px; border: 1px solid var(--gold-soft); border-radius: 10px; font-weight: 700; }
+.ncw .editor-document:hover { background: var(--cream); }
+.ncw .editor-document small { font-size: .65rem; background: var(--cream); padding: 3px 6px; border-radius: 4px; }

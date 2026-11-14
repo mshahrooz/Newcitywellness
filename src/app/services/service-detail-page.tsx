@@ -1,4 +1,6 @@
 import type { ReactNode } from "react"
+import { editorImage, editorValue, type FieldKey } from "../../content/editor-model"
+import { EditorBlocks } from "../editor-blocks"
 import Link from "next/link"
 import { SiteHeader } from "../site-header"
 import { SiteFooter } from "../site-footer"
@@ -44,14 +46,18 @@ export function ServiceDetailPage({ id, title, shortTitle, description, intro, h
   ]
   const treatmentImage = `${process.env.BASE_PATH || ""}/images/services/${photo.path}`
   const related = serviceLinks.filter((therapy) => therapy.id !== id)
+  const heroImage = editorImage(id, "hero", {
+    src: heroPhoto ? `${process.env.BASE_PATH || ""}/images/services/${heroPhoto.path}` : "",
+    width: heroPhoto?.width ?? 1600, height: heroPhoto?.height ?? 900, alt: "",
+  })
   return (
     <div className="ncw ncw-services ncw-service-detail">
       <SiteHeader current="services" currentService={id} />
       <main id="main-content">
-        <section className={heroPhoto ? "page-hero page-hero--photo" : "page-hero"} aria-labelledby={`${id}-title`}>
-          {heroPhoto && (
+        <section className={heroImage.src ? "page-hero page-hero--photo" : "page-hero"} aria-labelledby={`${id}-title`}>
+          {heroImage.src && (
             <div className="page-hero-photo" aria-hidden="true">
-              <img src={`${process.env.BASE_PATH || ""}/images/services/${heroPhoto.path}`} alt="" width={heroPhoto.width} height={heroPhoto.height} fetchPriority="high" />
+              <img data-editor-image="hero" {...heroImage} fetchPriority="high" />
             </div>
           )}
           <svg className="page-hero-art" viewBox="0 0 84 74" fill="none" aria-hidden="true">
@@ -69,9 +75,9 @@ export function ServiceDetailPage({ id, title, shortTitle, description, intro, h
                   <li aria-current="page">{shortTitle}</li>
                 </ol>
               </nav>
-              <h1 id={`${id}-title`}>{title}</h1>
+              <h1 id={`${id}-title`} data-editor-field="hero-title">{editorValue(id, "hero-title", title)}</h1>
               <div className="gold-rule" aria-hidden="true" />
-              <p>{description}</p>
+              <p data-editor-field="hero-description">{editorValue(id, "hero-description", description)}</p>
             </div>
           </div>
         </section>
@@ -89,20 +95,20 @@ export function ServiceDetailPage({ id, title, shortTitle, description, intro, h
           <div className="container acu-editorial">
             <div className="copy acu-article">
               <span className="eyebrow">The Practice</span>
-              <h2 id="acu-about-title" className="section-title">What Is {shortTitle}?</h2>
+              <h2 id="acu-about-title" className="section-title" data-editor-field="practice-heading">{editorValue(id, "practice-heading", `What Is ${shortTitle}?`)}</h2>
               <div className="gold-rule" aria-hidden="true" />
               {intro}
             </div>
             <figure className="frame frame--right acu-treatment-photo">
-              <img
-                src={`${treatmentImage}-1000.webp`}
-                srcSet={`${treatmentImage}-640.webp 640w, ${treatmentImage}-1000.webp 1000w`}
+              <img data-editor-image="treatment"
+                {...editorImage(id, "treatment", {
+                  src: `${treatmentImage}-1000.webp`,
+                  srcSet: `${treatmentImage}-640.webp 640w, ${treatmentImage}-1000.webp 1000w`,
+                  width: 1000, height: photo.height, alt: photo.alt,
+                })}
                 sizes="(max-width: 600px) calc(100vw - 32px), (max-width: 760px) calc(100vw - 40px), (max-width: 1304px) 41vw, 520px"
-                width={1000}
-                height={photo.height}
                 loading="lazy"
                 decoding="async"
-                alt={photo.alt}
               />
             </figure>
           </div>
@@ -112,15 +118,15 @@ export function ServiceDetailPage({ id, title, shortTitle, description, intro, h
           <div className="container">
             <div className="section-heading acu-visit-heading">
               <span className="eyebrow">Your First Visit</span>
-              <h2 id="acu-visit-title">What to Expect</h2>
+              <h2 id="acu-visit-title" data-editor-field="visit-heading">{editorValue(id, "visit-heading", "What to Expect")}</h2>
               <Ornament />
             </div>
             <ol className="acu-steps">
               {visitSteps.map((step, index) => (
                 <li key={step.title}>
                   <span className="acu-step-number" aria-hidden="true">0{index + 1}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.copy}</p>
+                  <h3 data-editor-field={`step-heading-${index + 1}`}>{editorValue(id, `step-heading-${index + 1}` as FieldKey, step.title)}</h3>
+                  <p data-editor-field={`step-copy-${index + 1}`}>{editorValue(id, `step-copy-${index + 1}` as FieldKey, step.copy)}</p>
                 </li>
               ))}
             </ol>
@@ -131,15 +137,15 @@ export function ServiceDetailPage({ id, title, shortTitle, description, intro, h
           <div className="container acu-faq-layout">
             <div className="copy">
               <span className="eyebrow">Before You Book</span>
-              <h2 id="acu-faq-title" className="section-title">Common Questions</h2>
+              <h2 id="acu-faq-title" className="section-title" data-editor-field="questions-heading">{editorValue(id, "questions-heading", "Common Questions")}</h2>
               <div className="gold-rule" aria-hidden="true" />
               <p>Have a question that’s not answered here? <a href={clinicPhone}>Call the clinic</a> before your visit.</p>
             </div>
             <div className="acu-faq-list">
-              {questions.map((question) => (
+              {questions.map((question, index) => (
                 <details key={question.title}>
-                  <summary>{question.title}</summary>
-                  <p>{question.copy}</p>
+                  <summary data-editor-field={`question-heading-${index + 1}`}>{editorValue(id, `question-heading-${index + 1}` as FieldKey, question.title)}</summary>
+                  <p data-editor-field={`question-copy-${index + 1}`}>{editorValue(id, `question-copy-${index + 1}` as FieldKey, question.copy)}</p>
                 </details>
               ))}
             </div>
@@ -165,11 +171,12 @@ export function ServiceDetailPage({ id, title, shortTitle, description, intro, h
         <section className="cta-band" aria-labelledby="acu-cta-title">
           <div className="container cta-inner">
             <span className="eyebrow">Get In Touch</span>
-            <h2 id="acu-cta-title">Let’s Talk About Your First Visit</h2>
-            <p>{bookingCopy}</p>
+            <h2 id="acu-cta-title" data-editor-field="closing-heading">{editorValue(id, "closing-heading", "Let’s Talk About Your First Visit")}</h2>
+            <p data-editor-field="closing-copy">{editorValue(id, "closing-copy", bookingCopy)}</p>
             <div className="cta-actions"><BookingLink /><a className="cta-phone" href={clinicPhone}>845-579-2428</a></div>
           </div>
         </section>
+        <EditorBlocks page={id} />
       </main>
       <SiteFooter />
     </div>

@@ -1,4 +1,6 @@
 import type { Metadata } from "next"
+import { editorImage, editorValue } from "../../content/editor-model"
+import { EditorBlocks } from "../editor-blocks"
 import Link from "next/link"
 import { SiteHeader } from "../site-header"
 import { SiteFooter } from "../site-footer"
@@ -19,7 +21,7 @@ export default function AboutPage() {
 
       <section className="page-hero page-hero--photo" aria-labelledby="about-title">
         <div className="page-hero-photo" aria-hidden="true">
-          <img src={`${process.env.BASE_PATH || ""}/images/about/hero-plumeria.webp`} alt="" width={1500} height={726} fetchPriority="high" />
+          <img data-editor-image="hero" {...editorImage("about", "hero", { src: `${process.env.BASE_PATH || ""}/images/about/hero-plumeria.webp`, width: 1500, height: 726, alt: "" })} fetchPriority="high" />
         </div>
         <svg className="page-hero-art" viewBox="0 0 84 74" fill="none" aria-hidden="true">
           <path d="M42 68C41 48 41 25 42 7" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" />
@@ -34,9 +36,9 @@ export default function AboutPage() {
               <li aria-current="page">About Us</li>
             </ol>
             </nav>
-            <h1 id="about-title" className="rise d1">About Us</h1>
+            <h1 id="about-title" className="rise d1" data-editor-field="hero-title">{editorValue("about", "hero-title", "About Us")}</h1>
             <div className="gold-rule rise d2"></div>
-            <p className="rise d3">Meet the practitioner and the wellness center serving New City, NY and all of Rockland County.</p>
+            <p className="rise d3" data-editor-field="hero-description">{editorValue("about", "hero-description", "Meet the practitioner and the wellness center serving New City, NY and all of Rockland County.")}</p>
           </div>
         </div>
       </section>
@@ -73,7 +75,7 @@ export default function AboutPage() {
             <h2 id="practitioner-title">Mordechai Genut, MS, L.Ac.</h2>
             <div className="gold-rule"></div>
             <p className="lead">Mordechai Genut is a NYS licensed acupuncturist and holistic health practitioner. He is the owner of New City Acupuncture &amp; Wellness Center located in New City, NY. He graduated with a Master’s Degree in Oriental Medicine from Touro College in 2009. He gained valuable hands-on experience at Lutheran Medical Center in Brooklyn, NY where he interned in the Oncology Support and in the Neurological and Orthopedic Rehabilitation units. His focus was helping patients rehabilitate from post stroke and paralysis.</p>
-            <p>Mordechai has successfully treated hundreds of patients over the years. He is very passionate about helping others heal from pain and illness. When Mordechai was younger, he suffered painful digestive issues throughout his childhood and adolescent years. It was recommended that he see an herbalist and acupuncturist to help manage his debilitating condition. Upon successful treatments, Mordechai became very interested in learning more about Traditional Chinese Medicine. Nowadays Mordechai’s goal is to help others maintain a mindful and well-balanced lifestyle to allow for optimal health, inner peace, and an overall good quality of life.</p>
+            <p data-editor-field="secondary-copy">{editorValue("about", "secondary-copy", "Mordechai has successfully treated hundreds of patients over the years. He is very passionate about helping others heal from pain and illness. When Mordechai was younger, he suffered painful digestive issues throughout his childhood and adolescent years. It was recommended that he see an herbalist and acupuncturist to help manage his debilitating condition. Upon successful treatments, Mordechai became very interested in learning more about Traditional Chinese Medicine. Nowadays Mordechai’s goal is to help others maintain a mindful and well-balanced lifestyle to allow for optimal health, inner peace, and an overall good quality of life.")}</p>
             <p>Mordechai has a passion for health and wellness and is an avid student of life. He is constantly learning and growing which has helped him to become a more centered, calmer, focused person. Mordechai is trained in the internal Chinese systems of Martial Arts including Tai Chi, Ba Gua, and Xing Yi, which focuses on the importance of maintaining a healthy internal environment to develop strength, maintain inner peace, and preserve health. Mordechai holds a 3rd Degree Black Belt and is a Master Level Instructor with over 20 years’ experience in the martial arts. He has been teaching many karate classes, self-defense seminars, Qi-Gong healing therapy programs, specialized breathing and exercises for the elderly and special needs population, and Tai Chi basic techniques to individuals and groups throughout New York, New Jersey, and surrounding areas.</p>
             <p>Mordechai prides himself on his professional, attentive, caring approach to medicine. With the knowledge and experience Mordechai possesses, his treatments are catered to each individual with focus on a treatment plan that is specialized for each person. No two people are looked at the same and there is no cookie cutter solution to solve a problem. A lot of time is spent with a client and researching the needs of the client.</p>
             <blockquote className="pullquote">
@@ -174,9 +176,9 @@ export default function AboutPage() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>
                 Mondays · 9:30 am
               </span>
-              <h2 id="sessions-title">Weekly Group Sessions</h2>
+              <h2 id="sessions-title" data-editor-field="session-heading">{editorValue("about", "session-heading", "Weekly Group Sessions")}</h2>
               <div className="gold-rule"></div>
-              <p>To help you start the week in a relaxed, focused and calm manner, we offer affordable weekly group sessions in Qigong, breathing, meditation, and relaxation. These sessions help improve posture, strengthen muscles, release stiffness in the joints, and enhance calmness. Join us Monday’s at 9:30 am right here in our wellness center.</p>
+              <p data-editor-field="session-copy">{editorValue("about", "session-copy", "To help you start the week in a relaxed, focused and calm manner, we offer affordable weekly group sessions in Qigong, breathing, meditation, and relaxation. These sessions help improve posture, strengthen muscles, release stiffness in the joints, and enhance calmness. Join us Monday’s at 9:30 am right here in our wellness center.")}</p>
               <ul className="chips">
                 <li className="chip">Qigong</li>
                 <li className="chip">Breathing</li>
@@ -192,14 +194,15 @@ export default function AboutPage() {
       <section className="cta-band" aria-labelledby="cta-title">
         <div className="container cta-inner">
           <span className="eyebrow">Get In Touch</span>
-          <h2 id="cta-title">Let’s Talk About Your First Visit</h2>
-          <p>Have questions about the clinic or what to expect? Call us to talk through your first visit, or book an appointment online.</p>
+          <h2 id="cta-title" data-editor-field="closing-heading">{editorValue("about", "closing-heading", "Let’s Talk About Your First Visit")}</h2>
+          <p data-editor-field="closing-copy">{editorValue("about", "closing-copy", "Have questions about the clinic or what to expect? Call us to talk through your first visit, or book an appointment online.")}</p>
           <div className="cta-actions">
             <a className="btn btn-gold" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener noreferrer">Book Appointment <span className="arrow" aria-hidden="true">→</span></a>
             <a className="cta-phone" href="tel:+18455792428">845-579-2428</a>
           </div>
         </div>
       </section>
+      <EditorBlocks page={"about"} />
     </main>
       <SiteFooter />
     </div>

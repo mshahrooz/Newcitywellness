@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect } from "react"
+import { editorImage, editorValue } from "./../content/editor-model"
+import { EditorBlocks } from "./editor-blocks"
 import Link from "next/link"
 import { SiteHeader } from "./site-header"
 import { SiteFooter } from "./site-footer"
@@ -16,6 +18,7 @@ function LeafArt({ className }: { className?: string }) {
 }
 
 export default function Home() {
+  const heroTitle = editorValue("home", "hero-title", "Personalized Acupuncture & Holistic Care for Pain, Stress, & Better Health")
   useEffect(() => {
     /* Contact form — mailto fallback (matches source behavior) */
     const contactForm = document.getElementById("contactForm") as HTMLFormElement | null
@@ -47,27 +50,28 @@ export default function Home() {
         {/* ===================== Hero ===================== */}
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-media">
-            <img
-              src="images/home/acupuncture-hero.webp"
-              srcSet="images/home/acupuncture-hero-960.webp 960w, images/home/acupuncture-hero.webp 1694w"
-              sizes="100vw"
-              width={1694}
-              height={928}
-              alt="Patient receiving acupuncture in a sunlit treatment room"
-              fetchPriority="high"
+            <img data-editor-image="hero"
+              {...editorImage("home", "hero", {
+                src: "images/home/acupuncture-hero.webp",
+                srcSet: "images/home/acupuncture-hero-960.webp 960w, images/home/acupuncture-hero.webp 1694w",
+                width: 1694, height: 928, alt: "Patient receiving acupuncture in a sunlit treatment room",
+              })}
+              sizes="100vw" fetchPriority="high"
             />
           </div>
           <div className="hero-content">
             <div className="hero-copy motion-reveal from-left">
-              <h1 id="hero-title">
-                <span>Personalized Acupuncture</span>{" "}
-                <span>&amp; Holistic Care for Pain,</span>{" "}
-                <span>Stress, &amp; Better Health</span>
+              <h1 id="hero-title" data-editor-field="hero-title">
+                {heroTitle === "Personalized Acupuncture & Holistic Care for Pain, Stress, & Better Health" ? <>
+                  <span>Personalized Acupuncture</span>{" "}
+                  <span>&amp; Holistic Care for Pain,</span>{" "}
+                  <span>Stress, &amp; Better Health</span>
+                </> : heroTitle}
               </h1>
-              <p>We take the time to listen and understand your concerns, considering your symptoms, lifestyle, nutrition, and overall health to provide thoughtful, individualized care focused on helping you feel better.</p>
+              <p data-editor-field="hero-description">{editorValue("home", "hero-description", "We take the time to listen and understand your concerns, considering your symptoms, lifestyle, nutrition, and overall health to provide thoughtful, individualized care focused on helping you feel better.")}</p>
               <div className="hero-actions">
-                <a className="btn btn-gold" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener">Book Appointment <span className="arrow">→</span></a>
-                <a className="btn btn-outline" href="#therapies">Explore Services <span className="arrow">→</span></a>
+                <a className="btn btn-gold" href="https://acusimple.com/bookings/8635" target="_blank" rel="noopener"><span data-editor-field="appointment-button">{editorValue("home", "appointment-button", "Book Appointment")}</span> <span className="arrow">→</span></a>
+                <a className="btn btn-outline" href="#therapies"><span data-editor-field="services-button">{editorValue("home", "services-button", "Explore Services")}</span> <span className="arrow">→</span></a>
               </div>
             </div>
           </div>
@@ -85,51 +89,51 @@ export default function Home() {
           <div className="container">
             <div className="section-heading motion-reveal">
               <span className="eyebrow">Our Therapies</span>
-              <h2 id="therapy-title">Explore Our Therapies</h2>
+              <h2 id="therapy-title" data-editor-field="therapies-heading">{editorValue("home", "therapies-heading", "Explore Our Therapies")}</h2>
               <Ornament />
-              <p>Traditional practices, thoughtfully personalized</p>
+              <p data-editor-field="therapies-copy">{editorValue("home", "therapies-copy", "Traditional practices, thoughtfully personalized")}</p>
             </div>
             <div className="therapy-grid">
               <article className="therapy-card motion-reveal delay-1">
                 <Link href="/services/acupuncture/" aria-label="Learn more about Acupuncture">
-                  <div className="therapy-image"><img src="images/acupuncture.png" alt="A patient receiving acupuncture treatment" loading="lazy" /></div>
-                  <div className="therapy-body"><h3>Acupuncture</h3><span className="text-link">Learn More <span>→</span></span></div>
+                  <div className="therapy-image"><img data-editor-image="acupuncture-card" {...editorImage("home", "acupuncture-card", { src: "images/acupuncture.png", width: 1024, height: 1024, alt: "A patient receiving acupuncture treatment" })} loading="lazy" /></div>
+                  <div className="therapy-body"><h3 data-editor-field="acupuncture-card-heading">{editorValue("home", "acupuncture-card-heading", "Acupuncture")}</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
               <article className="therapy-card motion-reveal delay-2">
                 <Link href="/services/chinese-medical-massage-tui-na/" aria-label="Learn more about Chinese Medical Massage (Tui-Na)">
-                  <div className="therapy-image"><img src="images/tuina.png" alt="Chinese medical massage treatment" loading="lazy" /></div>
-                  <div className="therapy-body"><h3>Chinese Medical Massage (Tui-Na)</h3><span className="text-link">Learn More <span>→</span></span></div>
+                  <div className="therapy-image"><img data-editor-image="tui-na-card" {...editorImage("home", "tui-na-card", { src: "images/tuina.png", width: 1024, height: 1024, alt: "Chinese medical massage treatment" })} loading="lazy" /></div>
+                  <div className="therapy-body"><h3 data-editor-field="tui-na-card-heading">{editorValue("home", "tui-na-card-heading", "Chinese Medical Massage (Tui-Na)")}</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
               <article className="therapy-card motion-reveal delay-3">
                 <Link href="/services/cupping/" aria-label="Learn more about Cupping">
-                  <div className="therapy-image"><img src="images/cupping.png" alt="Cupping therapy in progress" loading="lazy" /></div>
-                  <div className="therapy-body"><h3>Cupping</h3><span className="text-link">Learn More <span>→</span></span></div>
+                  <div className="therapy-image"><img data-editor-image="cupping-card" {...editorImage("home", "cupping-card", { src: "images/cupping.png", width: 1024, height: 1024, alt: "Cupping therapy in progress" })} loading="lazy" /></div>
+                  <div className="therapy-body"><h3 data-editor-field="cupping-card-heading">{editorValue("home", "cupping-card-heading", "Cupping")}</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
               <article className="therapy-card motion-reveal delay-4">
                 <Link href="/services/moxibustion/" aria-label="Learn more about Moxibustion">
-                  <div className="therapy-image"><img src="images/moxibustion.png" alt="Moxibustion warming therapy" loading="lazy" /></div>
-                  <div className="therapy-body"><h3>Moxibustion</h3><span className="text-link">Learn More <span>→</span></span></div>
+                  <div className="therapy-image"><img data-editor-image="moxibustion-card" {...editorImage("home", "moxibustion-card", { src: "images/moxibustion.png", width: 1024, height: 1024, alt: "Moxibustion warming therapy" })} loading="lazy" /></div>
+                  <div className="therapy-body"><h3 data-editor-field="moxibustion-card-heading">{editorValue("home", "moxibustion-card-heading", "Moxibustion")}</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
               <article className="therapy-card motion-reveal delay-1">
                 <Link href="/services/chinese-herbal-medicine/" aria-label="Learn more about Chinese Herbal Medicine">
-                  <div className="therapy-image"><img src="images/herbal.png" alt="Natural herbs and ingredients used in Chinese herbal medicine" loading="lazy" /></div>
-                  <div className="therapy-body"><h3>Chinese Herbal Medicine</h3><span className="text-link">Learn More <span>→</span></span></div>
+                  <div className="therapy-image"><img data-editor-image="herbal-card" {...editorImage("home", "herbal-card", { src: "images/herbal.png", width: 1024, height: 1024, alt: "Natural herbs and ingredients used in Chinese herbal medicine" })} loading="lazy" /></div>
+                  <div className="therapy-body"><h3 data-editor-field="herbal-card-heading">{editorValue("home", "herbal-card-heading", "Chinese Herbal Medicine")}</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
               <article className="therapy-card motion-reveal delay-2">
                 <Link href="/services/gua-sha/" aria-label="Learn more about Gua-Sha">
-                  <div className="therapy-image"><img src="images/guasha.png" alt="Traditional hands-on therapy session" loading="lazy" /></div>
-                  <div className="therapy-body"><h3>Gua-Sha</h3><span className="text-link">Learn More <span>→</span></span></div>
+                  <div className="therapy-image"><img data-editor-image="gua-sha-card" {...editorImage("home", "gua-sha-card", { src: "images/guasha.png", width: 1024, height: 1024, alt: "Traditional hands-on therapy session" })} loading="lazy" /></div>
+                  <div className="therapy-body"><h3 data-editor-field="gua-sha-card-heading">{editorValue("home", "gua-sha-card-heading", "Gua-Sha")}</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
               <article className="therapy-card motion-reveal delay-3">
                 <Link href="/services/qi-gong/" aria-label="Learn more about Qi-Gong">
-                  <div className="therapy-image"><img src="images/services/qi-gong/practice-640.webp" srcSet="images/services/qi-gong/practice-640.webp 640w, images/services/qi-gong/practice-1000.webp 1000w" sizes="(max-width: 900px) 50vw, (max-width: 980px) 33vw, (max-width: 1370px) 25vw, 312px" width={640} height={427} alt="A group practicing Tai Chi together" loading="lazy" decoding="async" /></div>
-                  <div className="therapy-body"><h3>Qi-Gong</h3><span className="text-link">Learn More <span>→</span></span></div>
+                  <div className="therapy-image"><img data-editor-image="qi-gong-card" {...editorImage("home", "qi-gong-card", { src: "images/services/qi-gong/practice-640.webp", srcSet: "images/services/qi-gong/practice-640.webp 640w, images/services/qi-gong/practice-1000.webp 1000w", width: 640, height: 427, alt: "A group practicing Tai Chi together" })} sizes="(max-width: 900px) 50vw, (max-width: 980px) 33vw, (max-width: 1370px) 25vw, 312px" loading="lazy" decoding="async" /></div>
+                  <div className="therapy-body"><h3 data-editor-field="qi-gong-card-heading">{editorValue("home", "qi-gong-card-heading", "Qi-Gong")}</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
             </div>
@@ -142,12 +146,12 @@ export default function Home() {
           <div className="container">
             <div className="first-visit motion-reveal">
               <div className="first-visit-media">
-                <img src="images/first-visit.png" alt="Welcoming clinic interior for your first visit" loading="lazy" />
+                <img data-editor-image="first-visit" {...editorImage("home", "first-visit", { src: "images/first-visit.png", width: 1344, height: 768, alt: "Welcoming clinic interior for your first visit" })} loading="lazy" />
               </div>
               <div className="first-visit-copy">
                 <span className="eyebrow">Begin Your Journey</span>
-                <h2 id="first-visit-title">Your First Visit</h2>
-                <p>What can you expect at your first session?</p>
+                <h2 id="first-visit-title" data-editor-field="first-visit-heading">{editorValue("home", "first-visit-heading", "Your First Visit")}</h2>
+                <p data-editor-field="first-visit-copy">{editorValue("home", "first-visit-copy", "What can you expect at your first session?")}</p>
                 <Link className="text-link" href="/faqs/#first-session">Learn More <span>→</span></Link>
               </div>
             </div>
@@ -159,15 +163,15 @@ export default function Home() {
           <BranchWatermark className="practitioner-art" />
           <div className="container practitioner-grid">
             <div className="practitioner-photo motion-reveal from-left">
-              <img src="images/home/practitioner-portrait.webp" width={411} height={410} alt="Mordechai Genut, New City Acupuncture and Wellness Center practitioner" loading="lazy" decoding="async" />
+              <img data-editor-image="practitioner" {...editorImage("home", "practitioner", { src: "images/home/practitioner-portrait.webp", width: 411, height: 410, alt: "Mordechai Genut, New City Acupuncture and Wellness Center practitioner" })} loading="lazy" decoding="async" />
             </div>
             <div className="practitioner-copy motion-reveal from-right">
               <span className="eyebrow">Your Practitioner</span>
-              <h2 id="practitioner-title">Meet the Practitioner</h2>
+              <h2 id="practitioner-title" data-editor-field="secondary-heading">{editorValue("home", "secondary-heading", "Meet the Practitioner")}</h2>
               <h3>Mordechai Genut, MS, L.Ac.</h3>
               <div className="gold-rule" />
-              <p>Mordechai Genut is the owner of New City Acupuncture &amp; Wellness Center. He is a licensed acupuncturist, holistic health practitioner, wellness coach, and martial arts expert. His practice is client-centered which focuses on providing care, compassion, attentiveness, and healing aimed at the whole person—mind, body, and spirit. He creates individualized treatment plans that target the specific needs of each person.</p>
-              <p>Mordechai’s goal is to help others maintain a mindful and well-balanced lifestyle to allow for optimal health, inner peace, and an overall good quality of life.</p>
+              <p data-editor-field="bio-copy">{editorValue("home", "bio-copy", "Mordechai Genut is the owner of New City Acupuncture & Wellness Center. He is a licensed acupuncturist, holistic health practitioner, wellness coach, and martial arts expert. His practice is client-centered which focuses on providing care, compassion, attentiveness, and healing aimed at the whole person—mind, body, and spirit. He creates individualized treatment plans that target the specific needs of each person.")}</p>
+              <p data-editor-field="secondary-copy">{editorValue("home", "secondary-copy", "Mordechai’s goal is to help others maintain a mindful and well-balanced lifestyle to allow for optimal health, inner peace, and an overall good quality of life.")}</p>
               <Link className="btn" href="/about-us/">About the Center <span className="arrow">→</span></Link>
             </div>
           </div>
@@ -270,8 +274,8 @@ export default function Home() {
           <div className="container contact-grid">
             <div className="contact-intro motion-reveal from-left">
               <span className="eyebrow">Get In Touch</span>
-              <h2 id="contact-title">Let’s Connect</h2>
-              <p>Contact us to make an appointment or find out what acupuncture can do for you.</p>
+              <h2 id="contact-title" data-editor-field="contact-heading">{editorValue("home", "contact-heading", "Let’s Connect")}</h2>
+              <p data-editor-field="contact-copy">{editorValue("home", "contact-copy", "Contact us to make an appointment or find out what acupuncture can do for you.")}</p>
               <div className="gold-rule" />
               <div className="contact-details">
                 <a href="tel:8455792428"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 2.8 9.3 2c.7-.2 1.5.2 1.7.9l1.1 3.7c.2.6 0 1.2-.5 1.6l-1.8 1.4a15.4 15.4 0 0 0 4.6 4.6l1.4-1.8c.4-.5 1-.7 1.6-.5l3.7 1.1c.7.2 1.1 1 1 1.7l-.8 2.7c-.2.7-.9 1.2-1.6 1.2C10.1 18.6 5.4 13.9 5.4 4.4c0-.7.5-1.4 1.2-1.6Z" /></svg>845-579-2428</a>
@@ -302,6 +306,7 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <EditorBlocks page={"home"} />
       </main>
 
       <SiteFooter />
