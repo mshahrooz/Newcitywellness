@@ -1167,10 +1167,6 @@
   color: #fffdf4;
 }
 
-.ncw .testimonials .section-heading .eyebrow {
-  color: var(--gold-pale);
-}
-
 .ncw .testimonials .ornament-line {
   background: linear-gradient(90deg, transparent, var(--gold-soft));
 }
@@ -1181,6 +1177,10 @@
 
 .ncw .testimonials .ornament-mark {
   color: var(--gold-soft);
+}
+
+.ncw .testimonial-slider-controls {
+  display: none;
 }
 
 .ncw .testimonial-grid {
@@ -1903,7 +1903,59 @@
   .ncw .condition-card svg { width: 30px; height: 30px; flex: 0 0 30px; }
   .ncw .condition-card span { font-size: 0.78rem; }
 
-  .ncw .testimonial-card { grid-template-columns: 44px 1fr; gap: 12px; padding: 22px 20px; }
+  .ncw .testimonials .section-heading { margin-bottom: 24px; }
+  .ncw .testimonial-slider-controls {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .ncw .testimonial-slider-controls button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(230, 214, 171, 0.52);
+    border-radius: 50%;
+    background: rgba(230, 214, 171, 0.1);
+    color: var(--gold-pale);
+    cursor: pointer;
+    transition: background-color var(--motion-color) var(--motion-ease);
+  }
+  .ncw .testimonial-slider-controls button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+  .ncw .testimonial-slider-controls button:active:not([aria-disabled="true"]) { background: rgba(230, 214, 171, 0.25); }
+  .ncw .testimonial-slider-controls button:focus-visible { outline: 2px solid var(--gold-pale); outline-offset: 3px; }
+  .ncw .testimonial-slider-count {
+    min-width: 3ch;
+    color: var(--gold-pale);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+  .ncw .testimonial-grid {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .ncw .testimonial-grid::-webkit-scrollbar { display: none; }
+  .ncw .testimonial-card {
+    flex: 0 0 100%;
+    min-width: 0;
+    scroll-snap-align: start;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
+    padding: 22px 20px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
+  }
   .ncw .leaf-art svg { width: 38px; height: 60px; }
   .ncw .testimonial-copy p { font-size: 0.78rem; }
 

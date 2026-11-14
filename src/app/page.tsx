@@ -7,6 +7,7 @@ import Link from "next/link"
 import { SiteHeader } from "./site-header"
 import { SiteFooter } from "./site-footer"
 import { BranchWatermark, Ornament } from "./wellness-art"
+import { TestimonialSlider } from "./testimonial-slider"
 import "./wellness.css"
 
 function LeafArt({ className }: { className?: string }) {
@@ -88,7 +89,6 @@ export default function Home() {
         <section className="therapies" id="therapies" aria-labelledby="therapy-title">
           <div className="container">
             <div className="section-heading motion-reveal">
-              <span className="eyebrow">Our Therapies</span>
               <h2 id="therapy-title" data-editor-field="therapies-heading">{editorValue("home", "therapies-heading", "Explore Our Therapies")}</h2>
               <Ornament />
               <p data-editor-field="therapies-copy">{editorValue("home", "therapies-copy", "Traditional practices, thoughtfully personalized")}</p>
@@ -166,7 +166,6 @@ export default function Home() {
               <img data-editor-image="practitioner" {...editorImage("home", "practitioner", { src: "images/home/practitioner-portrait.webp", width: 411, height: 410, alt: "Mordechai Genut, New City Acupuncture and Wellness Center practitioner" })} loading="lazy" decoding="async" />
             </div>
             <div className="practitioner-copy motion-reveal from-right">
-              <span className="eyebrow">Your Practitioner</span>
               <h2 id="practitioner-title" data-editor-field="secondary-heading">{editorValue("home", "secondary-heading", "Meet the Practitioner")}</h2>
               <h3>Mordechai Genut, MS, L.Ac.</h3>
               <div className="gold-rule" />
@@ -234,11 +233,10 @@ export default function Home() {
         <section className="testimonials" aria-labelledby="testimonials-title">
           <div className="container">
             <div className="section-heading motion-reveal">
-              <span className="eyebrow">Patient Experiences</span>
               <h2 id="testimonials-title">Patient Experiences</h2>
               <Ornament />
             </div>
-            <div className="testimonial-grid">
+            <TestimonialSlider>
               <article className="testimonial-card motion-reveal from-left">
                 <div className="leaf-art"><LeafArt /></div>
                 <div className="testimonial-copy">
@@ -263,7 +261,7 @@ export default function Home() {
                   <div className="reviewer">D. G.</div>
                 </div>
               </article>
-            </div>
+            </TestimonialSlider>
             <div className="testimonial-more"><Link href="/testimonials/">Read More Patient Testimonials <span className="arrow" aria-hidden="true">→</span></Link></div>
           </div>
         </section>
