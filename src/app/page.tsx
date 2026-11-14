@@ -276,7 +276,7 @@ export default function Home() {
                 </div>
               </article>
             </div>
-            <div className="testimonial-more"><a href="https://newcitywellness.com/testimonials/">Read More Patient Testimonials <span className="arrow">→</span></a></div>
+            <div className="testimonial-more"><Link href="/testimonials/">Read More Patient Testimonials <span className="arrow" aria-hidden="true">→</span></Link></div>
           </div>
         </section>
 

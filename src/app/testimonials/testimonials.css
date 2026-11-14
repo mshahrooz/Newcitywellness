@@ -1,0 +1,112 @@
+.ncw-testimonials .page-hero-copy { max-width: 820px; }
+.ncw-testimonials .page-hero-art { opacity: .12; }
+.ncw-testimonials .reviews-hero-link { margin-top: 28px; }
+.ncw-testimonials .reviews-feature { padding: var(--section-y) 0; background: var(--paper-warm); }
+.ncw-testimonials .reviews-feature-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(34px, 7vw, 96px);
+}
+.ncw-testimonials .reviews-feature-photo { margin: 0; min-width: 0; }
+.ncw-testimonials .reviews-feature-photo .frame { display: block; }
+.ncw-testimonials .reviews-feature-photo img { height: auto; width: 100%; aspect-ratio: 4 / 3; object-position: center 61%; }
+.ncw-testimonials .reviews-feature-photo figcaption {
+  margin: 24px 0 0; text-align: right; color: var(--muted);
+  font-size: .75rem; font-weight: 600; letter-spacing: .035em;
+}
+.ncw-testimonials .reviews-feature-quote { margin: 0; }
+.ncw-testimonials .reviews-feature-quote blockquote {
+  position: relative;
+  padding-left: clamp(20px, 3vw, 34px);
+  border-left: 2px solid var(--gold-soft);
+  font: 600 clamp(1.55rem, 2.7vw, 2.1rem)/1.35 var(--serif);
+  color: var(--forest);
+}
+.ncw-testimonials .reviews-feature-quote blockquote p::before { content: open-quote; }
+.ncw-testimonials .reviews-feature-quote blockquote p::after { content: close-quote; }
+.ncw-testimonials .reviews-feature-quote figcaption,
+.ncw-testimonials .reviews-card figcaption {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .86rem; color: var(--forest); line-height: 1.35;
+}
+.ncw-testimonials .reviews-feature-quote figcaption { margin-top: 24px; gap: 12px; }
+.ncw-testimonials .reviews-feature-quote small { display: block; margin-top: 2px; font-size: .75rem; color: var(--muted); }
+.ncw-testimonials .reviews-initials {
+  display: inline-grid; place-items: center; flex: 0 0 auto;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--cream); color: var(--forest);
+  border: 1px solid rgba(139,107,52,.24);
+  font: 700 .76rem/1 var(--sans); letter-spacing: .04em;
+}
+.ncw-testimonials .reviews-feature-quote .reviews-initials {
+  width: 44px; height: 44px; background: var(--forest); color: var(--gold-pale);
+}
+.ncw-testimonials .reviews-directory {
+  padding: var(--section-y) 0;
+  background: linear-gradient(180deg, #f9f4e8, var(--paper));
+  border-top: 1px solid rgba(184,146,79,.24);
+  scroll-margin-top: var(--section-scroll-offset);
+}
+.ncw-testimonials .reviews-intro { max-width: 660px; margin: 0 auto 26px; text-align: center; }
+.ncw-testimonials .reviews-intro .ornament { margin-bottom: 18px; }
+.ncw-testimonials .reviews-intro p { margin-top: 14px; color: var(--muted); font-size: .97rem; }
+.ncw-testimonials .reviews-filters {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+}
+.ncw-testimonials .reviews-filters button {
+  padding: 8px 16px; min-height: 44px;
+  border: 1px solid rgba(139,107,52,.35); border-radius: 999px;
+  background: var(--paper-warm); color: var(--forest);
+  font: 600 .84rem/1.35 var(--sans); cursor: pointer;
+}
+.ncw-testimonials .reviews-filters button:hover { background: var(--cream-2); }
+.ncw-testimonials .reviews-filters button[aria-pressed="true"] { background: var(--forest); color: var(--paper-warm); border-color: var(--forest); }
+.ncw-testimonials .reviews-filters button:focus-visible,
+.ncw-testimonials .reviews-disclosure summary:focus-visible { outline: 2px solid var(--forest-soft); outline-offset: 3px; }
+.ncw-testimonials .reviews-count { margin: 12px 0 24px; text-align: center; color: var(--muted); font-size: .8rem; }
+.ncw-testimonials .reviews-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 18px;
+}
+.ncw-testimonials .reviews-card {
+  padding: clamp(20px, 2.5vw, 32px);
+  border: 1px solid rgba(184,146,79,.26); border-radius: var(--radius);
+  background: var(--paper-warm);
+  box-shadow: 0 8px 24px rgba(31,48,35,.045);
+}
+.ncw-testimonials .reviews-card-header { display: flex; gap: 10px; justify-content: space-between; align-items: start; }
+.ncw-testimonials .reviews-card-header h3 { color: var(--forest); font: 700 clamp(1.35rem, 2vw, 1.65rem)/1.1 var(--serif); }
+.ncw-testimonials .reviews-quote-mark { color: #a37c37; width: 25px; height: 20px; flex: 0 0 auto; opacity: .65; }
+.ncw-testimonials .reviews-card figure { margin: 14px 0 0; }
+.ncw-testimonials .reviews-card blockquote { font-size: .93rem; line-height: 1.65; color: var(--ink-soft); margin: 0; }
+.ncw-testimonials .reviews-card figcaption { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.ncw-testimonials .reviews-card figcaption small { margin-left: auto; color: var(--muted); }
+.ncw-testimonials .reviews-disclosure { margin-top: 8px; }
+.ncw-testimonials .reviews-disclosure summary {
+  display: list-item; list-style: none;
+  width: fit-content; max-width: 100%; cursor: pointer;
+  color: var(--forest-soft); font-size: .82rem; font-weight: 700;
+  padding-block: 9px; border-radius: 4px;
+}
+.ncw-testimonials .reviews-disclosure summary::-webkit-details-marker { display: none; }
+.ncw-testimonials .reviews-disclosure summary:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ncw-testimonials .reviews-disclosure .reviews-toggle { align-items: center; gap: 8px; }
+.ncw-testimonials .reviews-toggle span { font-size: 1.1em; }
+.ncw-testimonials .reviews-toggle-open,
+.ncw-testimonials .reviews-disclosure[open] .reviews-toggle-close { display: inline-flex; }
+.ncw-testimonials .reviews-toggle-close,
+.ncw-testimonials .reviews-disclosure[open] .reviews-toggle-open,
+.ncw-testimonials .reviews-expandable:has(.reviews-disclosure[open]) .reviews-preview { display: none; }
+.ncw-testimonials .reviews-disclosure .reviews-full { margin-top: 6px; }
+
+@media (max-width: 1000px) {
+  .ncw-testimonials .reviews-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .ncw-testimonials .reviews-feature-inner { grid-template-columns: minmax(0, 1fr); }
+  .ncw-testimonials .reviews-feature-photo { width: calc(100% - 10px); margin-left: 10px; }
+}
+@media (max-width: 580px) {
+  .ncw-testimonials .reviews-grid { grid-template-columns: minmax(0, 1fr); }
+  .ncw-testimonials .reviews-filters { max-width: 390px; margin-inline: auto; }
+}
