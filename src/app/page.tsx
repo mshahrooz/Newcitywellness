@@ -124,7 +124,7 @@ export default function Home() {
               </article>
               <article className="therapy-card motion-reveal delay-3">
                 <Link href="/services/qi-gong/" aria-label="Learn more about Qi-Gong">
-                  <div className="therapy-image"><img src="images/qigong.png" alt="People practicing gentle Tai Chi movements" loading="lazy" /></div>
+                  <div className="therapy-image"><img src="images/services/qi-gong/practice-640.webp" srcSet="images/services/qi-gong/practice-640.webp 640w, images/services/qi-gong/practice-1000.webp 1000w" sizes="(max-width: 900px) 50vw, (max-width: 980px) 33vw, (max-width: 1370px) 25vw, 312px" width={640} height={427} alt="A group practicing Tai Chi together" loading="lazy" decoding="async" /></div>
                   <div className="therapy-body"><h3>Qi-Gong</h3><span className="text-link">Learn More <span>→</span></span></div>
                 </Link>
               </article>
