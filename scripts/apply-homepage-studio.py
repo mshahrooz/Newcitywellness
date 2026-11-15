@@ -26,6 +26,7 @@ TREE_BUILDERS = (
     "src/app/testimonial-slider.tsx",
     "src/app/wellness.css",
     "src/app/globals.css",
+    "src/app/local-fonts.css",
     "src/app/builder-page.css",
     "src/app/clinic-footer.css",
     "src/app/floating-booking-link.tsx",
