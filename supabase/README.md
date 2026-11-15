@@ -21,6 +21,6 @@ The [Page Studio](https://mshahrooz.github.io/Newcitywellness/studio/) is public
 
 ## Function maintenance
 
-Deploy `supabase/functions/publish-homepage/index.ts` with `publisher.mjs` and `pages.mjs` as `publish-homepage` in project `wiwujlfmqqirswhbvvyy` with JWT verification enabled. The function also looks up the current user and checks the server-side UID allowlist before accessing GitHub.
+Deploy `supabase/functions/publish-homepage/index.ts` with `publisher.mjs`, `pages.mjs`, and `embeds.js` as `publish-homepage` in project `wiwujlfmqqirswhbvvyy` with JWT verification enabled. The function also looks up the current user and checks the server-side UID allowlist before accessing GitHub.
 
 The publishing request can include up to 24 MiB of page content and media. GitHub changes are limited to the selected page’s publication JSON, recoverable draft, and recognized media. Home retains its original paths. Interior publications are stored in `src/content/studio-pages/` and `public/homepage-studio/pages/`. The function rejects stale base revisions and does not force-push. The GitHub Pages build validates the result before deploying. To roll back a publication, revert its commit in GitHub. To build locally, use the repository's normal `BUILD_TARGET=pages BASE_PATH=/Newcitywellness npm run build:pages` command.

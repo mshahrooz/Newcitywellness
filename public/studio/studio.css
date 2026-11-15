@@ -121,3 +121,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .page-picker option,.page-picker optgroup{background:#fff;color:#19342c}
 .library-group{margin:12px 0 6px;color:#2d5744;font-size:11px;letter-spacing:.075em;text-transform:uppercase}
 @media(max-width:600px){.page-picker select{max-width:clamp(112px,44vw,200px);min-height:31px;font-size:12px}}
+
+#column-handles{position:fixed;inset:0;pointer-events:none;z-index:5}
+.column-handle{position:fixed;display:grid;align-items:center;justify-content:center;width:19px;padding:0;transform:translateX(-50%);border:0;background:transparent;color:#fff;pointer-events:auto;touch-action:none;cursor:col-resize}
+.column-handle::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:#268165;box-shadow:0 0 0 1px #fff6}
+.column-handle span{position:relative;display:grid;place-items:center;width:20px;height:28px;border-radius:5px;background:#267b5f;border:1px solid #fff;font:700 13px system-ui;box-shadow:0 2px 7px #0c372641}
+.column-handle:hover span,.column-handle:focus-visible span,#column-handles.dragging .column-handle:hover span{background:#125542}

@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer';
 import { createHash, sign } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { parseFragment } from 'npm:parse5@8.1.1';
+import './embeds.js';
 import { PAGES, EMBEDS, pageFiles, pageDependencies } from './pages.mjs';
 
 const repo='mshahrooz/Newcitywellness', base='/repos/'+repo;
@@ -55,8 +56,8 @@ function validMedia(path,b){
   }
 }
 const tags=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite'.split(' '));
-const attrAllow=new Set('id class style title href target rel tabindex role for type name value required disabled selected placeholder referrerpolicy autocomplete inputmode minlength maxlength pattern rows cols checked alt src srcset sizes width height loading decoding fetchpriority viewBox viewbox fill stroke d x y rx ry cx cy r x1 x2 y1 y2 stroke-width stroke-linecap stroke-linejoin fill-rule clip-rule preserveAspectRatio preserveaspectratio focusable xmlns viewbox media poster preload autoplay loop muted playsinline controls download lang dir hidden open method enterkeyhint allowfullscreen'.split(' '));
-function verifyHtml(html,files,tree,key){
+const attrAllow=new Set('id class style title href target rel tabindex role for type name value required disabled selected placeholder referrerpolicy autocomplete inputmode minlength maxlength pattern rows cols checked alt src srcset sizes width height loading decoding fetchpriority viewBox viewbox fill stroke d x y rx ry cx cy r x1 x2 y1 y2 stroke-width stroke-linecap stroke-linejoin fill-rule clip-rule preserveAspectRatio preserveaspectratio focusable xmlns viewbox media poster preload autoplay loop muted playsinline controls download lang dir hidden open method enterkeyhint allowfullscreen sandbox allow'.split(' '));
+export function verifyHtml(html,files,tree,key){
   if(typeof html!=='string'||html.length>maxText||/<!doctype|<\/?(?:body|html|head)[\s>]/i.test(html))badZip();
   const seen=new Set();let main=0;
   const resource=v=>{
@@ -71,7 +72,10 @@ function verifyHtml(html,files,tree,key){
       const attr=name=>node.attrs.find(a=>a.name===name)?.value;
       const formClass={home:'contact-form',faqs:'faq-form','contact-us':'contact-page-form'}[key];
       if(node.tagName==='form'&&!(formClass&&attr('class')?.split(/\s+/).includes(formClass)||key==='conditions-treated'&&attr('role')==='search'))badZip();
-      if(node.tagName==='iframe'&&(!Object.hasOwn(EMBEDS,key)||attr('src')!==EMBEDS[key]))badZip();
+      if(node.tagName==='iframe'){
+        const original=Object.hasOwn(EMBEDS,key)&&attr('src')===EMBEDS[key]&&!attr('data-ncw-embed');
+        if(!original&&!globalThis.StudioEmbeds.safeFrame(attr))fail(422,'The page contains an unsupported embed.');
+      }
       for(const {name,value,prefix} of node.attrs){
         if(prefix||!(attrAllow.has(name)||/^(aria|data)-[a-z0-9_-]+$/.test(name)))badZip();
         if(name==='style'&&/url\s*\(|expression\s*\(|@import|javascript\s*:|\\|[<>]/i.test(value))badZip();

@@ -42,4 +42,8 @@ Use the [GitHub Pages Page Studio](https://mshahrooz.github.io/Newcitywellness/s
 
 The **Add element** palette groups text, media and links, and layout blocks. Use **Preview** and the device buttons to check placement before publishing.
 
+- **YouTube video** accepts watch, share, Shorts, and live URLs and renders the video automatically. Use **Preview** to play it.
+- **Embed code** accepts an HTTPS embed URL, iframe code, or HTML snippets. Custom code runs in an isolated frame. Some providers limit where embeds work.
+- **Columns** accepts a custom count from 1 to 100. Click the row or a column, then drag the green divider between two columns. A focused divider also supports keyboard arrow keys. Rows stack on phones. Very wide rows can scroll horizontally on larger screens.
+
 See [the publisher setup and rollback guide](supabase/README.md). GitHub is the source and host. Vercel is not part of this publishing flow.

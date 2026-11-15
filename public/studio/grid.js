@@ -241,7 +241,11 @@ function dupElement(n,id,device,position){
     return true;
   }
   if(n.hasAttribute('data-bs-column')&&!freeShell(n)){
-    clone.classList.add('bs-duplicated-column');n.after(clone);return true;
+    const grid=n.parentElement;
+    if(grid.children.length>=StudioColumns.LIMIT)return false;
+    const widths=StudioColumns.read(grid), i=Array.from(grid.children).indexOf(n);
+    clone.classList.add('bs-duplicated-column');n.after(clone);
+    widths.splice(i+1,0,widths[i]);StudioColumns.set(grid,widths);return true;
   }
   if(n.hasAttribute('data-bs-row')){
     n.after(clone);refreshFreeSizes();return true;
@@ -594,7 +598,7 @@ function commitPick(e){
     if(record(dragOperation(item.node,device,p)))choose(item.node,false);
     return true;
   }
-  const dims=item.node?measure(item.node):{width:item.kind==='image'?240:250,height:62};
+  const dims=item.node?measure(item.node):{width:['youtube','embed'].includes(item.kind)?440:item.kind==='image'?240:250,height:62};
   const p=gridPoint(z,e.clientX,e.clientY,dims,d);
   const id=item.node?idOf(item.node):unique();
   if(record(item.node?gridOperation(item.node,z,d,p):{kind:'grid-add',id,target:idOf(z),device:d,p,type:item.kind})){
