@@ -3,7 +3,7 @@ import { VisualEditor } from "./visual-editor"
 import "./visual-editor.css"
 
 export const metadata: Metadata = {
-  title: "Website Builder | New City Wellness",
+  title: "PageForge Studio · New City Wellness",
   robots: { index: false, follow: false },
 }
 

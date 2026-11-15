@@ -5,7 +5,8 @@ import { Columns3, Eye, Grid2X2, LayoutTemplate, Plus, Redo2, Search, Undo2 } fr
 import { addRow, appendSection, blankLayout, changeSection, customSection, elementTypes, isElementType, locateItem, moveSection, placeItem, removeItem, removeRow, removeSection, replaceItem, rowsAt, safeButtonUrl, setColumns, validLayout, youtubeId, type BuilderElement, type BuilderLayout, type ElementType, type Position, type SectionStyle } from "../../content/builder-model"
 import { fieldLabels, imageLabels, isField, isImage, maxFieldLength, pages, published, type Block, type EditorContent, type FieldKey, type ImageKey, type PageContent, type PageKey } from "../../content/editor-model"
 import { EditorDialog } from "./editor-dialog"
-import { BuilderCanvas, canvasCss, dragMime, type DragItem, type NativeCanvas } from "./builder-canvas"
+import { BuilderCanvas, canvasCss, type DragItem, type NativeCanvas } from "./builder-canvas"
+import { beginPageForgeDrag, endPageForgeDrag } from "./pageforge/drag"
 import { ColumnOptions, ElementFields, ElementPalette, PositionPicker, SectionForm } from "./builder-controls"
 import { optimizeImage } from "./optimize-image"
 import { prepareBuilderUpload } from "./builder-upload"
@@ -13,7 +14,6 @@ import { GitHubAccessError, publish, repoUrl, tokenSetupUrl, unlock, type Snapsh
 
 const base = process.env.BASE_PATH || ""
 const emptyPage: PageContent = {}
-const emptyContent: EditorContent = { version: 1, pages: {} }
 const id = () => crypto.randomUUID()
 const errorText = (error: unknown) => error instanceof Error ? error.message : "Something went wrong. Try again."
 const selector = "[data-editor-field], [data-builder-copy], img[data-editor-image], [data-editor-block-id]"
@@ -46,8 +46,8 @@ const copyLabel = (entry: NativeText) => entry.target.type === "field" && isFiel
 
 export function VisualEditor() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
-  const [previewOnly, setPreviewOnly] = useState(false)
-  const [history, setHistory] = useState<{ past: EditorContent[]; now: EditorContent; next: EditorContent[] }>({ past: [], now: emptyContent, next: [] })
+  const [previewOnly, setPreviewOnly] = useState(true)
+  const [history, setHistory] = useState<{ past: EditorContent[]; now: EditorContent; next: EditorContent[] }>({ past: [], now: published, next: [] })
   const content = history.now
   const [page, setPage] = useState<PageKey>("home")
   const [width, setWidth] = useState("Desktop")
@@ -86,7 +86,6 @@ export function VisualEditor() {
   const pictureSources = useRef(new Map<HTMLSourceElement, string>())
   const captured = useRef<NativeText[]>([])
 
-  const editorOpen = !!snapshot || previewOnly
   const changed = snapshot ? content !== snapshot.content : previewOnly && content !== published
   const active = pages.find(([key]) => key === page)!
   const draft = content.pages[page] ?? emptyPage
@@ -165,11 +164,6 @@ export function VisualEditor() {
     const doc = frame.current?.contentDocument
     const main = doc?.querySelector<HTMLElement>("[data-builder-page]")
     if (!doc || !main || !doc.defaultView) { setCanvas(null); setError("This page couldn’t be loaded in the builder. Try Reload preview."); return }
-    for (const details of doc.querySelectorAll<HTMLDetailsElement>("details")) {
-      details.dataset.builderInitiallyOpen = String(details.open)
-      if (details.name) { details.dataset.builderGroup = details.name; details.removeAttribute("name") }
-      details.open = true
-    }
     const css = doc.createElement("style")
     css.textContent = canvasCss
     doc.head.append(css)
@@ -182,6 +176,8 @@ export function VisualEditor() {
       else if (node.dataset.builderSection) native.set(node.dataset.builderSection, node)
     }
     publishedCustom.forEach(node => node.remove())
+    const publishedOrder = Array.from(main.querySelectorAll<HTMLElement>(":scope > [data-builder-section]"), node => node.dataset.builderSection!).filter(Boolean)
+    const preserved = [...main.querySelectorAll<HTMLElement>(":scope > [data-grapes-section]")].map(node => ({ node, before: [...main.children].slice([...main.children].indexOf(node) + 1).find(child => child.hasAttribute("data-builder-section"))?.getAttribute("data-builder-section") ?? null }))
     const legacy = main.querySelector<HTMLElement>("[data-editor-blocks]")
     const root = doc.createElement("div")
     root.className = "builder-studio-root"
@@ -205,9 +201,9 @@ export function VisualEditor() {
         handle.textContent = "⠿"; handle.title = "Drag text to another position"
         handle.setAttribute("aria-label", "Drag text to move it, or click text for a Move to option")
         handle.addEventListener("dragstart", event => {
-          event.dataTransfer?.setData(dragMime, JSON.stringify({ type: "native", scope: item.type, id: item.key }))
-          if (event.dataTransfer) event.dataTransfer.effectAllowed = "move"
+          if (item.type === "copy" || item.type === "field") beginPageForgeDrag(event.dataTransfer, { type: "native", scope: item.type, id: item.key })
         })
+        handle.addEventListener("dragend", endPageForgeDrag)
         handle.addEventListener("click", event => { event.preventDefault(); clickPicker.current(item, node) })
         handles.push(handle)
         node.closest("h2,h3,h4,p")?.before(handle)
@@ -228,7 +224,13 @@ export function VisualEditor() {
       const clicked = node ?? nested
       const item = clicked && captureCopy(clicked)
       if (item && clicked) { event.preventDefault(); clickPicker.current(item, clicked) }
-      else if (start.closest("a,button,form")) event.preventDefault()
+      else if (start.closest(".mobile-toggle") && start.closest("button")) {
+        event.preventDefault()
+        const button = start.closest("button")!
+        const expanded = button.getAttribute("aria-expanded") !== "true"
+        doc!.querySelector(".header-nav")?.classList.toggle("is-open", expanded)
+        button.setAttribute("aria-expanded", String(expanded))
+      } else if (start.closest("a,form") || (start.closest("button") && !start.closest(".builder-studio-native-drag"))) event.preventDefault()
     }
     function keyboard(event: KeyboardEvent) {
       if (event.key === "Enter" || event.key === " ") select(event)
@@ -240,6 +242,7 @@ export function VisualEditor() {
       }
     }
     function stopSubmit(event: Event) { event.preventDefault() }
+    doc.addEventListener("dragend", endPageForgeDrag)
     doc.addEventListener("click", select, true)
     doc.addEventListener("click", blockExternal, true)
     doc.addEventListener("keydown", keyboard, true)
@@ -249,22 +252,24 @@ export function VisualEditor() {
       doc.removeEventListener("click", blockExternal, true)
       doc.removeEventListener("keydown", keyboard, true)
       doc.removeEventListener("submit", stopSubmit, true)
+      doc.removeEventListener("dragend", endPageForgeDrag)
       handles.forEach(handle => handle.remove())
       root.remove()
       css.remove()
     }
     setEntries(text)
-    setCanvas({ main, native, anchors, root, legacy, hosts: new Map() })
+    setCanvas({ main, native, anchors, root, legacy, publishedOrder, preserved, hosts: new Map() })
     setError("")
   }, [])
 
   useEffect(() => {
+    if (window.matchMedia("(max-width: 650px)").matches) setWidth("Mobile")
     const area = frameArea.current
     if (!area || !("ResizeObserver" in window)) return
     const observer = new ResizeObserver(([entry]) => setAvailable({ width: entry.contentRect.width, height: entry.contentRect.height }))
     observer.observe(area)
     return () => observer.disconnect()
-  }, [editorOpen])
+  }, [])
   useEffect(() => {
     const sync = () => setFullScreen(document.fullscreenElement === app.current)
     document.addEventListener("fullscreenchange", sync)
@@ -282,13 +287,6 @@ export function VisualEditor() {
     const doc = canvas.main.ownerDocument
     doc.documentElement.classList.toggle("editor-show-marks", showMarks)
     doc.documentElement.classList.toggle("builder-studio-clean", clean)
-    for (const details of doc.querySelectorAll<HTMLDetailsElement>("details[data-builder-initially-open]")) {
-      if (!clean) { details.removeAttribute("name"); details.open = true }
-      else {
-        details.open = details.dataset.builderInitiallyOpen === "true"
-        if (details.dataset.builderGroup) details.name = details.dataset.builderGroup
-      }
-    }
     const moved = new Set(Object.values(layout.sections ?? {}).flatMap(section => [
       ...(section.before ?? []), ...(section.after ?? []), ...Object.values(section.anchors ?? {}).flat(),
     ]).flatMap(row => row.columns.flat().flatMap(item => item.source ? [item.source.scope + ":" + item.source.key] : [])))
@@ -397,7 +395,7 @@ export function VisualEditor() {
     }
   }
   function sectionMove(key: string, before: string | null) {
-    if (!busy) updateLayout(moveSection(layout, nativeKeys, key, before))
+    if (!busy) updateLayout(moveSection({ ...layout, order: canvas?.publishedOrder.length && !layout.order ? canvas.publishedOrder : layout.order }, nativeKeys, key, before))
   }
   function applySection(config: SectionStyle) {
     if (target?.type !== "section") return
@@ -405,7 +403,7 @@ export function VisualEditor() {
     if (target.section) next = changeSection(layout, target.section, config)
     else {
       const key = "section-" + id()
-      const added = appendSection(layout, nativeKeys, key, target.before ?? null, config.name || "New section")
+      const added = appendSection({ ...layout, order: canvas?.publishedOrder.length && !layout.order ? canvas.publishedOrder : layout.order }, nativeKeys, key, target.before ?? null, config.name || "New section")
       if (added === layout) { setPopupError("This page has reached its section limit."); return }
       next = changeSection(added, key, { ...config, name: config.name || "New section" })
       setPosition({ section: key, zone: "after" })
@@ -485,13 +483,17 @@ export function VisualEditor() {
       if (reconnect && snapshot && snapshot.sha !== data.sha) {
         throw new Error("Someone else published changes while this draft was open. Back up your draft before reopening the builder so you don’t overwrite their edits.")
       }
+      if (!snapshot && changed && JSON.stringify(data.content) !== JSON.stringify(published)) {
+        throw new Error("The live content changed while you were editing. Back up your draft before reloading the page to avoid overwriting another edit.")
+      }
       token.current = credential
-      if (reconnect) {
+      if (reconnect && snapshot) {
         setReconnect(false)
         setNotice("GitHub reconnected. Your draft is still open. Select Publish to GitHub to retry.")
       } else {
-        if (window.innerWidth < 650) setWidth("Mobile")
-        setSnapshot(data); setHistory({ past: [], now: data.content, next: [] })
+        setSnapshot(data); setPreviewOnly(false); setReconnect(false)
+        if (!changed) setHistory({ past: [], now: data.content, next: [] })
+        else setNotice("GitHub connected. Your draft and uploads are ready to publish.")
       }
     } catch (error) {
       if (reconnect) setPopupError(errorText(error))
@@ -499,11 +501,6 @@ export function VisualEditor() {
       setNeedsToken(error instanceof GitHubAccessError && error.needsToken)
     }
     finally { setBusy(false) }
-  }
-  function startDemo() {
-    setPreviewOnly(true); setError("")
-    if (window.innerWidth < 650) setWidth("Mobile")
-    setHistory({ past: [], now: published, next: [] })
   }
   async function save() {
     if (!snapshot || !changed || previewOnly) return
@@ -528,8 +525,8 @@ export function VisualEditor() {
     if (changed && !window.confirm("Leave the editor and discard unpublished changes?")) return
     token.current = ""; clearUploads()
     if (document.fullscreenElement === app.current) void document.exitFullscreen().catch(() => {})
-    close(); setCanvas(null); setEntries([]); setPosition(null); setSnapshot(null); setPreviewOnly(false)
-    setHistory({ past: [], now: emptyContent, next: [] })
+    close(); setCanvas(null); setEntries([]); setPosition(null); setSnapshot(null); setPreviewOnly(true); setRevision(revision + 1)
+    setHistory({ past: [], now: published, next: [] })
     setPage("home"); setConfirmPublish(false); setReconnect(false); setNeedsToken(false); setNotice(""); setCommit(""); setClean(false); setError("")
   }
 
@@ -538,39 +535,26 @@ export function VisualEditor() {
   const editingPhoto = target?.type === "image" ? draft.images?.[target.key as ImageKey] : undefined
   const dialogKey = !target ? "" : isCopyTarget(target) ? target.type + target.key : target.type === "item" ? (target.itemId ?? target.kind) : target.type
 
-  return <main ref={app} className={editorOpen ? "editor-app editor-app-unlocked builder-app" : "editor-app builder-app"}>
+  return <main ref={app} className="editor-app editor-app-unlocked builder-app pageforge-app">
     <header className="editor-top">
-      <div className="builder-brand"><LayoutTemplate size={22} aria-hidden="true" /><div><span className="editor-kicker">NEW CITY WELLNESS</span><h1>Website Builder</h1></div></div>
+      <div className="builder-brand"><LayoutTemplate size={22} aria-hidden="true" /><div><span className="editor-kicker">NEW CITY WELLNESS</span><h1>PageForge Studio</h1></div></div>
       <div className="editor-top-actions">
-        <a href={base + "/admin/grapes/"}>GrapesJS Design Studio ↗</a>
         <a href={base + "/"} target="_blank" rel="noopener noreferrer">View website ↗</a>
-        {editorOpen && <button type="button" onClick={toggleFullscreen}>{fullScreen ? "Exit fullscreen" : "Fullscreen"}</button>}
-        {editorOpen && <button type="button" disabled={busy} onClick={lock}>{previewOnly ? "Exit demo" : "Lock editor"}</button>}
+        <button type="button" onClick={toggleFullscreen}>{fullScreen ? "Exit fullscreen" : "Fullscreen"}</button>
+        {previewOnly ? <button type="button" disabled={busy} onClick={() => { setPopupError(""); setReconnect(true) }}>Connect GitHub</button> : <button type="button" disabled={busy} onClick={lock}>Disconnect GitHub</button>}
       </div>
     </header>
     {notice && <div className="editor-message" role="status">{notice} {commit && <a href={`${repoUrl}/actions?query=sha%3A${commit}`} target="_blank" rel="noopener noreferrer">Check deployment ↗</a>}</div>}
     {error && <div className="editor-message editor-error" role="alert">{error} {needsToken && snapshot &&
       <button type="button" disabled={busy} onClick={() => { setPopupError(""); setReconnect(true) }}>Reconnect GitHub without losing draft</button>}</div>}
-    {!editorOpen ? <section className="editor-lock">
-      <span className="editor-kicker">SITE ADMIN</span>
-      <h2>Unlock the website builder</h2>
-      <p>Edit your pages visually and publish directly to GitHub.</p>
-      <form onSubmit={connect}>
-        <label htmlFor="editor-pass">Editor password (GitHub token)</label>
-        <input id="editor-pass" type="password" autoComplete="off" required spellCheck={false} disabled={busy} />
-        <button className="editor-primary" disabled={busy}>{busy ? "Checking access…" : "Unlock editor"}</button>
-      </form>
-      <p className="editor-muted">On GitHub, choose <strong>Only select repositories → Newcitywellness</strong> and confirm <strong>Contents → Read and write</strong>. Paste the token here only. It stays in this tab and is sent only to GitHub.</p>
-      <a href={tokenSetupUrl} target="_blank" rel="noopener noreferrer">Set up a Newcitywellness GitHub token ↗</a>
-      <button type="button" onClick={startDemo} disabled={busy}>Try the builder without publishing</button>
-    </section> : <>
+    <>
       <div className="editor-toolbar builder-toolbar">
         <label>Page <select value={page} disabled={busy} onChange={event => changePage(event.currentTarget.value as PageKey)}>{pages.map(([key, , label]) => <option key={key} value={key}>{label}</option>)}</select></label>
         <div className="editor-view-buttons" role="group" aria-label="Preview screen size">{["Desktop", "Tablet", "Mobile"].map(size => <button key={size} type="button" aria-pressed={width === size} onClick={() => setWidth(size)}>{size}</button>)}</div>
         <div className="editor-toolbar-actions">
           <button type="button" aria-label="Undo" title="Undo" disabled={!history.past.length || busy} onClick={undo}><Undo2 size={16} /></button>
           <button type="button" aria-label="Redo" title="Redo" disabled={!history.next.length || busy} onClick={redo}><Redo2 size={16} /></button>
-          <span role="status">{previewOnly ? "Demo · not published" : changed ? "Unpublished changes" : "Up to date"}</span>
+          <span role="status">{previewOnly ? "Draft mode · nothing publishes" : changed ? "Unpublished changes" : "Up to date"}</span>
           {!previewOnly && <button className="editor-primary" disabled={busy || !changed} onClick={() => setConfirmPublish(true)}>{busy ? "Working…" : "Publish to GitHub"}</button>}
         </div>
       </div>
@@ -584,7 +568,7 @@ export function VisualEditor() {
             {!clean && <><button type="button" disabled={!canvas || busy} onClick={() => open({ type: "section" })}><Plus size={15} /> Section</button>
               <button type="button" disabled={!canvas || busy} onClick={() => open({ type: "outline" })}><Grid2X2 size={15} /> Sections</button>
               <button type="button" disabled={!canvas || busy} onClick={() => open({ type: "find" })}><Search size={15} /> Find text</button>
-              <button type="button" disabled={!canvas || busy} aria-pressed={showMarks} onClick={() => setShowMarks(!showMarks)}>Highlights</button></>}
+              <button type="button" disabled={!canvas || busy} aria-pressed={showMarks} onClick={() => setShowMarks(!showMarks)}>Drop zones</button></>}
             <button type="button" disabled={!canvas || busy} aria-pressed={clean} onClick={() => setClean(!clean)}><Eye size={15} /> {clean ? "Back to editing" : "Preview"}</button>
             <details className="editor-more"><summary>More</summary><div>
               <button type="button" disabled={busy} onClick={backup}>Download draft JSON</button>
@@ -592,7 +576,7 @@ export function VisualEditor() {
               <button type="button" disabled={busy} onClick={() => { setCanvas(null); setRevision(revision + 1) }}>Reload preview</button>
             </div></details>
           </div>
-          {!clean && <p className="builder-tip">{canvas ? "Drag an element onto a dotted slot, or tap a slot to add. Click text to edit." : "Loading page canvas…"}</p>}
+          {!clean && <p className="builder-tip" role="status">{canvas ? "Click text or photos to edit. Drag blocks onto the page, or choose Drop zones for manual placement." : "Loading the live page…"}</p>}
         </div>
         <div className="editor-frame-scroll" ref={frameArea}>
           <div className="editor-frame-device" style={{ width: screenWidth * scale, height: screenHeight * scale }}>
@@ -605,13 +589,13 @@ export function VisualEditor() {
         add={position => open({ type: "palette", position })} addSection={before => open({ type: "section", before })}
         edit={item => open({ type: "item", kind: item.type, itemId: item.id })} columns={position => open({ type: "columns", position })}
         sectionSettings={section => open({ type: "section", section })} moveSection={sectionMove} place={placeDragged} />}
-      {reconnect && <EditorDialog title="Reconnect GitHub" close={() => setReconnect(false)} busy={busy}>
+      {reconnect && <EditorDialog title={snapshot ? "Reconnect GitHub" : "Connect GitHub"} close={() => setReconnect(false)} busy={busy}>
         <form className="editor-dialog-body" onSubmit={connect}>
-          <p>Your current draft and selected uploads stay in this tab.</p>
+          <p>Your current draft and selected uploads stay in this tab. Use a token limited to Newcitywellness with <strong>Contents → Read and write</strong>.</p>
           {popupError && <p className="editor-popup-error" role="alert">{popupError}</p>}
           <label>New GitHub token<input type="password" autoComplete="off" spellCheck={false} required disabled={busy} /></label>
           <a href={tokenSetupUrl} target="_blank" rel="noopener noreferrer">Set up a Newcitywellness GitHub token ↗</a>
-          <div className="editor-dialog-actions"><button type="button" onClick={() => setReconnect(false)} disabled={busy}>Cancel</button><button className="editor-primary" type="submit" disabled={busy}>{busy ? "Checking access…" : "Reconnect GitHub"}</button></div>
+          <div className="editor-dialog-actions"><button type="button" onClick={() => setReconnect(false)} disabled={busy}>Cancel</button><button className="editor-primary" type="submit" disabled={busy}>{busy ? "Checking access…" : snapshot ? "Reconnect GitHub" : "Connect GitHub"}</button></div>
         </form>
       </EditorDialog>}
       {target && <EditorDialog key={dialogKey} title={popupTitle} subtitle={active[2]} close={close} busy={busy}>
@@ -672,6 +656,6 @@ export function VisualEditor() {
           </div>
         </form>}
       </EditorDialog>}
-    </>}
+    </>
   </main>
 }

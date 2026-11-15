@@ -6,15 +6,12 @@ import { ArrowDown, ArrowUp, Columns3, GripVertical, Plus, Settings2 } from "luc
 import { builderSectionStyle, PageElement } from "../builder-page"
 import { customSection, elementTypes, sectionOrder, type BuilderElement, type BuilderLayout, type BuilderRow, type Position } from "../../content/builder-model"
 
-export type DragItem = { type: "palette"; kind: keyof typeof elementTypes } | { type: "item" | "section"; id: string } | { type: "native"; id: string; scope: "copy" | "field" }
-export const dragMime = "application/x-ncw-builder"
+import { acceptsPageForgeDrag, activePageForgeDrag, beginPageForgeDrag, endPageForgeDrag, insertBeforeAtMidpoint, readPageForgeDrop, subscribePageForgeDrag, type PageForgeDrag } from "./pageforge/drag"
 
-export function startDrag(event: React.DragEvent, item: DragItem) {
-  event.dataTransfer.setData(dragMime, JSON.stringify(item))
-  event.dataTransfer.effectAllowed = item.type === "palette" ? "copy" : "move"
-}
+export type DragItem = PageForgeDrag
+export function startDrag(event: React.DragEvent, item: DragItem) { beginPageForgeDrag(event.dataTransfer, item) }
 function accept(event: React.DragEvent) {
-  if (!event.dataTransfer.types.includes(dragMime)) return false
+  if (!acceptsPageForgeDrag(event.dataTransfer)) return false
   event.preventDefault()
   event.stopPropagation()
   return true
@@ -22,15 +19,17 @@ function accept(event: React.DragEvent) {
 function drop(event: React.DragEvent, next: (item: DragItem) => void) {
   if (!accept(event)) return
   event.currentTarget.classList.remove("is-drop")
-  try { next(JSON.parse(event.dataTransfer.getData(dragMime)) as DragItem) } catch {}
+  const item = readPageForgeDrop(event.dataTransfer)
+  if (item) next(item)
+  endPageForgeDrag()
 }
 const enter = (event: React.DragEvent) => { if (accept(event)) event.currentTarget.classList.add("is-drop") }
 const leave = (event: React.DragEvent) => {
   const related = event.relatedTarget
-  if (!related || !event.currentTarget.contains(related as Node)) event.currentTarget.classList.remove("is-drop")
+  if (!related || !(related instanceof event.currentTarget.ownerDocument.defaultView!.Node) || !event.currentTarget.contains(related)) event.currentTarget.classList.remove("is-drop")
 }
 
-export type NativeCanvas = { main: HTMLElement; native: Map<string, HTMLElement>; anchors: Array<{ section: string; id: string; node: HTMLElement; label: string }>; root: HTMLElement; legacy: HTMLElement | null; hosts: Map<string, HTMLElement> }
+export type NativeCanvas = { main: HTMLElement; native: Map<string, HTMLElement>; anchors: Array<{ section: string; id: string; node: HTMLElement; label: string }>; root: HTMLElement; legacy: HTMLElement | null; publishedOrder: string[]; preserved: { node: HTMLElement; before: string | null }[]; hosts: Map<string, HTMLElement> }
 
 type Props = {
   canvas: NativeCanvas; layout: BuilderLayout; clean: boolean; resolve: (path: string) => string
@@ -43,7 +42,83 @@ type Props = {
 
 export function BuilderCanvas(p: Props) {
   const { canvas, layout, clean } = p
-  const order = sectionOrder(layout, [...canvas.native.keys()])
+  const order = sectionOrder({ ...layout, order: layout.order ?? canvas.publishedOrder }, [...canvas.native.keys()])
+  const handlers = useRef({ order, moveSection: p.moveSection, place: p.place })
+  useEffect(() => { handlers.current = { order, moveSection: p.moveSection, place: p.place } })
+  useEffect(() => {
+    const { main, hosts } = canvas
+    const doc = main.ownerDocument
+    const onDragEnd = () => {
+      delete doc.documentElement.dataset.pageforgeDrag
+      main.querySelectorAll(".is-drop").forEach(node => node.classList.remove("is-drop"))
+    }
+    const unsubscribe = subscribePageForgeDrag(item => {
+      if (item) doc.documentElement.dataset.pageforgeDrag = item.type
+      else onDragEnd()
+    })
+    function sectionBelow(event: DragEvent, dragged?: string) {
+      return insertBeforeAtMidpoint(event.clientY, handlers.current.order.flatMap(id => {
+        const section = canvas.native.get(id) ?? hosts.get("custom-" + id)
+        if (!section) return []
+        const rect = section.getBoundingClientRect()
+        return rect ? [{ id, top: rect.top, height: rect.height }] : []
+      }), dragged)
+    }
+    function blockDestination(event: DragEvent): Position | undefined {
+      const element = event.target
+      if (!(element instanceof doc.defaultView!.Element)) return
+      const sectionNode = element.closest<HTMLElement>("[data-pageforge-section]")
+      const section = sectionNode?.dataset.pageforgeSection
+      if (!section) return
+      // Drop over an existing text/card area to insert at its nearest registered inline slot.
+      const inline = anchorsNear(section, event.clientX, event.clientY)
+      if (inline) return { section, zone: "after", anchor: inline }
+      const rect = sectionNode.getBoundingClientRect()
+      return { section, zone: event.clientY < rect.top + rect.height / 2 ? "before" : "after" }
+    }
+    function anchorsNear(section: string, x: number, y: number) {
+      return canvas.anchors.filter(anchor => {
+        const previous = anchor.node.previousElementSibling
+        if (anchor.section !== section || !previous?.getClientRects().length) return false
+        const rect = previous.getBoundingClientRect()
+        return x >= rect.left - 20 && x <= rect.right + 20 && y >= rect.top - 12 && y <= rect.bottom + 26
+      }).reduce<{ id: string; distance: number } | undefined>((best, anchor) => {
+        const distance = Math.abs(anchor.node.previousElementSibling!.getBoundingClientRect().bottom - y)
+        return !best || distance < best.distance ? { id: anchor.id, distance } : best
+      }, undefined)?.id
+    }
+    function mark(event: DragEvent) {
+      const drag = activePageForgeDrag()
+      if (!drag || !acceptsPageForgeDrag(event.dataTransfer)) return
+      main.querySelectorAll(".is-drop").forEach(node => node.classList.remove("is-drop"))
+      if (drag.type === "section") {
+        event.preventDefault()
+        const slot = sectionBelow(event, drag.id)
+        const boundary = slot ? hosts.get("junction-" + slot) : canvas.root
+        boundary?.querySelector(".builder-studio-boundary")?.classList.add("is-drop")
+      } else {
+        const position = blockDestination(event)
+        if (!position) return
+        event.preventDefault()
+        const parent = hosts.get(position.anchor ? "anchor-" + position.anchor : position.section + ":" + position.zone)
+        parent?.querySelector(".builder-studio-zone-actions > .builder-studio-slot, .builder-studio-empty-zone .builder-studio-slot")?.classList.add("is-drop")
+      }
+    }
+    function move(event: DragEvent) {
+      const item = readPageForgeDrop(event.dataTransfer)
+      if (!item) return
+      const destination = item.type === "section" ? undefined : blockDestination(event)
+      if (item.type !== "section" && !destination) return
+      event.preventDefault()
+      event.stopPropagation()
+      if (item.type === "section") handlers.current.moveSection(item.id, sectionBelow(event, item.id))
+      else if (destination) handlers.current.place(item, destination)
+      endPageForgeDrag()
+    }
+    main.addEventListener("dragover", mark)
+    main.addEventListener("drop", move)
+    return () => { unsubscribe(); onDragEnd(); main.removeEventListener("dragover", mark); main.removeEventListener("drop", move) }
+  }, [canvas])
   const hosts = useRef(canvas.hosts)
   function host(id: string) {
     let fresh = hosts.current.get(id)
@@ -68,9 +143,11 @@ export function BuilderCanvas(p: Props) {
       const junction = activate("junction-" + sectionId)
       junction.className = "builder-studio-junction"
       insert(junction)
+      for (const part of canvas.preserved) if (part.before === sectionId) insert(part.node)
       const template = native.get(sectionId)
       const node = template ?? activate("custom-" + sectionId)
       if (!template) node.className = "builder-section builder-custom"
+      node.dataset.pageforgeSection = sectionId
       insert(node)
       const settings = layout.sections?.[sectionId]
       const { "--builder-bg": background, "--builder-fg": foreground } = builderSectionStyle(settings) as Record<string, string | undefined>
@@ -93,6 +170,7 @@ export function BuilderCanvas(p: Props) {
       anchorHost.className = "builder-studio-anchor"
       if (node.nextSibling !== anchorHost) node.after(anchorHost)
     }
+    for (const part of canvas.preserved) if (!part.before) insert(part.node)
     if (legacy && legacy.nextSibling !== root) main.insertBefore(legacy, root)
     for (const [id, node] of hosts.current) if (!active.has(id)) { node.remove(); hosts.current.delete(id) }
   })
@@ -102,6 +180,7 @@ export function BuilderCanvas(p: Props) {
   function junction(before: string | null) {
     return <div className="builder-studio-boundary" onDragOver={enter} onDragLeave={leave} onDrop={event => drop(event, item => {
       if (item.type === "section") p.moveSection(item.id, before)
+      else { const last = order.at(-1); if (before || last) p.place(item, before ? { section: before, zone: "before" } : { section: last!, zone: "after" }) }
     })}>
       <button type="button" onClick={() => p.addSection(before)} aria-label={before ? "Add a section above" : "Add a section at the end"}><Plus size={14} /> Section</button>
     </div>
@@ -111,7 +190,8 @@ export function BuilderCanvas(p: Props) {
     const isSelected = p.selection && JSON.stringify(p.selection) === JSON.stringify(position)
     return <button type="button" className={`builder-studio-slot${compact ? " is-compact" : ""}${isSelected ? " is-selected" : ""}`}
       aria-label={label} onClick={() => { p.select(position); p.add(position) }}
-      onDragOver={enter} onDragLeave={leave} onDrop={event => drop(event, item => p.place(item, position))}>
+      onDragOver={event => { if (activePageForgeDrag()?.type !== "section") enter(event) }} onDragLeave={leave}
+      onDrop={event => { if (activePageForgeDrag()?.type !== "section") drop(event, item => p.place(item, position)) }}>
       <Plus size={14} /><span>{label}</span>
     </button>
   }
@@ -130,7 +210,7 @@ export function BuilderCanvas(p: Props) {
                 {!clean && dropSlot({ ...basePosition, row: row.id, column: index, before: item.id }, "Insert above element", true)}
                 <div className={!clean ? "builder-studio-item" : undefined} onClick={clean ? undefined : (event) => { event.preventDefault(); p.edit(item) }}>
                   {!clean && <div className="builder-studio-item-bar">
-                    <button type="button" aria-label={`Edit ${elementTypes[item.type]}`} onClick={event => { event.stopPropagation(); p.edit(item) }} draggable onDragStart={event => startDrag(event, { type: "item", id: item.id })}><GripVertical size={14} /> {elementTypes[item.type]}</button>
+                    <button type="button" aria-label={`Edit ${elementTypes[item.type]}`} onClick={event => { event.stopPropagation(); p.edit(item) }} draggable onDragStart={event => startDrag(event, { type: "item", id: item.id })} onDragEnd={endPageForgeDrag}><GripVertical size={14} /> {elementTypes[item.type]}</button>
                   </div>}
                   <PageElement item={item} resolve={p.resolve} />
                 </div>
@@ -157,7 +237,7 @@ export function BuilderCanvas(p: Props) {
         {!clean && createPortal(junction(id), host("junction-" + id), "junction")}
         {createPortal(<>
           {!clean && <div className="builder-studio-section-bar">
-            <button type="button" draggable onDragStart={event => startDrag(event, { type: "section", id })} onClick={() => p.sectionSettings(id)} title="Drag to reorder or click for settings"><GripVertical size={16} />{label}</button>
+            <button type="button" draggable onDragStart={event => startDrag(event, { type: "section", id })} onDragEnd={endPageForgeDrag} onClick={() => p.sectionSettings(id)} title="Drag to reorder or click for settings"><GripVertical size={16} />{label}</button>
             <div><button type="button" aria-label={`Move ${label} up`} disabled={index === 0} onClick={() => p.moveSection(id, order[index - 1])}><ArrowUp size={15} /></button>
               <button type="button" aria-label={`Move ${label} down`} disabled={index === order.length - 1} onClick={() => p.moveSection(id, order[index + 2] ?? null)}><ArrowDown size={15} /></button>
               <button type="button" aria-label={`Settings for ${label}`} onClick={() => p.sectionSettings(id)}><Settings2 size={15} /></button></div>
@@ -173,7 +253,8 @@ export function BuilderCanvas(p: Props) {
 }
 
 export const canvasCss = `
-  .builder-studio-native-drag {vertical-align:baseline;margin-right:4px;padding:1px 4px!important;font:600 11px/1.2 system-ui,sans-serif!important;background:#eef6e9!important;color:#1a472d!important;border-radius:4px;border:1px solid #91af97;cursor:grab!important;}
+  .builder-studio-native-drag {position:absolute;z-index:4;margin-inline-start:-24px;opacity:0;pointer-events:none;padding:1px 4px!important;font:600 11px/1.2 system-ui,sans-serif!important;background:#eef6e9!important;color:#1a472d!important;border-radius:4px;border:1px solid #91af97;cursor:grab!important;}
+  .builder-studio-native-drag:hover,.builder-studio-native-drag:has(+ :is(h2,h3,h4,p):hover),.builder-studio-native-drag:focus-visible,html.editor-show-marks .builder-studio-native-drag {opacity:1;pointer-events:auto;}
   html.builder-studio-clean .builder-studio-native-drag,.builder-studio-native-drag[hidden] {display:none!important;}
   html:not(.builder-studio-clean) builder-copy[data-builder-copy]:not([data-builder-moved-source]) { display:inline !important; }
   html:not(.builder-studio-clean) :is([data-builder-copy]:not(input),[data-editor-field]) { cursor:text; }
@@ -183,22 +264,32 @@ export const canvasCss = `
   html.editor-show-marks:not(.builder-studio-clean) :is([data-builder-copy],[data-editor-field],img[data-editor-image]) {outline:1px dashed #aa791f;outline-offset:2px;}
   .page-load-indicator, html:not(.builder-studio-clean) .condition-search-widget {display:none !important;}
   .ncw *, .ncw *::before, .ncw *::after {animation:none !important;transition:none !important;}
-  html:not(.builder-studio-clean) .header-nav, html:not(.builder-studio-clean) .site-header {position:relative!important;top:auto!important;}
-  html:not(.builder-studio-clean) .ncw .header-nav .dropdown-menu {visibility:visible;}
-  html:not(.builder-studio-clean) .floating-booking-link {position:static!important; display:flex!important;width:max-content!important;margin:10px auto;transform:none!important;}
-  html:not(.builder-studio-clean) .floating-booking-link .floating-booking-label {display:inline!important;opacity:1!important;max-width:none!important;}
+
   .builder-studio-junction,.builder-studio-host,.builder-studio-anchor {min-width:0;}
   .builder-studio-junction:empty,.builder-studio-host:empty,.builder-studio-anchor:empty {display:none;}
   .builder-studio-boundary,.builder-studio-section-bar,.builder-studio-zone-actions,.builder-studio-item-bar {display:flex;align-items:center;gap:6px;}
-  .builder-studio-boundary {justify-content:center;padding:3px 8px;background:#e5ebe4;position:relative;z-index:2;}
+  .builder-studio-boundary {justify-content:center;position:relative;z-index:3;height:0;}
+  .builder-studio-boundary > button {position:absolute;top:-12px;opacity:0;min-height:25px!important;pointer-events:none;}
+  .builder-studio-boundary:hover > button,.builder-studio-boundary:focus-within > button,html[data-pageforge-drag] .builder-studio-boundary > button,html.editor-show-marks .builder-studio-boundary > button {opacity:1;pointer-events:auto;}
+  html[data-pageforge-drag] .builder-studio-boundary {height:26px;}
   .builder-studio-boundary.is-drop {background:#afd4b2;box-shadow:inset 0 3px #226e48;}
-  .builder-studio-section-bar {justify-content:space-between;flex-wrap:wrap;position:relative;z-index:2;border-top:1px solid #a6bca7;background:#eaf1e7;padding:4px clamp(7px,2vw,32px);}
+  .builder-studio-section-bar {justify-content:space-between;position:absolute;left:12px;right:12px;top:4px;z-index:6;opacity:0;pointer-events:none;}
+  .builder-studio-section-bar button {pointer-events:none;}
+  .builder-studio-section-bar:hover button,.builder-native:hover .builder-studio-section-bar button,.builder-custom:hover .builder-studio-section-bar button,.builder-studio-section-bar:focus-within button,html.editor-show-marks .builder-studio-section-bar button,html[data-pageforge-drag] .builder-studio-section-bar button {pointer-events:auto;}
+  .builder-native:hover .builder-studio-section-bar,.builder-custom:hover .builder-studio-section-bar,.builder-studio-section-bar:focus-within,html.editor-show-marks .builder-studio-section-bar,html[data-pageforge-drag] .builder-studio-section-bar {opacity:1;}
+  .builder-native,.builder-custom {display:block!important;position:relative;}
+  html.builder-studio-clean .builder-native {display:contents!important;}
   .builder-studio-section-bar > div {display:flex;gap:4px;}
   .ncw :is(.builder-studio-section-bar,.builder-studio-boundary,.builder-studio-item-bar,.builder-studio-zone-actions,.builder-studio-row) button:not(.builder-link), .ncw .builder-studio-slot {border:1px solid #a8bcaa;border-radius:5px;color:#163b29;background:#f6fcf6;font:650 12px/1.25 system-ui,sans-serif;text-align:center;min-height:30px;cursor:pointer;padding:4px 8px;display:inline-flex;align-items:center;justify-content:center;gap:5px;}
   .ncw [draggable=true] {cursor:grab!important;}
   .ncw .builder-studio-section-bar button:disabled {opacity:.4;cursor:default;}
   html:not(.builder-studio-clean) .builder-studio-host .builder-zone,
   html:not(.builder-studio-clean) .builder-studio-anchor .builder-zone {padding:7px 0;}
+  html:not(.builder-studio-clean):not([data-pageforge-drag]):not(.editor-show-marks) .builder-studio-empty-zone {position:relative;height:0;padding:0!important;z-index:3;background:none;}
+  html:not(.builder-studio-clean):not([data-pageforge-drag]):not(.editor-show-marks) .builder-studio-empty-zone > div {position:relative;top:-8px;opacity:0;pointer-events:none;}
+  html:not(.builder-studio-clean):not([data-pageforge-drag]):not(.editor-show-marks) .builder-studio-empty-zone:focus-within > div {opacity:1;pointer-events:auto;}
+  .builder-custom .builder-studio-empty-zone {height:auto!important;min-height:45px;}
+  .builder-custom .builder-studio-empty-zone > div {opacity:1!important;top:0!important;pointer-events:auto!important;}
   html:not(.builder-studio-clean) .builder-studio-host .builder-zone-inner,
   html:not(.builder-studio-clean) .builder-studio-anchor .builder-zone-inner {gap:8px;}
   .builder-studio-anchor .builder-zone {min-width:0;}

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { AlignLeft, Columns3, FileDown, Heading, Image, Link2, Play, Video } from "lucide-react"
 import { colorValue, customSection, elementTypes, sectionOrder, type BuilderElement, type BuilderLayout, type ElementType, type Position, type SectionStyle } from "../../content/builder-model"
 import { startDrag } from "./builder-canvas"
+import { endPageForgeDrag } from "./pageforge/drag"
 
 const icons = { heading: Heading, paragraph: AlignLeft, photo: Image, button: Link2, document: FileDown, youtube: Play, video: Video }
 
@@ -12,7 +13,7 @@ export function ElementPalette({ choose, disabled }: { choose: (type: ElementTyp
     {(Object.keys(elementTypes) as ElementType[]).map(kind => {
       const Icon = icons[kind]
       return <button type="button" key={kind} title={`Drag ${elementTypes[kind].toLowerCase()} onto the page, or click to choose a position`}
-        disabled={disabled} draggable={!disabled} onDragStart={event => startDrag(event, { type: "palette", kind })} onClick={() => choose(kind)}>
+        disabled={disabled} draggable={!disabled} onDragStart={event => startDrag(event, { type: "palette", kind })} onDragEnd={endPageForgeDrag} onClick={() => choose(kind)}>
         <Icon size={16} aria-hidden="true" /><span>{elementTypes[kind]}</span>
       </button>
     })}

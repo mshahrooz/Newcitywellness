@@ -1,6 +1,6 @@
 # New City Wellness website builder
 
-Open `/admin/` under the GitHub Pages site path. Choose **Try the builder without publishing** to practice on the current site in a temporary draft, or unlock it with a GitHub token to publish. No external dashboard backend is required.
+Open `/admin/` or `/admin/pageforge/` under the GitHub Pages site path to see the current site in a temporary draft. Connect a GitHub token when you want to publish. No external dashboard backend is required.
 
 ## Build a page
 
@@ -25,11 +25,13 @@ If a token expires or GitHub denies access while publishing, use **More → Reco
 - Uploaded videos support MP4 and WebM up to 20 MB. Use a YouTube link for a larger video.
 - Upload only public website content. Removing an element removes it from the page, not from earlier commits. Draft JSON backups contain text, structure and file references, not the file bytes.
 
-## GrapesJS Design Studio
+## PageForge Studio integration
 
-Open **GrapesJS Design Studio** from the builder header, or go to `/admin/grapes/`. The studio opens in a demo state and does not write to GitHub until you connect and confirm publishing.
+The dashboard now opens directly into the website canvas in draft mode and does not require a token to start editing. Use **Connect GitHub** only when you are ready to publish. Your current draft stays open when you connect, provided the published content has not changed since you loaded it.
 
-- Select the page, then drag a section, columns, title, paragraph, photo, button, file download, YouTube video or local video from **Blocks**. Double-click new text to edit it. The block panel also has a click-to-insert option.
-- Click a new block to open its **Styles** panel or the relevant media controls. Uploaded files use the same repository and limits as the existing builder. Use **Layers** to review the structure and the device controls to check widths.
-- Existing Next.js sections are shown as reorderable cards. They are not imported as editable HTML. Use the original Site Builder to edit their copy, colors, and content so forms and interactive features keep working. If a page has been reordered in GrapesJS, its published section order is controlled by GrapesJS.
-- GitHub stores the editable GrapesJS project and separate HTML/CSS output. The build cleans and scopes that output before rendering it on the public page. **Backup** downloads the project and HTML/CSS as JSON. Uploaded files are not embedded in that backup.
+- Select a page to see its original header, sections, images, and footer. Click editable text or photos for a popup. Use **Find text** for content inside a collapsed menu or accordion.
+- Drag a block from the toolbar. PageForge drop guides appear inside sections and at section boundaries. Hover over a section to drag its handle to another position. **Drop zones** exposes the same placement controls for keyboard and touch use.
+- Choose **Section** or its settings to add a section or change colors. **Add row** creates up to four columns. Existing text inside interactive components can be edited but is not detached from the component.
+- The editor shows the site's actual markup and styling. Live form submission and application scripts are disabled inside the editing frame. The published site still uses its own production React components and scripts.
+
+The integration adapts the drag state and midpoint insertion behavior of [PageForge Studio](https://github.com/VinodPrabhashvara/PageForge-Studio), distributed under MIT. See [the license](licenses/PageForge-Studio.txt). The old `/admin/grapes/` address is a compatibility entry to the same dashboard.

@@ -154,3 +154,11 @@ body:has(.editor-app) > .floating-booking-link { display: none; }
   .editor-palette button { flex:none; }
   .builder-tip { display:none; }
 }
+
+.pageforge-app .editor-kicker { margin-bottom: 1px; }
+.pageforge-app .editor-top { padding-block: 8px; }
+.pageforge-app .editor-top h1 { letter-spacing: -.03em; }
+.pageforge-app .editor-toolbar { column-gap: 12px; }
+.pageforge-app .editor-preview-bar { background: #edf2ec; }
+.pageforge-app .editor-palette { align-items: stretch; }
+.pageforge-app .editor-toolbar-actions > span { white-space: nowrap; }
