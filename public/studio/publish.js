@@ -339,6 +339,35 @@ const StudioPublish = (() => {
   }
   function bindSource(source){loadedSource=source;}
   function baseOfDraft(){return loadedSource;}
+  async function waitForLivePublication(id,feedback,links,pos){
+    if(!/^[a-f0-9-]{36}$/.test(id))return;
+    const release=new URL('homepage-studio/live-revision.json',LIVE);
+    const deadline=Date.now()+180000;
+    let interval=1500;
+    while(feedback.isConnected && Date.now()<deadline){
+      try{
+        release.searchParams.set('check',String(Date.now()));
+        const res=await fetch(release.href,{cache:'no-store',signal:AbortSignal.timeout(6000)});
+        const live=res.ok?await res.json():null;
+        if(live?.publication===id && /^[a-f0-9]{24}$/.test(live.revision)){
+          const url=new URL(LIVE);
+          url.searchParams.set('ncw_rev',live.revision);
+          const page=await fetch(url.href,{cache:'no-store',signal:AbortSignal.timeout(6000)});
+          if(page.ok && (await page.text()).includes('name="ncw-home-revision" content="'+live.revision+'"')){
+            if(!feedback.isConnected)return;
+            feedback.textContent='Your changes are live on GitHub Pages.';
+            links.prepend(create('a',{href:url.href,target:'_blank',rel:'noopener noreferrer'},'Open updated homepage ↗'));
+            pos();
+            return;
+          }
+        }
+      }catch{ /* Pages may still be deploying. */ }
+      if(!feedback.isConnected)return;
+      await new Promise(resolve=>setTimeout(resolve,interval));
+      interval=Math.min(interval*2,12000);
+    }
+    if(feedback.isConnected)feedback.textContent='Committed to GitHub. Deployment is taking longer than expected. Use Watch Pages build to check its progress.';
+  }
   function panel(){
     if(busy)return;
     const pos=open('Publish homepage changes','GITHUB PAGES');
@@ -397,10 +426,13 @@ const StudioPublish = (() => {
         cap(zip.size,MAX_UPLOAD);
         progress('Publishing the homepage and its media…');
         const result=await publisher('publish',zip);
-        progress('Committed to GitHub. The live homepage updates after the Pages build succeeds.');
+        const pendingLive=create('span');
+        feedback.replaceChildren(pendingLive);
+        pendingLive.textContent='Committed to GitHub. Waiting for the new homepage to go live…';
         publishedLinks.replaceChildren(
           create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/commit/'+result.sha,target:'_blank',rel:'noopener noreferrer'},'View GitHub commit ↗'),
           create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/actions/workflows/deploy.yml',target:'_blank',rel:'noopener noreferrer'},'Watch Pages build ↗'));
+        void waitForLivePublication(result.id,pendingLive,publishedLinks,pos);
         if(VALID_SHA.test(result.source)){
           bindSource(result.source);
           void save({quiet:true});
