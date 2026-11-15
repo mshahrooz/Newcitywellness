@@ -189,7 +189,7 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
         fail(403, 'This account does not have permission to publish. Ask the site owner.');
       }
       const action = new URL(req.url).searchParams.get('action') || 'publish';
-      if (!['check', 'publish'].includes(action)) fail(400, 'Unknown publishing action.');
+      if (!['check', 'status', 'publish'].includes(action)) fail(400, 'Unknown publishing action.');
       let files, pub, state;
       if (action === 'publish') {
         if (req.headers.get('content-type') !== packageType) fail(415, 'The editor must send a ZIP package.');
@@ -238,7 +238,8 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
       }
       const getHead = async () => (await git('/git/ref/heads/main', 'read the live branch')).object?.sha;
       const head = await getHead();
-      if (!sha.test(head) || head !== pub.baseRevision) fail(409, 'Main changed after this draft was prepared. Save your draft and reload the editor.');
+      if (!sha.test(head)) fail(502, 'GitHub did not return the current main revision.');
+      if (action === 'publish' && head !== pub.baseRevision) fail(409, 'Main changed after this draft was prepared. Save your draft and try Publish again.');
       const treeSha = (await git('/git/commits/' + head, 'read the current homepage revision')).tree?.sha;
       if (!sha.test(treeSha)) fail(502, 'GitHub did not return a valid source tree.');
       const snapshot = await git('/git/trees/' + treeSha + '?recursive=1', 'read the current homepage files');
@@ -250,11 +251,31 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
         if (p.sha !== tree.get(n) || p.encoding !== 'base64' || typeof p.content !== 'string') fail(409, 'The homepage source changed before publication.');
         return Buffer.from(p.content, 'base64');
       };
-      await Promise.all(guardPaths.map(async n => {
-        if (!tree.has(n) || sha256(await read(n)) !== pub.guard[n]) fail(409, 'The homepage source changed. Reload the editor and prepare the draft again.');
-      }));
-      if (!JSON.parse(await read('package.json')).scripts?.['build:pages']?.includes('apply-homepage-studio.py')) {
+      const [guardEntries, config] = await Promise.all([
+        Promise.all(guardPaths.map(async n => {
+          if (!tree.has(n)) fail(409, 'The GitHub homepage source is missing ' + n + '.');
+          return [n, sha256(await read(n))];
+        })),
+        read('package.json'),
+      ]);
+      const guard = Object.fromEntries(guardEntries);
+      if (!JSON.parse(config).scripts?.['build:pages']?.includes('apply-homepage-studio.py')) {
         fail(409, 'The GitHub Pages homepage integration is disabled.');
+      }
+      if (action === 'status') {
+        let publication = null;
+        const sourceSha = tree.get(source) || null;
+        if (sourceSha) {
+          const [rawSource, rawDraft] = await Promise.all([read(source), read(draft)]);
+          const {state: savedState} = readPublication(new Map([[source, rawSource], [draft, rawDraft]]));
+          validateStoredDraft(savedState, new Map(), tree);
+          publication = { draft: savedState };
+        }
+        return json({ ok: true, parent: head, source: sourceSha, guard, publication,
+          assets: [...tree.keys()].filter(path => path.startsWith('public/images/') || path.startsWith('public/media/homepage-studio/')) });
+      }
+      if (!guardPaths.every(n => guard[n] === pub.guard[n])) {
+        fail(409, 'The homepage source changed. Refresh the editor before publishing.');
       }
       validateStoredDraft(state, files, tree);
       verifyHtml(pub.html, files, tree);
@@ -266,7 +287,7 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
         if (blob.sha !== expected) fail(502, 'GitHub did not confirm a homepage file.');
         entries.push({ path, mode: '100644', type: 'blob', sha: expected });
       }
-      if (!entries.length) return json({ ok: true, sha: head, id: pub.id });
+      if (!entries.length) return json({ ok: true, sha: head, id: pub.id, source: gitSha(files.get(source)) });
       const next = await git('/git/trees', 'assemble the homepage files', 'POST', { base_tree: treeSha, tree: entries });
       if (!sha.test(next.sha)) fail(502, 'GitHub did not confirm the homepage file tree.');
       const made = await git('/git/commits', 'create the homepage commit', 'POST', {
@@ -277,7 +298,7 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
       if (await getHead() !== head) fail(409, 'Main changed while the draft was being prepared. Reload the editor.');
       const updated = await git('/git/refs/heads/main', 'advance the live branch', 'PATCH', { sha: made.sha, force: false });
       if (updated.object?.sha !== made.sha) fail(502, 'GitHub did not confirm the commit. Check the Pages build before retrying.');
-      return json({ ok: true, sha: made.sha, id: pub.id });
+      return json({ ok: true, sha: made.sha, id: pub.id, source: gitSha(files.get(source)) });
     } catch (e) {
       if (e instanceof PublishError) return json({ error: e.message }, e.status);
       console.error('Homepage publisher failed', e?.name || 'Error');

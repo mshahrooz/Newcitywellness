@@ -264,20 +264,20 @@ function draftString(){
   return JSON.stringify({version:1,page:'new-city-wellness-homepage',operations:list.slice(0,cursor),publishedBase:typeof StudioPublish!=='undefined'?StudioPublish.baseOfDraft():null});
 }
 let saveQueue=Promise.resolve();
-function save(){
+function save({quiet=false}={}){
   const data=draftString(), undoStamp=list.slice(0,cursor);
   saveQueue=saveQueue.catch(()=>{}).then(async()=>{
     if(data.length<3500000){
       try{
         localStorage.setItem(STORAGE,data);
         if(window.indexedDB)await draftStore('readwrite',s=>s.delete(STORAGE)).catch(()=>{});
-        savedOps=undoStamp;showState();flash('Draft saved in this browser. Nothing was published.');return;
+        savedOps=undoStamp;showState();if(!quiet)flash('Draft saved in this browser. Nothing was published.');return;
       }catch{}
     }
     try{
       await draftStore('readwrite',s=>s.put(data,STORAGE));
       try{localStorage.setItem(STORAGE,'@indexeddb');}catch{}
-      savedOps=undoStamp;showState();flash('Draft and media saved in this browser.');
+      savedOps=undoStamp;showState();if(!quiet)flash('Draft and media saved in this browser.');
     }catch{flash('Browser storage is unavailable or full. Download the editable draft to keep it.');}
   });
   return saveQueue;
