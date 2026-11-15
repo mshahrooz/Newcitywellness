@@ -542,10 +542,13 @@ function openSettings(n) {
   button(actions,'Grid placement',()=>gridPanel(n));
   button(actions,'Duplicate',()=>cloneSelected(n));
   if(n.dataset.bsMove==='yes')button(actions,'Move to…',()=>pickTarget(n));
-  if(n.classList.contains('bs-offset-item'))button(actions,'Reset drag position for this view',()=>{
-    record({kind:'drag-offset',id:idOf(n),device:devicePlacement(),p:{x:0,y:0}});
-    choose(n);
-  });
+  if(n.classList.contains('bs-offset-item')){
+    const device=devicePlacement();
+    button(actions,device==='desktop'?'Reset shared drag position':'Use desktop drag position',()=>{
+      record({kind:'drag-offset',id:idOf(n),device:devicePlacement(),relative:true,p:{x:0,y:0}});
+      choose(n);
+    },{id:'reset-drag-position'});
+  }
   button(actions,'Add nearby',()=>startAdd(n));
   const parent=n.parentElement?.closest('[data-bs-kind],[data-bs-column]');
   if(parent)button(actions,'Select parent '+titleOf(parent).toLowerCase(),()=>choose(parent));
@@ -642,7 +645,7 @@ function finishDrag(commit=false){
   if(!commit)return;
   if(choice&&gesture.moved){
     const {device,p}=choice;
-    if(record({kind:'drag-offset',id:idOf(gesture.node),device,p}))choose(gesture.node,false);
+    if(record(dragOperation(gesture.node,device,p)))choose(gesture.node,false);
   }else if(!gesture.moved)gridPanel(gesture.node);
 }
 $('drag').addEventListener('pointerdown',e=>{
@@ -699,7 +702,11 @@ $('preview').onclick=()=>{
 function switchView(b){
   view=b.dataset.view;stage.dataset.view=view;syncViewport();
   document.querySelectorAll('[data-view]').forEach(el=>{if(el.tagName==='BUTTON')el.setAttribute('aria-pressed',String(el===b));});
-  requestAnimationFrame(()=>{refreshFreeSizes();paint();if(now()&&!popup.hidden)adjustPopup(now());});
+  requestAnimationFrame(()=>{refreshFreeSizes();paint();if(now()&&!popup.hidden){
+    const reset=$('reset-drag-position');
+    if(reset)reset.textContent=devicePlacement()==='desktop'?'Reset shared drag position':'Use desktop drag position';
+    adjustPopup(now());
+  }});
 }
 document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>switchView(b));
 $('add').onclick=()=>startAdd();
@@ -725,7 +732,7 @@ $('help').onclick=()=>{
   toggleMenu(false);const place=open('How to edit the homepage','QUICK GUIDE');
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
   para('Use Add nearby → Directly above or Directly below to insert without making a new row. Explicit inline moves and insertions can reposition other items.');
-  para('Dragging moves only the selected element and preserves its original space. Turn Snap off for finer placement. Adjust each preview size separately. Use the section settings to reorder whole sections.');
+  para('Dragging moves only the selected element and preserves its original space. Desktop drags carry over to tablet and mobile. Use their previews to fine-tune placement if needed. Turn Snap off for finer placement.');
   para('Use Duplicate in settings or Ctrl+D. Add a blank or column-based section with + Section. Its settings include color, image, or video backgrounds.');
   para('Save keeps edits in this browser. Download an editable draft to move it to another browser. Approved publisher accounts can publish the homepage from this editor.');
   place();
@@ -769,7 +776,7 @@ function boot(){
   D.fonts?.ready.then(()=>{refreshFreeSizes();paint();});
   D.addEventListener('submit',e=>{e.preventDefault();flash('The contact form is disabled in this preview.');},true);
   D.addEventListener('scroll',()=>{paint();if(!popup.hidden&&now())adjustPopup(now());},{passive:true,capture:true});
-  D.defaultView.addEventListener('resize',paint);
+  D.defaultView.addEventListener('resize',()=>{refreshFreeSizes();paint();});
   window.addEventListener('resize',()=>{syncViewport();paint();if(!popup.hidden)adjustPopup(now());});
   const loadSaved=(raw)=>{if(!raw||cursor)return;list=readDraft(raw);pendingPublisherBase=JSON.parse(raw).publishedBase||null;if(typeof StudioPublish!=='undefined')StudioPublish.bindSource(pendingPublisherBase);cursor=list.length;savedOps=list.slice();replay();};
   const warn=()=>flash('The saved draft could not be read. The original homepage is open.');

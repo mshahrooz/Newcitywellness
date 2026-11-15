@@ -1,6 +1,7 @@
 /* Behavior for the statically published Studio homepage only. Other pages keep Next.js. */
 (() => {
   'use strict';
+  if(typeof StudioResponsiveOffsets!=='undefined')StudioResponsiveOffsets.observe(document);
   const header = document.querySelector('.site-header');
   const nav = document.querySelector('.header-nav');
   const menu = header?.querySelector('.mobile-toggle');

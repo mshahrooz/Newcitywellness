@@ -149,6 +149,7 @@ def apply(root, output, prefix):
     inject = (
         '<meta name="homepage-studio-publication" content="' + obj["id"] + '">'
         '<link rel="stylesheet" href="' + versioned("homepage-studio/layout-v1.css") + '">'
+        '<script defer src="' + versioned("homepage-studio/responsive-offsets.js") + '"></script>'
         '<script defer src="' + versioned("homepage-studio/homepage-v1.js") + '"></script>'
     )
     changed = HEAD_END.sub(lambda m: inject + m[0], changed, count=1)
