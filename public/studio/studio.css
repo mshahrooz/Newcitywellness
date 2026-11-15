@@ -42,18 +42,23 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 #drop-guide{background:#215dbb;border-radius:2px;box-shadow:0 0 0 1px #fff}
 #guide-label{position:absolute;top:-26px;left:0;color:#fff;background:#215dbb;font-size:11px;line-height:21px;padding:0 8px;border-radius:4px;white-space:nowrap}
 .popup,.menu{position:fixed;z-index:6;background:white;border:1px solid #cbd9d0;border-radius:14px;box-shadow:0 14px 45px #152c2536}
-.popup{width:min(355px,calc(100vw - 16px));display:flex;flex-direction:column;max-height:min(620px,calc(100dvh - 85px));overflow:hidden}
-.popup-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 15px;border-bottom:1px solid #e2eae4;background:#f6faf6}
+.popup{width:min(355px,calc(100vw - 16px));display:flex;flex-direction:column;max-height:min(780px,calc(100dvh - 28px));overflow:hidden}
+.popup-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-shrink:0;padding:12px 15px;border-bottom:1px solid #e2eae4;background:#f6faf6}
 .popup-head span{color:#456c58;font-size:9px;letter-spacing:.13em;font-weight:800}
 .popup-head h2{margin:3px 0 0;font-size:17px}
 .popup-head button{border:0;border-radius:6px;background:#e8f0ea;color:#234635;font-size:22px;width:31px;height:31px;line-height:1}
-.popup-body{padding:13px 15px;overflow:auto;overscroll-behavior:contain}
+.popup-body{min-height:0;padding:13px 15px;overflow:auto;overscroll-behavior:contain}
 .popup-body p{margin:0 0 10px}
 .popup-body .muted{font-size:12px;color:#50685b}
 .popup-body label:not(.align-radio){display:grid;gap:4px;margin-bottom:10px;font-size:12px;font-weight:650}
 .popup-body input:not([type=radio]),.popup-body textarea,.popup-body select{width:100%;border:1px solid #becfc2;border-radius:6px;padding:7px;background:white;color:#17362a}
 .popup-body input[type=file]{font-size:11px}
 .popup-body textarea{min-height:64px;resize:vertical}
+.popup-body .studio-text{font-size:14px;line-height:1.5}
+.popup-body textarea.studio-text{min-height:clamp(132px,24dvh,220px);padding:9px}
+.popup-footer{display:flex;justify-content:flex-end;align-items:center;flex-shrink:0;padding:9px 15px;border-top:1px solid #e2eae4;background:#fff}
+.popup-footer .delete-element{border:1px solid #edccca;border-radius:7px;background:#fff4f3;color:#9a2e2d;padding:7px 10px;font-size:12px;font-weight:700}
+.popup-footer .delete-element:hover{background:#ffe7e5;color:#801e1d}
 .popup-body fieldset{border:0;padding:0;margin:0 0 10px}
 .popup-body legend{font-size:12px;font-weight:700;margin-bottom:5px}
 .popup-body hr{border:0;height:1px;background:#e0e9e2;margin:12px 0}
@@ -71,7 +76,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .danger,.menu .danger,.actions .danger{color:#9a2e2d}
 #toast{position:fixed;bottom:14px;right:14px;z-index:10;background:#193d31;color:white;padding:10px 14px;border-radius:8px;max-width:calc(100vw - 28px);box-shadow:0 3px 15px #0003}
 @media(max-width:840px){.hint{display:none}.studio-bar{gap:7px}.devices{padding-left:4px}}
-@media(max-width:600px){.wide,.identity small{display:none}.identity strong{font-size:12px}.brand-symbol{width:25px;height:25px}.studio-bar{padding-inline:7px;min-height:52px}.studio-bar button{min-height:31px;padding-inline:6px;font-size:12px}.studio-bar .icon{width:25px;font-size:17px}.studio-bar .accent{padding-inline:7px}.devices button{width:26px}.devices svg{width:15px;height:15px}.right{margin-left:0}.subbar{padding-inline:9px}.popup{max-height:44dvh}}
+@media(max-width:600px){.wide,.identity small{display:none}.identity strong{font-size:12px}.brand-symbol{width:25px;height:25px}.studio-bar{padding-inline:7px;min-height:52px}.studio-bar button{min-height:31px;padding-inline:6px;font-size:12px}.studio-bar .icon{width:25px;font-size:17px}.studio-bar .accent{padding-inline:7px}.devices button{width:26px}.devices svg{width:15px;height:15px}.right{margin-left:0}.subbar{padding-inline:9px}.popup{max-height:min(76dvh,calc(100dvh - 28px))}}
 @media(max-width:395px){.identity strong{display:none}}
 .popup-body .look{margin-top:10px;padding:8px 10px;background:#f5faf6;border:1px solid #dbe7df;border-radius:7px}
 .look summary{cursor:pointer;font-size:12px;font-weight:720}

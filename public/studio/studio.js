@@ -150,6 +150,35 @@ function dePair(p){
   if(p?.classList.contains('bs-pair')&&p.children.length===1)p.replaceWith(p.firstElementChild);
   else if(p?.classList.contains('bs-pair')&&!p.children.length)p.remove();
 }
+function canDeleteElement(n){
+  return !!(n?.isConnected&&idOf(n)&&!n.hasAttribute('data-bs-zone')&&!n.matches('main,.ncw,body')
+    &&(n.dataset.bsKind||n.hasAttribute('data-bs-column')||n.hasAttribute('data-bs-row')));
+}
+function deleteElement(n){
+  if(!canDeleteElement(n))return false;
+  const shell=freeShell(n),parent=n.parentElement;
+  // Remove an empty photo frame too, without deleting its card or service link.
+  const removed=therapyPhoto(n)&&parent.children.length===1?parent:n;
+  const ids=new Set([removed,...removed.querySelectorAll('[id]')].map(el=>el.id).filter(Boolean));
+  removed.remove();
+  if(shell)removeFreeContainer(shell);
+  else dePair(parent);
+  for(const slot of D.querySelectorAll('template[data-bs-flow-origin]')){
+    if(slot.dataset.bsFlowOrigin===idOf(n))slot.remove();
+  }
+  // Remove only accessibility references that pointed to the deleted item.
+  if(ids.size)for(const el of D.querySelectorAll('[aria-labelledby],[aria-describedby],[aria-controls]')){
+    for(const attr of ['aria-labelledby','aria-describedby','aria-controls']){
+      const old=el.getAttribute(attr);
+      if(!old)continue;
+      const keys=old.trim().split(/\s+/);
+      const retained=keys.filter(id=>!ids.has(id)||D.getElementById(id));
+      if(retained.length===keys.length)continue;
+      if(retained.length)el.setAttribute(attr,retained.join(' '));else el.removeAttribute(attr);
+    }
+  }
+  return true;
+}
 function apply(op){
   if(!op||typeof op!=='object')return false;
   const n=byId(op.id), target=op.target?byId(op.target):null;
@@ -247,10 +276,7 @@ function apply(op){
       if(!['top','right','bottom','left'].includes(op.edge))return false;
       const prop='padding-'+op.edge;
       if(op.value==='')n.style.removeProperty(prop);else n.style.setProperty(prop,bounded(op.value,0,220)+'px');return true;
-    case 'remove':
-      if(!n.hasAttribute('data-bs-new')&&n.dataset.bsRow!=='custom'&&!n.hasAttribute('data-bs-copy'))return false;
-      const shell=freeShell(n), old=n.parentElement;n.remove();
-      if(shell)removeFreeContainer(shell);else dePair(old);return true;
+    case 'remove':return deleteElement(n);
     default:return false;
   }
 }
@@ -394,7 +420,22 @@ function paint(){
 function close(){popup.hidden=true;placement=null;gesture=null;}
 function open(title,category,anchor=null){
   $('popup-title').textContent=title;$('popup-type').textContent=category;
-  body.replaceChildren();popup.hidden=false;gesture=null;
+  body.replaceChildren();body.scrollTop=0;popup.hidden=false;gesture=null;
+  const footer=$('popup-footer'),remove=$('delete-element');
+  footer.hidden=!canDeleteElement(anchor)||!['ELEMENT SETTINGS','CARD SETTINGS','SECTION SETTINGS','ROW / COLUMN'].includes(category);
+  remove.onclick=null;
+  if(!footer.hidden){
+    const label=anchor.matches('.therapy-card')?'card':anchor.hasAttribute('data-bs-row')?'section'
+      :anchor.hasAttribute('data-bs-column')?'column':anchor.dataset.bsKind==='image'?'image':'element';
+    remove.textContent='Delete '+label;
+    remove.onclick=()=>{
+      if(record({kind:'remove',id:idOf(anchor)})){
+        active=null;close();paint();
+        $('undo').focus({preventScroll:true});
+        flash('Deleted from draft. Use Undo to restore.');
+      }
+    };
+  }
   const place=()=>adjustPopup(anchor);
   return place;
 }
@@ -529,7 +570,6 @@ function openSettings(n) {
     button(a,'＋ Add section below',()=>rowChoices(n,'after'));
     button(a,'Add element',()=>startAdd(n));
     button(a,'Duplicate section',()=>cloneSelected(n));
-    if(custom||n.hasAttribute('data-bs-copy'))button(a,'Remove section',()=>{record({kind:'remove',id:idOf(n)});active=null;close();paint();},{class:'danger'});
     place();return;
   }
   const k=n.dataset.bsKind, e=content(n);
@@ -543,7 +583,6 @@ function openSettings(n) {
     } else {
       para('Move or duplicate this component as a single item.');
       button(a,'Grid placement',()=>gridPanel(n));button(a,'Duplicate',()=>cloneSelected(n));
-      if(n.hasAttribute('data-bs-copy'))button(a,'Remove',()=>{record({kind:'remove',id:idOf(n)});active=null;close();paint();},{class:'danger'});
       if(rowOf(n))button(a,'Section settings',()=>choose(rowOf(n)));
     }
     put();return;
@@ -555,7 +594,7 @@ function openSettings(n) {
     const token=Symbol();input(body,'Alternative text',n.dataset.bsAlt??e?.alt??'',{maxlength:250},el=>record({kind:'alt',id:idOf(n),value:el.value},token));
   }else{
     const token=Symbol(), current=textCopy(e);
-    input(body,k==='button'||k==='document'?'Label':'Text',current,{tag:k==='title'||k==='text'?'textarea':'input',maxlength:3000},el=>record({kind:'text',id:idOf(n),value:el.value},token));
+    input(body,k==='button'||k==='document'?'Label':'Text',current,{tag:k==='title'||k==='text'?'textarea':'input',class:'studio-text',maxlength:3000},el=>record({kind:'text',id:idOf(n),value:el.value},token));
     if(k==='button'&&!isExisting(n)){
       const urlToken=Symbol();input(body,'Button link',e.getAttribute('href'),{placeholder:'https://… or #section'},el=>{
         el.setCustomValidity(okayURL(el.value)?'':'Enter a public link or a section anchor.');
@@ -585,9 +624,6 @@ function openSettings(n) {
   const parent=n.parentElement?.closest('[data-bs-kind],[data-bs-column]');
   if(parent&&!therapyCard(n))button(actions,'Select parent '+titleOf(parent).toLowerCase(),()=>choose(parent));
   if(rowOf(n))button(actions,'Section settings',()=>choose(rowOf(n)));
-  if(n.hasAttribute('data-bs-new')||n.hasAttribute('data-bs-copy'))button(actions,'Remove',()=>{
-    record({kind:'remove',id:idOf(n)});active=null;close();paint();
-  },{class:'danger'});
   if(k!=='image'&&e){
     const details=create('details',{class:'look'});details.append(create('summary',{},'Text appearance'));body.append(details);
     const font=Symbol(), color=Symbol();
@@ -769,6 +805,7 @@ $('help').onclick=()=>{
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
   para('Use Add nearby → Directly above or Directly below to insert without making a new row. Explicit inline moves and insertions can reposition other items.');
   para('Dragging moves only the selected element and preserves its original space. Desktop drags carry over to tablet and mobile. Use their previews to fine-tune placement if needed. Turn Snap off for finer placement.');
+  para('Use Delete in the item settings to remove it from your draft. Undo restores deleted content.');
   para('Use Duplicate in settings or Ctrl+D. Add a blank or column-based section with + Section. Its settings include color, image, or video backgrounds.');
   para('Save keeps edits in this browser. Download an editable draft to move it to another browser. Approved publisher accounts can publish the homepage from this editor.');
   place();
