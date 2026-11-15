@@ -311,7 +311,7 @@ function gridPanel(n){
   const z=zoneOf(n)||rowList()[0];if(!z)return;
   const begin=knownPosition(n,z,devicePlacement());
   const place=open('Grid placement','POSITION / SIZE / LAYER',n);
-  para('Drag the grip or use these controls. Desktop, tablet, and mobile can have different positions. On phones, items without a mobile position stack below the original content.');
+  para('Dragging the grip moves only this element. These grid controls change how the element fits into its section and may affect spacing.');
   const label=create('label',{},'Destination section');
   const selector=create('select',{'aria-label':'Destination section'});
   for(const option of allZones().filter(s=>!n.contains(s))){
@@ -397,6 +397,56 @@ function backgroundPanel(section){
   update();
 }
 function scrollToSelection(n){n.scrollIntoView({block:'nearest'});requestAnimationFrame(paint);}
+// Move the painted box, not its layout box. Old grid-place operations still replay unchanged.
+function dragOffset(n,device){
+  const read=axis=>parseFloat(n.style.getPropertyValue('--bs-drag-'+device+'-'+axis))||0;
+  return {x:read('x'),y:read('y')};
+}
+function applyDragOffset(n,op){
+  if(!['desktop','tablet','mobile'].includes(op.device)||!canDragIndependently(n))return false;
+  const {x,y}=op.p||{};
+  if(!Number.isFinite(x)||!Number.isFinite(y))return false;
+  const key='--bs-drag-'+op.device;
+  n.style.setProperty(key+'-x',bounded(x,-100,100)+'vw');
+  n.style.setProperty(key+'-y',bounded(y,-GRID_CAP,GRID_CAP)+'px');
+  n.classList.add('bs-offset-item');
+  // CSS transforms do not apply to regular inline boxes. Keep them inline and offset their paint instead.
+  if(D.defaultView.getComputedStyle(n).display==='inline'&&!n.matches('img,video,input,textarea,select')){
+    n.classList.add('bs-offset-inline');
+  }
+  return true;
+}
+function canDragIndependently(n){
+  return !!(n?.isConnected&&(n.dataset.bsKind||n.hasAttribute('data-bs-column'))
+    && !n.hasAttribute('data-bs-row')&&!n.hasAttribute('data-bs-zone')&&!n.closest('.floating-booking-link'));
+}
+function offsetDragStart(n){
+  const win=D.defaultView, device=devicePlacement(), r=n.getBoundingClientRect();
+  return {device,r,base:dragOffset(n,device),scrollX:win.scrollX,scrollY:win.scrollY};
+}
+function offsetDragTarget(n,start,dx,dy,snap=snapGrid){
+  const win=D.defaultView, root=D.documentElement;
+  const width=win.innerWidth||1200;
+  const px=start.r.left+start.scrollX-win.scrollX;
+  const py=start.r.top+start.scrollY-win.scrollY;
+  let left=0,right=root.clientWidth||width,top=-win.scrollY,bottom=Math.max(root.scrollHeight,win.innerHeight)-win.scrollY;
+  for(let el=n.parentElement;el&&el!==root;el=el.parentElement){
+    const css=win.getComputedStyle(el);
+    const clipX=/^(hidden|clip|auto|scroll)$/.test(css.overflowX);
+    const clipY=/^(hidden|clip|auto|scroll)$/.test(css.overflowY);
+    if(!clipX&&!clipY)continue;
+    const r=el.getBoundingClientRect();
+    if(clipX){left=Math.max(left,r.left);right=Math.min(right,r.right);}
+    if(clipY){top=Math.max(top,r.top);bottom=Math.min(bottom,r.bottom);}
+  }
+  const round=(v,step)=>Math.round(v/step)*step;
+  const lpx=px+dx+win.scrollX-start.scrollX,tpx=py+dy+win.scrollY-start.scrollY;
+  const keep=(v,lo,hi,original)=>bounded(v,Math.min(lo,original),Math.max(hi,original));
+  const x=keep(snap?round(lpx-left,width/GRID_COLS)+left:lpx,left,right-start.r.width,px);
+  const y=keep(snap?round(tpx-top,GRID_STEP)+top:tpx,top,bottom-start.r.height,py);
+  return {left:x,top:y,width:start.r.width,height:start.r.height,device:start.device,
+    p:{x:Math.round((start.base.x+100*(x-px)/width)*10000)/10000,y:Math.round((start.base.y+y-py)*100)/100}};
+}
 function gridOperation(n,zone,device,p){
   const oldZone=zoneOf(n)||zone;
   const baseline=device==='desktop'||oldZone!==zone?null:knownPosition(n,oldZone,'desktop');
@@ -415,7 +465,7 @@ function cloneSelected(n){
 function startGridPick({node=null,kind=null}){
   close();gridPick={node,kind};stage.classList.add('bs-placement-mode');
   $('hint').textContent='Click anywhere on the page grid to place the element. Esc cancels.';
-  flash('Click anywhere on the page to place the element.');
+  flash(node?'Click to move only the selected item.':'Click anywhere on the page to place the element.');
 }
 function clearGridPick(){
   if(!gridPick)return;
@@ -427,11 +477,11 @@ function setGridMode(next){
   const btn=$('grid-mode');
   btn.setAttribute('aria-pressed',String(next==='grid'));
   btn.innerHTML=next==='grid'?'<span aria-hidden="true">▦</span> Grid':'<span aria-hidden="true">≡</span> Flow';
-  btn.title=next==='grid'?'Free grid placement active. Click to switch to document flow.':'Inline placement active. Click for free grid dragging.';
+  btn.title=next==='grid'?'Grid snapping and grid insertion. Click to switch to inline insertion.':'Inline insertion. Dragging still leaves other items in place.';
   if(mode==='edit')$('hint').textContent=defaultHint();
 }
 function defaultHint(){
-  return gridMode==='grid'?'Click an element to edit. Drag its grip anywhere on the page.':'Click an element to edit. Flow drag places it beside another element.';
+  return gridMode==='grid'?'Click an element to edit. Drag its grip to move it without shifting other items.':'Drag without shifting other items. Use Move to… for inline reordering.';
 }
 function markerFrame(rect){
   const x=Math.max(rect.f.left,rect.left), y=Math.max(rect.f.top,rect.top);
@@ -482,6 +532,13 @@ function updatePick(e){
   const z=zoneAt(e.clientX,e.clientY);
   if(!z)return;
   const device=devicePlacement();
+  if(gridPick.node&&canDragIndependently(gridPick.node)){
+    const n=gridPick.node,start=offsetDragStart(n);
+    const target=offsetDragTarget(n,start,e.clientX-start.r.left,e.clientY-start.r.top,gridMode==='grid'&&snapGrid);
+    const frameRect=frame.getBoundingClientRect();
+    drawGhost(n,frameRect.left+target.left,frameRect.top+target.top,target.width,target.height);
+    return;
+  }
   const dims=gridPick.node?measure(gridPick.node):{width:gridPick.kind==='image'?240:250,height:62};
   const p=gridPoint(z,e.clientX,e.clientY,dims,device);
   showGridVisual(z,p,gridPick.node);
@@ -492,6 +549,12 @@ function commitPick(e){
   const item=gridPick;clearGridPick();
   if(!z)return true;
   const d=devicePlacement();
+  if(item.node&&canDragIndependently(item.node)){
+    const start=offsetDragStart(item.node);
+    const {p,device}=offsetDragTarget(item.node,start,e.clientX-start.r.left,e.clientY-start.r.top,gridMode==='grid'&&snapGrid);
+    if(record({kind:'drag-offset',id:idOf(item.node),device,p}))choose(item.node,false);
+    return true;
+  }
   const dims=item.node?measure(item.node):{width:item.kind==='image'?240:250,height:62};
   const p=gridPoint(z,e.clientX,e.clientY,dims,d);
   const id=item.node?idOf(item.node):unique();
