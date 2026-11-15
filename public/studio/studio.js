@@ -170,6 +170,7 @@ function apply(op){
   const k=n.dataset.bsKind, e=content(n);
   switch(op.kind){
     case 'duplicate': return dupElement(n,op.copy,op.device||'desktop',op.p);
+    case 'drag-offset': return applyDragOffset(n,op);
     case 'grid-place': return ['desktop','tablet','mobile'].includes(op.device)&&attachFree(n,target,op.device,op.p,op.baseline);
     case 'grid-flow': return restoreFlow(n);
     case 'grid-auto': {
@@ -378,7 +379,7 @@ function paint(){
   Object.assign(outline.style,{left:l+'px',top:top+'px',width:(rt-l)+'px',height:(bt-top)+'px'});
   outline.hidden=false;
   $('selection-label').textContent=titleOf(n);
-  $('drag').hidden=n.hasAttribute('data-bs-zone')||gridMode==='flow'&&!row&&n.dataset.bsMove!=='yes'&&!freeShell(n);
+  $('drag').hidden=!canDragIndependently(n);
   $('selection-add').hidden=false;
   $('selection-duplicate').hidden=false;
   const resize=$('resize-selection');resize.hidden=!freeShell(n)||drag?.moved||!!resizeDrag||!!gridPick;
@@ -447,7 +448,7 @@ function pickTarget(){
   const n=now();
   if(!n)return;
   const place=open('Move '+titleOf(n).toLowerCase(),'ELEMENT PLACEMENT',n);
-  para('Choose an available destination. For precise placement you can also drag the handle above the element.');
+  para('Choose an available destination. This reorders the page and can move nearby items. Drag the handle instead to keep their positions.');
   const allowed=[...D.querySelectorAll('[data-bs-column],[data-bs-move=yes]')].filter(t=>t!==n&&!n.contains(t)&&canInline(n,t,t.hasAttribute('data-bs-column')?'inside':'before'));
   if(!allowed.length){para('Add a row or another editable element to create a destination.');place();return;}
   const sel=create('select',{'aria-label':'Move destination'});
@@ -541,6 +542,10 @@ function openSettings(n) {
   button(actions,'Grid placement',()=>gridPanel(n));
   button(actions,'Duplicate',()=>cloneSelected(n));
   if(n.dataset.bsMove==='yes')button(actions,'Move to…',()=>pickTarget(n));
+  if(n.classList.contains('bs-offset-item'))button(actions,'Reset drag position for this view',()=>{
+    record({kind:'drag-offset',id:idOf(n),device:devicePlacement(),p:{x:0,y:0}});
+    choose(n);
+  });
   button(actions,'Add nearby',()=>startAdd(n));
   const parent=n.parentElement?.closest('[data-bs-kind],[data-bs-column]');
   if(parent)button(actions,'Select parent '+titleOf(parent).toLowerCase(),()=>choose(parent));
@@ -607,61 +612,17 @@ function locationChoices(n,kind){
   button(grid,'Pick any spot on the grid',()=>startGridPick({kind}));
   place();
 }
-function showGuide(target,side){
-  const r=anchorRect(target);if(!r)return;
-  const vertical=side==='left'||side==='right', label=side==='inside'?'Inside column':side==='before'?'Insert above':side==='after'?'Insert below':side==='left'?'Insert on left':'Insert on right';
-  let bounds=vertical?{left:(side==='left'?r.left:r.right)-2,top:r.top,width:4,height:r.height}:
-    {left:r.left,top:(side==='before'?r.top:side==='inside'?r.top+12:r.bottom)-2,width:r.width,height:4};
-  const x=Math.max(r.f.left,bounds.left), y=Math.max(r.f.top,bounds.top);
-  bounds={left:x,top:y,width:Math.min(bounds.width,r.f.right-x),height:Math.min(bounds.height,r.f.bottom-y)};
-  if(bounds.width<1||bounds.height<1)return;
-  const el=$('drop-guide');Object.assign(el.style,Object.fromEntries(Object.entries(bounds).map(([k,v])=>[k,v+'px'])));
-  $('guide-label').textContent=label;el.hidden=false;
-}
-function pointTarget(x,y){
-  const f=frame.getBoundingClientRect();
-  if(gridMode==='grid'&&!drag.node.hasAttribute('data-bs-row')&&!drag.node.hasAttribute('data-bs-zone')){
-    if(x<f.left||x>=f.right||y<f.top||y>=f.bottom)return null;
-    const cx=x-f.left,cy=y-f.top;
-    const z=zoneAt(cx,cy,drag.node);
-    if(!z)return null;
-    const device=devicePlacement();
-    const position=gridPoint(z,cx-drag.offsetX,cy-drag.offsetY,drag.dims,device);
-    position.z=coords(freeShell(drag.node),device)?.z??coords(freeShell(drag.node),'desktop')?.z??0;
-    return {zone:z,p:position,device};
-  }
-  if(x<f.left||x>=f.right||y<f.top||y>=f.bottom)return null;
-  const cx=x-f.left,cy=y-f.top;
-  const under=D.elementFromPoint(cx,cy);if(!under)return null;
-  const hovered=targetFrom(under);
-  if(drag.node.hasAttribute('data-bs-zone'))return null;
-  if(drag.node.hasAttribute('data-bs-row')){
-    const row=rowOf(hovered)||rowOf(under)||rowList().find(item=>{const r=surfaceOf(item).getBoundingClientRect();return cy>=r.top&&cy<=r.bottom;});
-    if(row&&row!==drag.node){const r=surfaceOf(row).getBoundingClientRect();return [row,cy<r.top+r.height/2?'before':'after'];}
-    return null;
-  }
-  let n=hovered;
-  if(!n||!canInline(drag.node,n,n.hasAttribute('data-bs-column')?'inside':'before')){
-    const parentCol=under.closest('[data-bs-column]');
-    if(parentCol&&canInline(drag.node,parentCol,'inside'))return [parentCol,'inside'];
-    return null;
-  }
-  if(n.hasAttribute('data-bs-column'))return [n,'inside'];
-  const r=n.getBoundingClientRect();
-  const rx=(cx-r.left)/r.width, ry=(cy-r.top)/r.height;
-  const side=rx<.19?'left':rx>.81?'right':ry<.5?'before':'after';
-  return canInline(drag.node,n,side)?[n,side]:[n,ry<.5?'before':'after'];
-}
 function updateDrag(x,y){
   if(!drag)return;
   drag.x=x;drag.y=y;
   if(!drag.moved&&Math.hypot(x-drag.startX,y-drag.startY)>5){drag.moved=true;close();}
   if(!drag.moved)return;
-  const aimed=pointTarget(x,y);guide=aimed||null;
-  $('drop-guide').hidden=true;
-  if(guide?.zone){showGridVisual(guide.zone,guide.p,drag.node);return;}
-  hideGridVisual();
-  if(guide)showGuide(...guide);
+  const f=frame.getBoundingClientRect();
+  if(!drag.node.isConnected||drag.layout.device!==devicePlacement()){guide=null;hideGridVisual();return;}
+  if(x<f.left||x>=f.right||y<f.top||y>=f.bottom){guide=null;hideGridVisual();return;}
+  guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,gridMode==='grid'&&snapGrid);
+  const {left,top,width,height}=guide;
+  drawGhost(drag.node,f.left+left,f.top+top,width,height);
 }
 function duringDrag(){
   if(!drag)return;
@@ -679,29 +640,23 @@ function finishDrag(commit=false){
   const gesture=drag, choice=guide;drag=null;guide=null;cancelAnimationFrame(viewportTick);$('drop-guide').hidden=true;hideGridVisual();
   if($('drag').hasPointerCapture(gesture.pointer))$('drag').releasePointerCapture(gesture.pointer);
   if(!commit)return;
-  if(choice?.zone&&gesture.moved){
-    const {zone,p,device}=choice;
-    if(record(gridOperation(gesture.node,zone,device,p)))choose(gesture.node,false);
-  }else if(choice&&gesture.moved){
-    const [target,side]=choice;
-    if(record({kind:'move',id:idOf(gesture.node),target:idOf(target),side,pair:unique()})){
-      gesture.node.scrollIntoView({block:'nearest'});choose(gesture.node,false);
-    }
-  }else if(!gesture.moved){
-    if(gesture.node.hasAttribute('data-bs-row')||gesture.node.hasAttribute('data-bs-zone'))openSettings(gesture.node);else if(gridMode==='grid'||freeShell(gesture.node))gridPanel(gesture.node);else pickTarget();
-  }
+  if(choice&&gesture.moved){
+    const {device,p}=choice;
+    if(record({kind:'drag-offset',id:idOf(gesture.node),device,p}))choose(gesture.node,false);
+  }else if(!gesture.moved)gridPanel(gesture.node);
 }
 $('drag').addEventListener('pointerdown',e=>{
-  if(e.button!==0||!now())return;
+  const n=now();
+  if(e.button!==0||!canDragIndependently(n))return;
   e.preventDefault();clearGridPick();$('drag').setPointerCapture(e.pointerId);
-  const n=now(), r=anchorRect(n), dims=measure(n);
-  drag={node:n,pointer:e.pointerId,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,moved:false,dims,offsetX:Math.max(0,Math.min(dims.width,e.clientX-r.left)),offsetY:Math.max(0,Math.min(dims.height,e.clientY-r.top))};
+  const layout=offsetDragStart(n);
+  drag={node:n,pointer:e.pointerId,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,moved:false,layout};
   viewportTick=requestAnimationFrame(duringDrag);
 });
 $('drag').addEventListener('pointermove',e=>updateDrag(e.clientX,e.clientY));
-$('drag').addEventListener('pointerup',()=>finishDrag(true));
+$('drag').addEventListener('pointerup',e=>{if(drag?.moved)updateDrag(e.clientX,e.clientY);finishDrag(true);});
 $('drag').addEventListener('pointercancel',()=>finishDrag());
-$('drag').addEventListener('click',e=>{if(e.detail===0&&now()){if(now().hasAttribute('data-bs-row')||now().hasAttribute('data-bs-zone'))openSettings(now());else if(gridMode==='grid'||freeShell(now()))gridPanel(now());else pickTarget();}});
+$('drag').addEventListener('click',e=>{if(e.detail===0&&canDragIndependently(now()))gridPanel(now());});
 $('selection-settings').onclick=()=>now()&&openSettings(now());
 $('selection-add').onclick=()=>startAdd();
 $('selection-duplicate').onclick=()=>now()&&cloneSelected(now());
@@ -769,8 +724,8 @@ $('compare').onclick=()=>{toggleMenu(false);window.open('canvas.html','_blank','
 $('help').onclick=()=>{
   toggleMenu(false);const place=open('How to edit the homepage','QUICK GUIDE');
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
-  para('Use Add nearby → Directly above or Directly below to insert without making a new row. Left and right placements create a responsive pair.');
-  para('Grid mode lets you drag within or between sections in any direction. Turn Snap off for finer placement, or switch to Flow for inline reordering.');
+  para('Use Add nearby → Directly above or Directly below to insert without making a new row. Explicit inline moves and insertions can reposition other items.');
+  para('Dragging moves only the selected element and preserves its original space. Turn Snap off for finer placement. Adjust each preview size separately. Use the section settings to reorder whole sections.');
   para('Use Duplicate in settings or Ctrl+D. Add a blank or column-based section with + Section. Its settings include color, image, or video backgrounds.');
   para('Save keeps edits in this browser. Download an editable draft to move it to another browser. Approved publisher accounts can publish the homepage from this editor.');
   place();

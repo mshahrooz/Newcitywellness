@@ -68,3 +68,19 @@
 .ncw .bs-drag-ghost{position:fixed;z-index:999999;pointer-events:none;opacity:.72;filter:drop-shadow(0 7px 14px #112f37a0);overflow:hidden}
 .ncw .bs-drag-ghost>.bs-drag-look{position:static!important;transform:none!important;translate:none!important;animation:none!important;margin:0!important;width:100%!important;max-width:100%!important;pointer-events:none!important}
 .ncw .bs-drag-ghost>img{height:auto!important}
+
+/* Dragging changes paint offsets while preserving the element's layout space. */
+.ncw .bs-offset-item{
+  --bs-active-drag-x:var(--bs-drag-desktop-x,0px);
+  --bs-active-drag-y:var(--bs-drag-desktop-y,0px);
+  translate:var(--bs-active-drag-x) var(--bs-active-drag-y)!important
+}
+.ncw .bs-offset-inline{
+  position:relative;left:var(--bs-active-drag-x);top:var(--bs-active-drag-y);translate:none!important
+}
+@media(max-width:900px){
+  .ncw .bs-offset-item{--bs-active-drag-x:var(--bs-drag-tablet-x,0px);--bs-active-drag-y:var(--bs-drag-tablet-y,0px)}
+}
+@media(max-width:600px){
+  .ncw .bs-offset-item{--bs-active-drag-x:var(--bs-drag-mobile-x,0px);--bs-active-drag-y:var(--bs-drag-mobile-y,0px)}
+}
