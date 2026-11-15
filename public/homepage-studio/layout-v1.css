@@ -69,6 +69,24 @@
 .ncw .bs-drag-ghost>.bs-drag-look{position:static!important;transform:none!important;translate:none!important;animation:none!important;margin:0!important;width:100%!important;max-width:100%!important;pointer-events:none!important}
 .ncw .bs-drag-ghost>img{height:auto!important}
 
+/* Visual Studio blocks, shared by the editor and published pages. */
+.ncw .bs-subheading{margin:0;font-family:var(--serif,serif);font-size:clamp(1.25rem,3vw,1.75rem);line-height:1.18}
+.ncw .bs-list{margin:0;padding-inline-start:1.6em;list-style-position:outside}
+.ncw ul.bs-list{list-style-type:disc}.ncw ol.bs-list{list-style-type:decimal}
+.ncw .bs-list li+li{margin-block-start:.35em}
+.ncw .bs-quote,.ncw .bs-callout{margin:0;padding:.7em 1em;border-inline-start:3px solid currentColor;white-space:pre-line}
+.ncw .bs-quote{font-family:var(--serif,serif);font-style:italic;font-size:1.2em}
+.ncw .bs-callout,.ncw .bs-accordion{background:color-mix(in srgb,currentColor 6%,transparent);border-radius:6px}
+.ncw .bs-divider{margin:0;border:0;border-block-start:1px solid currentColor;opacity:.48}
+.ncw .bs-spacer{height:clamp(8px,var(--bs-spacer,32px),200px)}
+.ncw .bs-accordion{padding:.7em 1em;border:1px solid color-mix(in srgb,currentColor 25%,transparent)}
+.ncw .bs-accordion summary{cursor:pointer;font-weight:700;overflow-wrap:anywhere}
+.ncw .bs-accordion[open] summary{margin-block-end:.6em}
+.ncw .bs-captioned{margin:0}
+.ncw .bs-captioned figcaption{margin-block-start:.45em;font-size:.85em;white-space:pre-line}
+.ncw .bs-video{display:block;width:100%;height:auto;max-height:70vh;object-fit:contain;background:#152c25;border-radius:5px}
+.ncw [hidden]{display:none!important}
+
 /* Desktop offsets are shared. Smaller screens can add their own adjustments. */
 .ncw .bs-offset-item{
   /* Reset inherited custom properties so two nested edited elements don't share offsets. */

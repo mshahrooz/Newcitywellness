@@ -306,7 +306,7 @@ function fileReadBg(f,kind,done){
   rd.onload=()=>{
     const value=String(rd.result).replace(/^data:[^;]*;/,'data:'+mime+';');
     if(kind==='image'){const im=new Image();im.onload=()=>done(value);im.onerror=()=>flash('This image could not be opened.');im.src=value;}
-    else done(value);
+    else done(value,f.name);
   };
   rd.onerror=()=>flash('This file could not be opened.');rd.readAsDataURL(f);
 }
@@ -606,6 +606,7 @@ function sizeObserver(){
   if(!D||!D.defaultView.ResizeObserver)return;
   const observer=new D.defaultView.ResizeObserver(()=>refreshFreeSizes());
   observer.observe(D.documentElement);
+  return ()=>observer.disconnect();
 }
 /* IndexedDB can hold uploaded background videos beyond localStorage's quota. */
 function draftStore(mode, task){

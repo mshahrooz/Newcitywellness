@@ -1,4 +1,4 @@
-/* Behavior for the statically published Studio homepage only. Other pages keep Next.js. */
+/* Shared navigation, responsive offsets and homepage features for Studio publications. */
 (() => {
   'use strict';
   if(typeof StudioResponsiveOffsets!=='undefined')StudioResponsiveOffsets.observe(document);

@@ -7,8 +7,11 @@ const StudioPublish = (() => {
   const REPO_API='/repos/'+OWNER+'/'+REPO;
   const LIVE='https://'+OWNER+'.github.io/'+REPO+'/';
   const BASE='/'+REPO+'/';
-  const SOURCE='src/content/homepage-studio-published.json';
-  const DRAFT='public/homepage-studio/draft.json';
+  const selected=()=>typeof page==='undefined'?['home','Home','']:page;
+  const paths=(key=selected()[0])=>key==='home'
+    ? {SOURCE:'src/content/homepage-studio-published.json',DRAFT:'public/homepage-studio/draft.json',MANIFEST:'homepage-studio/live-revision.json'}
+    : {SOURCE:'src/content/studio-pages/'+key+'.json',DRAFT:'public/homepage-studio/pages/'+key+'/draft.json',MANIFEST:'homepage-studio/pages/'+key+'/live-revision.json'};
+  const liveUrl=()=>LIVE+(selected()[2]?selected()[2]+'/':'');
   const MAIN_REF=REPO_API+'/git/ref/heads/main';
   const SITE_ORIGIN=new URL(LIVE).origin;
   const MAX_UPLOAD=24*1024*1024;
@@ -24,7 +27,7 @@ const StudioPublish = (() => {
   ];
   const mediaMap={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif','image/gif':'gif','application/pdf':'pdf','video/mp4':'mp4','video/webm':'webm'};
   const safeMedia=/^(?:images\/|media\/homepage-studio\/)[A-Za-z0-9_./-]+$/;
-  const SAMPLE_TAGS=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small'.split(' '));
+  const SAMPLE_TAGS=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite'.split(' '));
   const utf8=new TextEncoder(), decode=new TextDecoder();
   const checkStyle=/(?:url\s*\(|expression\s*\(|@import|javascript\s*:|\\|[<>])/i;
   let busy=false;
@@ -36,38 +39,41 @@ const StudioPublish = (() => {
   }
   const unpack=s=>Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0));
   const sha256=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
-  const details={LIVE,REPO_API,GUARDED,SUPPORT,SOURCE,DRAFT};
+  const details={LIVE,REPO_API,GUARDED,SUPPORT,...paths('home')};
+  const canvasGuard=()=>selected()[0]==='home'?STUDIO_SOURCE_REVISION:pageAssets[selected()[0]]?.guard;
+  const guardPaths=()=>selected()[0]==='home'?GUARDED:Object.keys(canvasGuard()||{});
   function pathUrl(path){return path.split('/').map(encodeURIComponent).join('/');}
   async function gh(path){
     let res;
     try{
       res=await fetch(API+path,{cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',
         headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}});
-    }catch{throw Error('Could not reach GitHub to check the homepage. Your draft is still here.');}
+    }catch{throw Error('Could not reach GitHub to check the selected page. Your draft is still here.');}
     if(!res.ok){
       if(res.status===429||res.status===403&&res.headers.get('x-ratelimit-remaining')==='0')throw Error('GitHub is temporarily limiting public requests. Save your draft and try again later.');
-      throw Error('GitHub could not verify the homepage ('+res.status+'). Your draft is still here.');
+      throw Error('GitHub could not verify the selected page ('+res.status+'). Your draft is still here.');
     }
     return res.json();
   }
   const fileAt=(path,parent)=>gh(REPO_API+'/contents/'+pathUrl(path)+'?ref='+encodeURIComponent(parent));
   async function publicStatus(includeGuard=false){
+    const {SOURCE}=paths(), required=guardPaths();
     const ref=await gh(MAIN_REF);
     const parent=ref.object.sha;
     if(!VALID_SHA.test(parent))throw Error('GitHub returned an invalid branch reference.');
     const commit=await gh(REPO_API+'/git/commits/'+parent);
     const snapshot=await gh(REPO_API+'/git/trees/'+commit.tree.sha+'?recursive=1');
-    if(snapshot.truncated)throw Error('GitHub did not return the full site tree. No homepage was published.');
+    if(snapshot.truncated)throw Error('GitHub did not return the full site tree. No page was published.');
     const tree=new Map(snapshot.tree.filter(i=>i.type==='blob').map(i=>[i.path,i.sha]));
-    if(!SUPPORT.every(name=>tree.has(name)))throw Error('The Homepage Studio connection is not yet installed in GitHub.');
+    if(!SUPPORT.every(name=>tree.has(name)))throw Error('The Page Studio connection is not yet installed in GitHub.');
     if(!tree.has('package.json'))throw Error('The Pages build configuration is missing.');
     const rawPackage=await fileAt('package.json',parent);
-    if(!JSON.parse(decode.decode(unpack(rawPackage.content))).scripts?.['build:pages']?.includes('apply-homepage-studio.py'))throw Error('The homepage build connection is not enabled.');
+    if(!JSON.parse(decode.decode(unpack(rawPackage.content))).scripts?.['build:pages']?.includes('apply-homepage-studio.py'))throw Error('The Pages build connection is not enabled.');
     const baseline={
       parent,tree,source:tree.get(SOURCE)||null,
     };
     if(includeGuard){
-      const bytes=await Promise.all(GUARDED.map(async name=>{
+      const bytes=await Promise.all(required.map(async name=>{
         const file=await fileAt(name,parent);
         if(!file.content||file.sha!==tree.get(name))throw Error('Could not verify '+name+'. No changes were submitted.');
         return [name,await sha256(unpack(file.content))];
@@ -78,10 +84,11 @@ const StudioPublish = (() => {
   }
   async function status(includeGuard=false){
     if(!signedIn())return publicStatus(includeGuard);
+    const required=guardPaths();
     const snapshot=await publisher('status');
     if(!VALID_SHA.test(snapshot.parent)||snapshot.source!==null&&!VALID_SHA.test(snapshot.source)
-      ||!Array.isArray(snapshot.assets)||!GUARDED.every(name=>/^[a-f0-9]{64}$/.test(snapshot.guard?.[name]))){
-      throw Error('GitHub did not return a valid homepage revision. Your draft is unchanged.');
+      ||!Array.isArray(snapshot.assets)||!required.every(name=>/^[a-f0-9]{64}$/.test(snapshot.guard?.[name]))){
+      throw Error('GitHub did not return a valid page revision. Your draft is unchanged.');
     }
     return {parent:snapshot.parent,source:snapshot.source,guard:snapshot.guard,
       tree:new Set(snapshot.assets),publicDraft:snapshot.publication?.draft};
@@ -111,12 +118,13 @@ const StudioPublish = (() => {
     return url.href;
   }
   async function prepare(root,revision,context){
+    const key=context?.page||selected()[0];
     const output=Array.from(root.querySelectorAll('.ncw,.floating-booking-link')).filter(n=>n.parentNode===root);
-    if(!output.length||!root.querySelector('main[data-builder-page]'))throw Error('The homepage canvas is not ready.');
+    if(!output.length||!root.querySelector('main[data-builder-page]'))throw Error('The page canvas is not ready.');
     const top=root.ownerDocument.createElement('div');
     output.forEach(n=>top.append(n.cloneNode(true)));
     if(typeof StudioResponsiveOffsets!=='undefined')StudioResponsiveOffsets.strip(top);
-    top.querySelectorAll('script,.bs-drag-ghost,template[data-bs-flow-origin]').forEach(n=>n.remove());
+    top.querySelectorAll('script,link,style,.bs-drag-ghost,template[data-bs-flow-origin],[data-studio-runtime]').forEach(n=>n.remove());
     top.querySelectorAll('input,textarea').forEach(n=>{n.removeAttribute('value');if(n.tagName==='TEXTAREA')n.textContent='';});
     top.querySelectorAll('.site-header,.header-nav,.nav-dropdown').forEach(n=>n.classList.remove('is-open','is-pinned','is-scrolled','open'));
     top.querySelectorAll('.mobile-toggle,.nav-dropdown-toggle').forEach(n=>n.setAttribute('aria-expanded','false'));
@@ -145,6 +153,7 @@ const StudioPublish = (() => {
     }
     for(const node of top.querySelectorAll('*')){
       const tag=node.localName;
+      if(node.classList.contains('bs-accordion'))node.removeAttribute('open');
       if(!SAMPLE_TAGS.has(tag))throw Error('This element cannot be published: '+tag);
       for(const attr of [...node.attributes]){
         const key=attr.name, value=attr.value;
@@ -163,8 +172,10 @@ const StudioPublish = (() => {
         }
         if(node.matches('.brand[href="#"], .footer-brand[href="#"]')||node.getAttribute('href')==='#'&&node.textContent.trim()==='Home')node.setAttribute('href',BASE);
       }
-      for(const key of ['src','poster']){
-        if(node.hasAttribute(key))node.setAttribute(key,await media(node.getAttribute(key)));
+      if(tag==='iframe'){
+        if(typeof STUDIO_EMBEDS==='undefined'||!Object.hasOwn(STUDIO_EMBEDS,key)||node.getAttribute('src')!==STUDIO_EMBEDS[key])throw Error('This page has an unapproved embed.');
+      }else for(const attr of ['src','poster']){
+        if(node.hasAttribute(attr))node.setAttribute(attr,await media(node.getAttribute(attr)));
       }
       if(node.hasAttribute('srcset')){
         const parts=node.getAttribute('srcset').split(',');
@@ -174,7 +185,7 @@ const StudioPublish = (() => {
       }
     }
     for(const op of clonedOperations){
-      if((['image','file'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')){
+      if((['image','file','video'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')){
         // Preserve full edit history but upload only media referenced by the final canvas.
         if(cache.has(op.value)){
           const name=(await cache.get(op.value)).slice(BASE.length);
@@ -183,15 +194,15 @@ const StudioPublish = (() => {
       }
     }
     // Intermediate media overwritten later should not bloat the public repository or expose unused uploads.
-    const ops=clonedOperations.filter(op=>!((['image','file'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')));
-    const portable={version:1,page:'new-city-wellness-homepage',operations:ops};
+    const ops=clonedOperations.filter(op=>!((['image','file','video'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')));
+    const portable={version:1,page:key==='home'?'new-city-wellness-homepage':'new-city-wellness-'+key,operations:ops};
     const plain=utf8.encode(JSON.stringify(portable)+'\n');
     let draftText;
     if(typeof CompressionStream==='function'){
       const zip=new Blob([plain]).stream().pipeThrough(new CompressionStream('gzip'));
       draftText=JSON.stringify({encoding:'gzip-base64',data:pack(new Uint8Array(await new Response(zip).arrayBuffer()))})+'\n';
     }else draftText=decode.decode(plain);
-    const content=JSON.stringify({version:1,id:crypto.randomUUID(),baseRevision:context.parent,guard:context.guard,draftSha256:await sha256(utf8.encode(draftText)),html:top.innerHTML})+'\n';
+    const content=JSON.stringify({version:1,...(key==='home'?{}:{page:key}),id:crypto.randomUUID(),baseRevision:context.parent,guard:context.guard,draftSha256:await sha256(utf8.encode(draftText)),html:top.innerHTML})+'\n';
     cap(utf8.encode(content).length,850000);cap(utf8.encode(draftText).length,850000);
     let size=0;
     for(const value of files.values())size+=value.length*.75;
@@ -199,6 +210,7 @@ const StudioPublish = (() => {
     return {content,draftText,files,id:JSON.parse(content).id};
   }
   async function connect(){
+    const {SOURCE,DRAFT}=paths();
     const indicator=$('publish-status');
     indicator.textContent='Checking GitHub…';
     try{
@@ -208,13 +220,8 @@ const StudioPublish = (() => {
         const pub=JSON.parse(decode.decode(unpack(rawPub.content)));
         const file=await fileAt(DRAFT,s.parent);
         const bytes=unpack(file.content);
-        if(await sha256(bytes)!==pub.draftSha256)throw Error('The published homepage draft did not pass its integrity check.');
-        let state=JSON.parse(decode.decode(bytes));
-        if(state.encoding==='gzip-base64'){
-          const stream=new Blob([unpack(state.data)]).stream().pipeThrough(new DecompressionStream('gzip'));
-          state=JSON.parse(await new Response(stream).text());
-        }
-        s.publicDraft=state;
+        if(await sha256(bytes)!==pub.draftSha256)throw Error('The published page draft did not pass its integrity check.');
+        s.publicDraft=await decodeDraft(bytes);
       }
       indicator.textContent='GitHub Pages connected';
       indicator.removeAttribute('title');
@@ -225,6 +232,28 @@ const StudioPublish = (() => {
       throw e;
     }
   }
+  async function decodeDraft(bytes) {
+    let state=JSON.parse(decode.decode(bytes));
+    if(state.encoding==='gzip-base64'){
+      const stream=new Blob([unpack(state.data)]).stream().pipeThrough(new DecompressionStream('gzip'));
+      state=JSON.parse(await new Response(stream).text());
+    }
+    return state;
+  }
+  async function initialDraft(){
+    const {MANIFEST,DRAFT}=paths();
+    const fetchLive=async path=>fetch(LIVE+path+'?check='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(7000)});
+    if(location.origin!==SITE_ORIGIN)return null;
+    const manifest=await fetchLive(MANIFEST);
+    if(!manifest.ok)return null;
+    const state=await manifest.json();
+    if(!state.publication||!VALID_SHA.test(state.source)||!/^[a-f0-9]{64}$/.test(state.draftSha256))return null;
+    const draft=await fetchLive(DRAFT.slice('public/'.length));
+    if(!draft.ok)throw Error('The latest deployed draft is not ready.');
+    const bytes=new Uint8Array(await draft.arrayBuffer());
+    if(await sha256(bytes)!==state.draftSha256)throw Error('The deployed draft is out of date.');
+    return {...await remoteDraft({publicDraft:await decodeDraft(bytes),parent:null}),publishedBase:state.source};
+  }
   async function remoteDraft(revision){
     if(!revision?.publicDraft)throw Error('There is no saved Studio publication to load yet.');
     const ops=await Promise.all(revision.publicDraft.operations.map(async op=>{
@@ -233,23 +262,24 @@ const StudioPublish = (() => {
       const type=Object.keys(mediaMap).find(k=>mediaMap[k]===ext);
       if(!type)throw Error('The published draft contains an unknown media format.');
       let answer=await fetch(LIVE+path,{cache:'force-cache'}).catch(()=>null);
-      if(!answer?.ok)answer=await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/'+revision.parent+'/'+pathUrl('public/'+path),{cache:'force-cache'});
-      if(!answer.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
+      if(!answer?.ok&&revision.parent)answer=await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/'+revision.parent+'/'+pathUrl('public/'+path),{cache:'force-cache'});
+      if(!answer?.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
       return {...op,value:'data:'+type+';base64,'+pack(new Uint8Array(await answer.arrayBuffer()))};
     }));
     return {...revision.publicDraft,operations:ops};
   }
   async function checkedPackage(update){
-    if(!cursor)throw Error('Make or load a homepage edit first.');
-    update('Checking the latest homepage revision…');
+    const {SOURCE,DRAFT}=paths();
+    if(!cursor)throw Error('Make or load a page edit first.');
+    update('Checking the latest page revision…');
     const current=await status(true);
     $('publish-status').textContent='GitHub Pages connected';
     $('publish-status').removeAttribute('title');
-    if(current.source!==loadedSource)throw Error('The homepage on GitHub changed. Download a copy of this draft if needed, then load the last published homepage before editing or publishing.');
-    if(!GUARDED.every(name=>!STUDIO_SOURCE_REVISION[name]||STUDIO_SOURCE_REVISION[name]===current.guard[name])){
-      throw Error('This editor is based on an older version of the original site. Its homepage publishing connection needs to be refreshed.');
+    if(current.source!==loadedSource)throw Error('This page on GitHub changed. Download a copy of this draft if needed, then load the last published page before editing or publishing.');
+    if(!canvasGuard()||!guardPaths().every(name=>canvasGuard()[name]===current.guard[name])){
+      throw Error('This editor is based on an older version of the original site. Its publishing connection needs to be refreshed.');
     }
-    update('Preparing the homepage and its local media…');
+    update('Preparing the selected page and its local media…');
     const snapshot=draftString();
     const ready=await prepare(D.body,JSON.parse(snapshot),{...current,canvas:frame.contentDocument.URL});
     if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
@@ -326,7 +356,7 @@ const StudioPublish = (() => {
     if(!signedIn())throw Error('Your session expired. Sign in again.');
     let response;
     try{
-      response=await fetch(STUDIO_AUTH.url+'/functions/v1/publish-homepage?action='+action,{
+      response=await fetch(STUDIO_AUTH.url+'/functions/v1/publish-homepage?action='+action+'&page='+encodeURIComponent(selected()[0]),{
         method:'POST',credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(145000),
         headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+publisherSession.token,...(zip?{'Content-Type':'application/zip'}:{})},
         ...(zip?{body:zip}:{}),
@@ -342,22 +372,23 @@ const StudioPublish = (() => {
   function baseOfDraft(){return loadedSource;}
   async function waitForLivePublication(id,feedback,links,pos){
     if(!/^[a-f0-9-]{36}$/.test(id))return;
-    const release=new URL('homepage-studio/live-revision.json',LIVE);
+    const release=new URL(paths().MANIFEST,LIVE);
+    const target=liveUrl();
     const deadline=Date.now()+180000;
     let interval=1500;
-    while(feedback.isConnected && Date.now()<deadline){
+    while(feedback.isConnected && !popup.hidden && Date.now()<deadline){
       try{
         release.searchParams.set('check',String(Date.now()));
         const res=await fetch(release.href,{cache:'no-store',signal:AbortSignal.timeout(6000)});
         const live=res.ok?await res.json():null;
         if(live?.publication===id && /^[a-f0-9]{24}$/.test(live.revision)){
-          const url=new URL(LIVE);
+          const url=new URL(target);
           url.searchParams.set('ncw_rev',live.revision);
           const page=await fetch(url.href,{cache:'no-store',signal:AbortSignal.timeout(6000)});
           if(page.ok && (await page.text()).includes('name="ncw-home-revision" content="'+live.revision+'"')){
             if(!feedback.isConnected)return;
             feedback.textContent='Your changes are live on GitHub Pages.';
-            links.prepend(create('a',{href:url.href,target:'_blank',rel:'noopener noreferrer'},'Open updated homepage ↗'));
+            links.prepend(create('a',{href:url.href,target:'_blank',rel:'noopener noreferrer'},'Open updated page ↗'));
             pos();
             return;
           }
@@ -371,28 +402,30 @@ const StudioPublish = (() => {
   }
   function panel(){
     if(busy)return;
-    const pos=open('Publish homepage changes','GITHUB PAGES');
-    para('Anyone can edit and preview. Only approved Supabase accounts can publish changes to the homepage.');
+    const pos=open('Publish '+selected()[1],'GITHUB PAGES');
+    para('Anyone can edit and preview. Only approved Supabase accounts can publish changes to the selected page.');
     const links=group();
-    links.append(create('a',{href:LIVE,target:'_blank',rel:'noopener noreferrer'},'View live homepage ↗'));
+    links.append(create('a',{href:liveUrl(),target:'_blank',rel:'noopener noreferrer'},'View live page ↗'));
     const identity=create('p',{class:'muted',role:'status'});
     const authArea=group('publisher-auth');
     authArea.before(identity);
     const activeDraft=!!cursor&&mode==='edit';
     {
-      button(group(),'Load published homepage into editor',async e=>{
+      button(group(),'Load published page into editor',async e=>{
         const b=e.currentTarget;
         if(cursor){const useBackup=window.confirm('Load the latest GitHub version over the currently open draft? Download your draft first if you need a copy.');if(!useBackup)return;}
+        const epoch=canvasEpoch;
         b.disabled=true;
         try{
           const revision=await connect();
           const source=revision.source;
           const got=await remoteDraft(revision);
-          list=readDraft(JSON.stringify(got));cursor=list.length;bindSource(source);active=null;close();replay();flash('Latest published homepage loaded.');
-        }catch(error){flash(error.message);b.disabled=false;}
+          if(epoch!==canvasEpoch||!b.isConnected)return;
+          list=readDraft(JSON.stringify(got));cursor=list.length;bindSource(source);active=null;close();replay();flash('Latest published page loaded.');
+        }catch(error){if(epoch===canvasEpoch){flash(error.message);b.disabled=false;}}
       });
     }
-    if(!activeDraft)para(!cursor?'Make a homepage edit or load a saved draft to publish it.':'Use Back to editing before publishing.');
+    if(!activeDraft)para(!cursor?'Make a page edit or load a saved draft to publish it.':'Use Back to editing before publishing.');
     const feedback=create('p',{role:'status',class:'publish-feedback'});
     body.append(feedback);
     const controls=group();
@@ -404,6 +437,7 @@ const StudioPublish = (() => {
       if(direct)direct.disabled=value||!signedIn();
       if(download)download.disabled=value;
       $('publish').disabled=value;
+      if($('page-picker'))$('page-picker').disabled=value;
       authArea.querySelectorAll('button,input').forEach(el=>{el.disabled=value;});
     };
     const test=button(controls,'Test publishing access',async()=>{
@@ -412,9 +446,9 @@ const StudioPublish = (() => {
       try{
         progress('Checking access without publishing…');
         await publisher('check');
-        progress('Write access confirmed. Checking the current homepage revision…');
+        progress('Write access confirmed. Checking the current page revision…');
         await connect();
-        progress('GitHub confirmed write access and the current homepage revision. No files, commits or deployments were changed.');
+        progress('GitHub confirmed write access and the current page revision. No files, commits or deployments were changed.');
       }catch(e){progress(e.message);}
       finally{running(false);if(!signedIn())showAuth();pos();}
     });
@@ -425,11 +459,11 @@ const StudioPublish = (() => {
         publishedLinks.replaceChildren();
         const {zip}=await preparedRevision(progress);
         cap(zip.size,MAX_UPLOAD);
-        progress('Publishing the homepage and its media…');
+        progress('Publishing the selected page and its media…');
         const result=await publisher('publish',zip);
         const pendingLive=create('span');
         feedback.replaceChildren(pendingLive);
-        pendingLive.textContent='Committed to GitHub. Waiting for the new homepage to go live…';
+        pendingLive.textContent='Committed to GitHub. Waiting for the new page to go live…';
         publishedLinks.replaceChildren(
           create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/commit/'+result.sha,target:'_blank',rel:'noopener noreferrer'},'View GitHub commit ↗'),
           create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/actions/workflows/deploy.yml',target:'_blank',rel:'noopener noreferrer'},'Watch Pages build ↗'));
@@ -446,7 +480,7 @@ const StudioPublish = (() => {
       running(true);
       try{
         const zip=await githubPackage(progress);
-        exportFile(zip,'new-city-wellness-github-upload.zip','application/zip');
+        exportFile(zip,pageIdentity()+'-github-upload.zip','application/zip');
         progress('Package ready. Nothing was published.');
       }catch(e){progress(e.message);}
       finally{running(false);pos();}
@@ -455,7 +489,7 @@ const StudioPublish = (() => {
       authArea.replaceChildren();
       const ready=supabaseReady()&&location.origin===SITE_ORIGIN;
       if(!ready){
-        identity.textContent=!supabaseReady()?'Publishing setup is not complete.':'Open Homepage Studio on GitHub Pages to sign in and publish.';
+        identity.textContent=!supabaseReady()?'Publishing setup is not complete.':'Open Page Studio on GitHub Pages to sign in and publish.';
       }else if(signedIn()){
         identity.textContent='Signed in as '+publisherSession.email+'.';
         button(authArea,'Sign out',async()=>{
@@ -491,7 +525,7 @@ const StudioPublish = (() => {
     $('publish').onclick=panel;
     $('publish-status').textContent='Ready to edit';
   };
-  return {start,details,status,prepare,connect,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft};
+  return {start,details,status,prepare,connect,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,initialDraft,isBusy:()=>busy};
 })();
 
 StudioPublish.start();

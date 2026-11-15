@@ -114,3 +114,10 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .publisher-form label{margin:0;min-width:0}
 .publisher-form button{justify-self:start}
 @media(max-width:540px){.publisher-form{grid-template-columns:1fr}}
+
+.page-picker{display:flex;align-items:center;gap:7px;color:#d4e4da;font-size:11px;font-weight:700}
+.page-picker select{max-width:clamp(120px,19vw,245px);min-height:35px;padding:0 24px 0 9px;border:1px solid #628174;border-radius:7px;background:#234636;color:#fff;font-size:13px}
+.page-picker select:disabled{opacity:.65}
+.page-picker option,.page-picker optgroup{background:#fff;color:#19342c}
+.library-group{margin:12px 0 6px;color:#2d5744;font-size:11px;letter-spacing:.075em;text-transform:uppercase}
+@media(max-width:600px){.page-picker select{max-width:clamp(112px,44vw,200px);min-height:31px;font-size:12px}}
