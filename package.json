@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node scripts/compile-grapes-designs.cjs && next dev -p 3000 2>&1 | tee dev.log",
     "build": "node scripts/compile-grapes-designs.cjs && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
-    "build:pages": "node scripts/compile-grapes-designs.cjs && next build --webpack",
+    "build:pages": "node scripts/compile-grapes-designs.cjs && next build --webpack && python3 scripts/apply-homepage-studio.py out --base-path \"$BASE_PATH\"",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:push": "prisma db push --accept-data-loss",
