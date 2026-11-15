@@ -27,7 +27,7 @@ const StudioPublish = (() => {
   const SAMPLE_TAGS=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small'.split(' '));
   const utf8=new TextEncoder(), decode=new TextDecoder();
   const checkStyle=/(?:url\s*\(|expression\s*\(|@import|javascript\s*:|\\|[<>])/i;
-  let activeBaseline=null, busy=false;
+  let busy=false;
   const cap=(n,max)=>{if(n>max)throw Error('The publication is too large. Compress the uploaded media and try again.');};
   function pack(view){
     const chunks=[];
@@ -51,7 +51,7 @@ const StudioPublish = (() => {
     return res.json();
   }
   const fileAt=(path,parent)=>gh(REPO_API+'/contents/'+pathUrl(path)+'?ref='+encodeURIComponent(parent));
-  async function status(includeGuard=false){
+  async function publicStatus(includeGuard=false){
     const ref=await gh(MAIN_REF);
     const parent=ref.object.sha;
     if(!VALID_SHA.test(parent))throw Error('GitHub returned an invalid branch reference.');
@@ -65,7 +65,6 @@ const StudioPublish = (() => {
     if(!JSON.parse(decode.decode(unpack(rawPackage.content))).scripts?.['build:pages']?.includes('apply-homepage-studio.py'))throw Error('The homepage build connection is not enabled.');
     const baseline={
       parent,tree,source:tree.get(SOURCE)||null,
-      signature:GUARDED.map(name=>[name,tree.get(name)]),
     };
     if(includeGuard){
       const bytes=await Promise.all(GUARDED.map(async name=>{
@@ -76,6 +75,16 @@ const StudioPublish = (() => {
       baseline.guard=Object.fromEntries(bytes);
     }
     return baseline;
+  }
+  async function status(includeGuard=false){
+    if(!signedIn())return publicStatus(includeGuard);
+    const snapshot=await publisher('status');
+    if(!VALID_SHA.test(snapshot.parent)||snapshot.source!==null&&!VALID_SHA.test(snapshot.source)
+      ||!Array.isArray(snapshot.assets)||!GUARDED.every(name=>/^[a-f0-9]{64}$/.test(snapshot.guard?.[name]))){
+      throw Error('GitHub did not return a valid homepage revision. Your draft is unchanged.');
+    }
+    return {parent:snapshot.parent,source:snapshot.source,guard:snapshot.guard,
+      tree:new Set(snapshot.assets),publicDraft:snapshot.publication?.draft};
   }
   function canonicalAsset(path){
     const p=decodeURIComponent(path).replace(/^\/+|\/+$/g,'');
@@ -189,56 +198,53 @@ const StudioPublish = (() => {
     return {content,draftText,files,id:JSON.parse(content).id};
   }
   async function connect(){
+    const indicator=$('publish-status');
+    indicator.textContent='Checking GitHub…';
     try{
       const s=await status();
-      activeBaseline=s;
-      $('publish-status').textContent=s.source?'Connected to GitHub Pages':'GitHub Pages connected';
-      if(!s.source)return;
-
-      const rawPub=await fileAt(SOURCE,s.parent);
-      const pub=JSON.parse(decode.decode(unpack(rawPub.content)));
-      if(!s.signature.every(([name,h])=>h&&pub.guard?.[name]))throw Error('The published homepage could not be matched to its source.');
-      const draft=await fileAt(DRAFT,s.parent);
-      const bytes=unpack(draft.content);
-      if(await sha256(bytes)!==pub.draftSha256)throw Error('The published homepage draft did not pass its integrity check.');
-      let assetContext=JSON.parse(decode.decode(bytes));
-      if(assetContext.encoding==='gzip-base64'){
-        const stream=new Blob([unpack(assetContext.data)]).stream().pipeThrough(new DecompressionStream('gzip'));
-        assetContext=JSON.parse(await new Response(stream).text());
+      if(s.source&&!s.publicDraft&&!signedIn()){
+        const rawPub=await fileAt(SOURCE,s.parent);
+        const pub=JSON.parse(decode.decode(unpack(rawPub.content)));
+        const file=await fileAt(DRAFT,s.parent);
+        const bytes=unpack(file.content);
+        if(await sha256(bytes)!==pub.draftSha256)throw Error('The published homepage draft did not pass its integrity check.');
+        let state=JSON.parse(decode.decode(bytes));
+        if(state.encoding==='gzip-base64'){
+          const stream=new Blob([unpack(state.data)]).stream().pipeThrough(new DecompressionStream('gzip'));
+          state=JSON.parse(await new Response(stream).text());
+        }
+        s.publicDraft=state;
       }
-      const visible=await fetch(LIVE+'?studio_revision='+encodeURIComponent(pub.id),{cache:'no-store',signal:AbortSignal.timeout(10000)}).then(r=>r.ok?r.text():'').catch(()=>'');
-      activeBaseline.live=visible.includes('name="homepage-studio-publication" content="'+pub.id+'"');
-      if(!activeBaseline.live)$('publish-status').textContent='Homepage commit on GitHub';
-      activeBaseline.publicDraft=assetContext;
-
+      indicator.textContent='GitHub Pages connected';
+      indicator.removeAttribute('title');
+      return s;
     }catch(e){
-      $('publish-status').textContent='Publishing check unavailable';
+      indicator.textContent='Publishing check unavailable';
+      indicator.title=e.message;
+      throw e;
     }
   }
-  async function remoteDraft(){
-    if(!activeBaseline?.publicDraft)throw Error('There is no saved Studio publication to load yet.');
-    const ops=await Promise.all(activeBaseline.publicDraft.operations.map(async op=>{
+  async function remoteDraft(revision){
+    if(!revision?.publicDraft)throw Error('There is no saved Studio publication to load yet.');
+    const ops=await Promise.all(revision.publicDraft.operations.map(async op=>{
       if(!op.value||typeof op.value!=='object'||!op.value.studioAsset)return op;
       const path=canonicalAsset(op.value.studioAsset),ext=path.split('.').pop();
       const type=Object.keys(mediaMap).find(k=>mediaMap[k]===ext);
       if(!type)throw Error('The published draft contains an unknown media format.');
       let answer=await fetch(LIVE+path,{cache:'force-cache'}).catch(()=>null);
-      if(!answer?.ok)answer=await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/'+activeBaseline.parent+'/'+pathUrl('public/'+path),{cache:'force-cache'});
+      if(!answer?.ok)answer=await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/'+revision.parent+'/'+pathUrl('public/'+path),{cache:'force-cache'});
       if(!answer.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
       return {...op,value:'data:'+type+';base64,'+pack(new Uint8Array(await answer.arrayBuffer()))};
     }));
-    return {...activeBaseline.publicDraft,operations:ops};
+    return {...revision.publicDraft,operations:ops};
   }
   async function checkedPackage(update){
-    if(!activeBaseline)throw Error('Could not verify the GitHub connection. Reload the editor and try again.');
     if(!cursor)throw Error('Make or load a homepage edit first.');
-    if(activeBaseline.source && loadedSource!==activeBaseline.source)throw Error('Load the last published homepage first so you do not overwrite someone else’s edits. You can download your current draft before loading it.');
-    const baseline=activeBaseline;
-    update('Checking for newer homepage changes…');
+    update('Checking the latest homepage revision…');
     const current=await status(true);
-    if(current.source!==baseline.source||JSON.stringify(current.signature)!==JSON.stringify(baseline.signature)){
-      throw Error('The homepage changed on GitHub while this editor was open. Save or download your draft and reload before publishing.');
-    }
+    $('publish-status').textContent='GitHub Pages connected';
+    $('publish-status').removeAttribute('title');
+    if(current.source!==loadedSource)throw Error('The homepage on GitHub changed. Download a copy of this draft if needed, then load the last published homepage before editing or publishing.');
     if(!GUARDED.every(name=>!STUDIO_SOURCE_REVISION[name]||STUDIO_SOURCE_REVISION[name]===current.guard[name])){
       throw Error('This editor is based on an older version of the original site. Its homepage publishing connection needs to be refreshed.');
     }
@@ -284,8 +290,6 @@ const StudioPublish = (() => {
   }
   async function preparedRevision(update=()=>{}){
     const {files,current}=await checkedPackage(update);
-    const latest=await gh(MAIN_REF);
-    if(latest.object?.sha!==current.parent)throw Error('Main changed while the package was being prepared. Please generate a fresh package.');
     return {zip:uploadZip(files),head:current.parent};
   }
   async function githubPackage(update=()=>{}){
@@ -326,17 +330,14 @@ const StudioPublish = (() => {
         headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+publisherSession.token,...(zip?{'Content-Type':'application/zip'}:{})},
         ...(zip?{body:zip}:{}),
       });
-    }catch{throw Error('Could not confirm publishing. Check the GitHub Pages build before retrying.');}
+    }catch{throw Error(action==='publish'?'Could not confirm publishing. Check the GitHub Pages build before retrying.':'Could not reach the publishing service. Your draft is unchanged. Try again.');}
     const result=await response.json().catch(()=>null);
     if(response.status===401)publisherSession=null;
     if(response.status===413)throw Error('The publication exceeds the upload limit. Reduce the uploaded media and try again.');
     if(!response.ok||!result?.ok)throw Error(result?.error||(response.status===401?'Your session expired. Sign in again.':'The editor could not confirm publishing.'));
     return result;
   }
-  function bindSource(source){
-    loadedSource=source;
-
-  }
+  function bindSource(source){loadedSource=source;}
   function baseOfDraft(){return loadedSource;}
   function panel(){
     if(busy)return;
@@ -348,14 +349,15 @@ const StudioPublish = (() => {
     const authArea=group('publisher-auth');
     authArea.before(identity);
     const activeDraft=!!cursor&&mode==='edit';
-    if(activeBaseline?.publicDraft){
+    {
       button(group(),'Load published homepage into editor',async e=>{
         const b=e.currentTarget;
         if(cursor){const useBackup=window.confirm('Load the latest GitHub version over the currently open draft? Download your draft first if you need a copy.');if(!useBackup)return;}
         b.disabled=true;
         try{
-          const source=activeBaseline.source;
-          const got=await remoteDraft();
+          const revision=await connect();
+          const source=revision.source;
+          const got=await remoteDraft(revision);
           list=readDraft(JSON.stringify(got));cursor=list.length;bindSource(source);active=null;close();replay();flash('Latest published homepage loaded.');
         }catch(error){flash(error.message);b.disabled=false;}
       });
@@ -380,7 +382,9 @@ const StudioPublish = (() => {
       try{
         progress('Checking access without publishing…');
         await publisher('check');
-        progress('GitHub confirmed write access. No files, commits or deployments were changed.');
+        progress('Write access confirmed. Checking the current homepage revision…');
+        await connect();
+        progress('GitHub confirmed write access and the current homepage revision. No files, commits or deployments were changed.');
       }catch(e){progress(e.message);}
       finally{running(false);if(!signedIn())showAuth();pos();}
     });
@@ -397,8 +401,10 @@ const StudioPublish = (() => {
         publishedLinks.replaceChildren(
           create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/commit/'+result.sha,target:'_blank',rel:'noopener noreferrer'},'View GitHub commit ↗'),
           create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/actions/workflows/deploy.yml',target:'_blank',rel:'noopener noreferrer'},'Watch Pages build ↗'));
-        await connect();
-        if(activeBaseline?.parent===result.sha)bindSource(activeBaseline.source);
+        if(VALID_SHA.test(result.source)){
+          bindSource(result.source);
+          void save({quiet:true});
+        }
       }catch(e){progress(e.message);}
       finally{running(false);if(!signedIn())showAuth();pos();}
     },{class:'publish-cta'}):null;
@@ -450,7 +456,7 @@ const StudioPublish = (() => {
     if(!$('publish'))return;
     bindSource(pendingPublisherBase);
     $('publish').onclick=panel;
-    void connect();
+    $('publish-status').textContent='Ready to edit';
   };
   return {start,details,status,prepare,connect,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft};
 })();
