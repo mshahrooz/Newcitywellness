@@ -38,10 +38,6 @@ The integration adapts the drag state and midpoint insertion behavior of [PageFo
 
 ## Homepage Studio publishing
 
-The WPBakery-style [Homepage Studio](https://new-city-wellness-bakery-studio.vercel.app/) writes only the GitHub Pages homepage publication, its recoverable editor draft, and the media referenced by it. It does not change the other pages, the old dashboards, or any content on newcitywellness.com. A normal Pages build with no studio publication uses the original Next.js homepage.
+Use the [GitHub Pages Homepage Studio](https://mshahrooz.github.io/Newcitywellness/studio/) to draft and preview edits. Approved editors sign in with credentials from the dedicated NewCity Wellness Supabase project and click **Publish to GitHub Pages**. The existing Pages build applies the published revision to the homepage only.
 
-Edit the page and check desktop and mobile preview, then choose **Publish homepage**. Sign in to GitHub as `mshahrooz` and create a fine-grained token for **Only select repositories → Newcitywellness** with **Contents → Read and write**. Give the token an expiry. Paste it in the editor's password field, review the confirmation, and publish. The token is used only for that publish request and sent directly to GitHub. Do not add it to the repository or the hosting environment. **Save draft** still saves only in the browser. After the commit, use **Watch Pages build** or **Check live homepage**.
-
-Upload background media before publishing rather than hotlinking a remote image or video. Media used by the homepage goes into `public/images/homepage-studio/` or `public/media/homepage-studio/`. Subsequent browsers can choose **Load published homepage into editor** to resume a saved publication.
-
-A Pages build validates the edited HTML and local assets after Next.js exports the site. It preserves the production homepage's metadata, fonts, and stylesheet links. The homepage-only runtime retains the mobile menu, testimonial arrows, and mailto contact form. If the native homepage source changes, the build falls back to the updated native page instead of showing a stale Studio publication. Do not edit the homepage simultaneously in the old dashboard and in Studio. Revert a Studio publication commit in GitHub to roll back.
+See [the publisher setup and rollback guide](supabase/README.md). GitHub is the source and host. Vercel is not part of this publishing flow.
