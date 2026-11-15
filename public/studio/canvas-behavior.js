@@ -1,6 +1,8 @@
-/* Homepage-only interactions. The preview does not send enquiries. */
+/* Shared navigation and homepage features. The preview does not send enquiries. */
 function enableHomepageBehavior(doc, getEditing = () => false, notify = () => {}) {
   const win = doc.defaultView, $ = (s) => doc.querySelector(s);
+  const controller = new win.AbortController();
+  const signal = controller.signal;
   const header = $('.site-header'), nav = $('.header-nav'), menu = $('.mobile-toggle');
   const drop = $('.nav-dropdown'), dropBtn = $('.nav-dropdown-toggle');
   function clearMenus() {
@@ -19,8 +21,8 @@ function enableHomepageBehavior(doc, getEditing = () => false, notify = () => {}
     menu.setAttribute('aria-expanded',String(open)); menu.setAttribute('aria-label',open?'Close menu':'Open menu');
   });
   dropBtn?.addEventListener('click', () => dropBtn.setAttribute('aria-expanded',String(drop.classList.toggle('open'))));
-  doc.addEventListener('pointerdown', e => {if (!e.target.closest('.site-header,.header-nav')) clearMenus();});
-  doc.addEventListener('keydown', e => {if (e.key === 'Escape') clearMenus();});
+  doc.addEventListener('pointerdown', e => {if (!e.target.closest('.site-header,.header-nav')) clearMenus();},{signal});
+  doc.addEventListener('keydown', e => {if (e.key === 'Escape') clearMenus();},{signal});
   win.addEventListener('scroll', sync, {passive:true}); win.addEventListener('resize',sync); sync();
   doc.querySelectorAll('.testimonial-slider-controls').forEach(controls=>{
     const rail=controls.parentElement.querySelector('.testimonial-grid');
@@ -39,7 +41,7 @@ function enableHomepageBehavior(doc, getEditing = () => false, notify = () => {}
     function go(n){const first=rail.children[0],c=rail.children[nearest+n];if(c&&first)rail.scrollTo({left:c.offsetLeft-first.offsetLeft,behavior:'smooth'});}
     prev?.addEventListener('click',()=>go(-1));next?.addEventListener('click',()=>go(1));rail.addEventListener('scroll',sliderSync,{passive:true});
   });
-  doc.querySelectorAll('form').forEach(f=>f.addEventListener('submit',e=>{
+  doc.querySelectorAll('form:not([role=search])').forEach(f=>f.addEventListener('submit',e=>{
     e.preventDefault();
     if(!getEditing())notify('The contact form is disabled in this preview.');
   }));
@@ -47,5 +49,5 @@ function enableHomepageBehavior(doc, getEditing = () => false, notify = () => {}
   doc.querySelectorAll('a[href]').forEach(a=>{
     if (!a.getAttribute('href').startsWith('#')) {a.target='_blank';a.rel='noopener noreferrer';}
   });
-  return () => {win.removeEventListener('scroll',sync);win.removeEventListener('resize',sync);};
+  return () => {controller.abort();win.removeEventListener('scroll',sync);win.removeEventListener('resize',sync);};
 }

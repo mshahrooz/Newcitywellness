@@ -1,6 +1,6 @@
-# Homepage Studio publishing
+# Page Studio publishing
 
-The [Homepage Studio](https://mshahrooz.github.io/Newcitywellness/studio/) is public for editing and previewing. Only approved accounts in the dedicated NewCity Wellness Supabase project can write to GitHub. The existing [Pages workflow](https://github.com/mshahrooz/Newcitywellness/actions/workflows/deploy.yml) owns deployment. This connection publishes the homepage only and does not change other pages, site hosting, or DNS.
+The [Page Studio](https://mshahrooz.github.io/Newcitywellness/studio/) is public for editing and previewing. Only approved accounts in the dedicated NewCity Wellness Supabase project can write to GitHub. The existing [Pages workflow](https://github.com/mshahrooz/Newcitywellness/actions/workflows/deploy.yml) owns deployment. Choose any public page from the top-bar dropdown. Each publish changes the selected page and its draft, without changing other pages, site hosting, or DNS.
 
 ## One-time owner setup
 
@@ -17,10 +17,10 @@ The [Homepage Studio](https://mshahrooz.github.io/Newcitywellness/studio/) is pu
    | `STUDIO_PUBLISHER_IDS` | The approved Supabase user UIDs, separated by commas |
 
    Do not put the private key or editor passwords in the repository. No Supabase secret or service-role key is required in the browser. The publishable key in the editor config is designed to be public.
-5. In Studio, open **Publish homepage**, sign in with your Supabase publisher account, and click **Test publishing access**. This checks GitHub write access without changing the live site. To publish after checking your visual edits, click **Publish to GitHub Pages**. The confirmation links to the commit and the Pages build. Direct branch rules still apply. Remove a UID from the Edge Function secret to revoke that person's right to publish.
+5. In Studio, open **Publish page**, sign in with your Supabase publisher account, and click **Test publishing access**. This checks GitHub write access without changing the live site. To publish after checking your visual edits, click **Publish to GitHub Pages**. The confirmation links to the commit and the Pages build. Direct branch rules still apply. Remove a UID from the Edge Function secret to revoke that person's right to publish.
 
 ## Function maintenance
 
-Deploy `supabase/functions/publish-homepage/index.ts` and `publisher.mjs` as `publish-homepage` in project `wiwujlfmqqirswhbvvyy` with JWT verification enabled. The function also looks up the current user and checks the server-side UID allowlist before accessing GitHub.
+Deploy `supabase/functions/publish-homepage/index.ts` with `publisher.mjs` and `pages.mjs` as `publish-homepage` in project `wiwujlfmqqirswhbvvyy` with JWT verification enabled. The function also looks up the current user and checks the server-side UID allowlist before accessing GitHub.
 
-The publishing request can include up to 24 MiB of homepage content and media. GitHub changes are limited to the published homepage JSON, recoverable draft, and recognized media under the Homepage Studio paths. The function rejects stale base revisions and does not force-push. The GitHub Pages build validates the result before deploying. To roll back a publication, revert its commit in GitHub. To build locally, use the repository's normal `BUILD_TARGET=pages BASE_PATH=/Newcitywellness npm run build:pages` command.
+The publishing request can include up to 24 MiB of page content and media. GitHub changes are limited to the selected page’s publication JSON, recoverable draft, and recognized media. Home retains its original paths. Interior publications are stored in `src/content/studio-pages/` and `public/homepage-studio/pages/`. The function rejects stale base revisions and does not force-push. The GitHub Pages build validates the result before deploying. To roll back a publication, revert its commit in GitHub. To build locally, use the repository's normal `BUILD_TARGET=pages BASE_PATH=/Newcitywellness npm run build:pages` command.

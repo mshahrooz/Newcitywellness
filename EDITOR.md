@@ -36,8 +36,10 @@ The dashboard now opens directly into the website canvas in draft mode and does 
 
 The integration adapts the drag state and midpoint insertion behavior of [PageForge Studio](https://github.com/VinodPrabhashvara/PageForge-Studio), distributed under MIT. See [the license](licenses/PageForge-Studio.txt). The old `/admin/grapes/` address is a compatibility entry to the same dashboard.
 
-## Homepage Studio publishing
+## Page Studio
 
-Use the [GitHub Pages Homepage Studio](https://mshahrooz.github.io/Newcitywellness/studio/) to draft and preview edits. Approved editors sign in with credentials from the dedicated NewCity Wellness Supabase project and click **Publish to GitHub Pages**. The existing Pages build applies the published revision to the homepage only.
+Use the [GitHub Pages Page Studio](https://mshahrooz.github.io/Newcitywellness/studio/) to draft and preview edits. Approved editors sign in with credentials from the dedicated NewCity Wellness Supabase project and click **Publish to GitHub Pages**. Choose any of the 15 public pages using the dropdown. Switching pages saves the current draft in this browser. New browsers open the last fully deployed draft when one exists. Publishing updates only the selected page and never updates another page’s draft.
+
+The **Add element** palette groups text, media and links, and layout blocks. Use **Preview** and the device buttons to check placement before publishing.
 
 See [the publisher setup and rollback guide](supabase/README.md). GitHub is the source and host. Vercel is not part of this publishing flow.

@@ -1,8 +1,35 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const frame=$('canvas'), stage=$('stage'), popup=$('popup'), body=$('popup-body'), outline=$('outline'), selection=$('selection');
-const STORAGE='ncw.bakery.home.v1', MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
-const types={title:['Heading','A new section heading'],'text':['Paragraph','Write a short paragraph here.'],'image':['Image',''],'button':['Button','Learn more'],'document':['Document','Download document'],'row':['Row','']};
+const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
+const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
+const picker=$('page-picker');
+const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=all-pages1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
+let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
+const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
+const types={
+  title:['Heading','A new section heading','Section title','Text'],
+  subheading:['Subheading','A new subheading','Smaller heading','Text'],
+  text:['Paragraph','Write a short paragraph here.','Body copy','Text'],
+  bullets:['Bulleted list','First item\nSecond item','One item per line','Text'],
+  numbered:['Numbered list','First step\nSecond step','Steps in order','Text'],
+  quote:['Quote','Add a quote or short excerpt.','Pull quote','Text'],
+  image:['Image','','Upload an image','Media & links'],
+  captioned:['Captioned image','','Photo with a visible caption','Media & links'],
+  video:['Video','','Upload an MP4 or WebM','Media & links'],
+  button:['Button','Learn more','Link or call to action','Media & links'],
+  document:['Document','Download document','Downloadable PDF','Media & links'],
+  callout:['Callout','Put a useful note or reminder here.','Highlighted note','Layout'],
+  accordion:['Accordion','A short answer goes here.','Expandable question and answer','Layout'],
+  divider:['Divider','','Horizontal rule','Layout'],
+  spacer:['Spacer','','Adjustable vertical space','Layout'],
+  row:['Row','','Responsive columns','Layout']
+};
+const imageKind=k=>k==='image'||k==='captioned';
+const listKind=k=>k==='bullets'||k==='numbered';
+const richKinds=['subheading','quote','callout','accordion','divider','spacer','captioned','bullets','numbered','video'];
 let pendingPublisherBase=null;
 let D, original, list=[], savedOps=[], cursor=0, active=null, mode='edit', view='desktop', drag, guide, placement, stopBehavior, toastTimer, gesture, viewportTick, baselineReady=false;
 const labels={hero:'Home hero',therapies:'Explore Our Therapies','first-visit':'Your First Visit',practitioner:'Meet the Practitioner',conditions:'Areas We Support',experiences:'Patient Experiences',contact:'Contact and hours'};
@@ -16,7 +43,7 @@ const isExisting=e=>!!e&&!e.closest('[data-bs-new]');
 const rowTitle=n=>n?.dataset.bsLabel||labels[n?.getAttribute('data-builder-section')]||'Section';
 const therapyCard=n=>n?.closest('.therapy-card');
 const therapyPhoto=n=>n?.matches('.therapy-card .therapy-image > img');
-const titleOf=n=>n.matches('.therapy-card')?'Therapy card':n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-zone')?rowTitle(n):n.hasAttribute('data-bs-column')?'Column':({image:'Image',button:'Button',document:'Document',title:'Heading',text:'Paragraph',link:'Link',component:'Component',detail:'Detail',form:'Form',field:'Form field',video:'Video'})[n.dataset.bsKind]||'Element';
+const titleOf=n=>n.matches('.therapy-card')?'Therapy card':n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-zone')?rowTitle(n):n.hasAttribute('data-bs-column')?'Column':({image:'Image',button:'Button',document:'Document',title:'Heading',text:'Paragraph',link:'Link',component:'Component',detail:'Detail',form:'Form',field:'Form field',video:'Video'})[n.dataset.bsKind]||types[n.dataset.bsKind]?.[0]||'Element';
 const rowList=()=>[...main().children].filter(x=>x.hasAttribute('data-bs-row'));
 const unique=()=> 'new-'+crypto.randomUUID();
 const asString=(v,len=3000)=>typeof v==='string'?v.slice(0,len):'';
@@ -38,16 +65,16 @@ function resetBody(){
   D.body.innerHTML=original;
 }
 function replay(){
-  const t=D.defaultView.scrollY;
+  const doc=D, t=doc.defaultView.scrollY;
   resetBody();
   for(const op of list.slice(0,cursor))apply(op);
   refreshFreeSizes();
-  stopBehavior=enableHomepageBehavior(D,()=>mode==='edit',flash);
-  requestAnimationFrame(()=>{D.defaultView.scrollTo(0,t);paint();});
+  stopBehavior=wireBehavior();
+  requestAnimationFrame(()=>{if(D===doc){doc.defaultView.scrollTo(0,t);paint();}});
   if(active&&!byId(active)) active=null;
   showState();paint();
 }
-function history(step){
+function stepHistory(step){
   const next=cursor+step;
   if(next<0||next>list.length)return;
   cursor=next;gesture=null;close();replay();
@@ -64,25 +91,27 @@ function markCanvas() {
   const m=main();
   m.querySelectorAll(':scope > [data-builder-section]').forEach(row=>{
     const id=row.getAttribute('data-builder-section');row.dataset.bsId='row-'+id;row.dataset.bsRow='native';
+    if(page[0]!=='home')row.dataset.bsLabel=row.dataset.builderLabel||id.replace(/-/g,' ').replace(/^./,c=>c.toUpperCase());
     const candidates=row.querySelectorAll('h1,h2,h3,h4,p,img,a.btn');
     let i=0;
     candidates.forEach(el=>{
       if(el.closest('form') || el.closest('.clinic-hours') || el.classList.contains('form-note'))return;
-      if(el.matches('img')&&(!el.hasAttribute('data-editor-image')||el.closest('a.btn')))return;
+      if(el.matches('img')&&((page[0]==='home'&&!el.hasAttribute('data-editor-image'))||el.closest('a.btn')))return;
       const num=++i;
       el.dataset.bsId=id+'-'+num;
       el.dataset.bsKind=el.matches('img')?'image':el.matches('a.btn')?'button':el.matches('h1,h2,h3,h4')?'title':'text';
       // Keep image masks, tab/slider structure, and nested cards intact.
       if(el.matches('h1,h2,h3,h4,p')&&!el.closest('a,.testimonial-card,.contact-form-wrap,.clinic-hours')){
         el.dataset.bsMove='yes';
-      } else if(el.matches('a.btn')&&!el.closest('.hero-actions')){el.dataset.bsMove='yes';}
+      } else if(el.matches('a.btn')&&!el.closest('.hero-actions')||page[0]!=='home'&&el.matches('img')&&!el.closest('.page-hero-photo')){el.dataset.bsMove='yes';}
     });
   });
   registerExtraNodes();
 }
 function content(el){
   if(el.hasAttribute('data-bs-new')){
-    if(el.dataset.bsKind==='image')return el.querySelector('img');
+    if(imageKind(el.dataset.bsKind))return el.querySelector('img');
+    if(el.dataset.bsKind==='accordion')return el.querySelector('p');
     if(el.dataset.bsKind==='button'||el.dataset.bsKind==='document')return el.querySelector('a');
     return el.firstElementChild;
   }
@@ -92,7 +121,7 @@ function content(el){
 function textCopy(el){if(!el)return '';return el.textContent.replace(/\s+/g,' ').trim();}
 function okayURL(link){
   if(/^#[A-Za-z0-9_:-]*$/.test(link))return true;
-  try{return ['https:','http:','tel:','mailto:'].includes(new URL(link).protocol);}catch{return false;}
+  try{return /^\/(?!\/)[^\s\\]*$/.test(link)||['https:','http:','tel:','mailto:'].includes(new URL(link).protocol);}catch{return false;}
 }
 function okayData(value,kind){
   return typeof value==='string'&&value.length<=MAX_FILE*1.35+100&& (kind==='image'?/^data:image\/(?:jpeg|png|webp|avif|gif);base64,[A-Za-z0-9+/=]+$/:/^data:application\/(?:pdf|octet-stream);base64,[A-Za-z0-9+/=]+$/).test(value);
@@ -123,10 +152,33 @@ function makeBlock(kind,id){
   let node;
   if(kind==='title')node=addNative('h2',{},types[kind][1]);
   else if(kind==='text')node=addNative('p',{},types[kind][1]);
-  else if(kind==='image')node=addNative('div',{class:'bs-placeholder'},'Choose an image to replace this placeholder');
+  else if(kind==='subheading')node=addNative('h3',{class:'bs-subheading'},types[kind][1]);
+  else if(listKind(kind)) {
+    node=addNative(kind==='bullets'?'ul':'ol',{class:'bs-list'});
+    setList(node,types[kind][1]);
+  }
+  else if(kind==='quote')node=addNative('blockquote',{class:'bs-quote'},types[kind][1]);
+  else if(kind==='callout')node=addNative('p',{class:'bs-callout'},types[kind][1]);
+  else if(kind==='divider')node=addNative('hr',{class:'bs-divider'});
+  else if(kind==='spacer')node=addNative('div',{class:'bs-spacer','aria-hidden':'true'});
+  else if(kind==='accordion') {
+    node=addNative('details',{class:'bs-accordion',open:''});
+    node.append(addNative('summary',{},'A common question'),addNative('p',{},types[kind][1]));
+  }
+  else if(kind==='video')node=addNative('div',{class:'bs-placeholder'},'Choose an MP4 or WebM video');
+  else if(imageKind(kind)){
+    const placeholder=addNative('div',{class:'bs-placeholder'},'Choose an image to replace this placeholder');
+    if(kind==='captioned') {
+      node=addNative('figure',{class:'bs-captioned'});
+      node.append(placeholder,addNative('figcaption',{},'Add a caption'));
+    } else node=placeholder;
+  }
   else if(kind==='document')node=addNative('a',{class:'bs-file-name',href:'#'},types[kind][1]);
   else node=addNative('a',{class:'btn',href:'#',target:'_blank',rel:'noopener noreferrer'},types[kind][1]);
   wrap.append(node);return wrap;
+}
+function setList(node,value){
+  node.replaceChildren(...asString(value).split(/\r?\n/).map(line=>line.trim()).filter(Boolean).map(line=>addNative('li',{},line)));
 }
 function canInline(n, target, side){
   if(!target||n===target||n?.contains(target))return false;
@@ -233,15 +285,36 @@ function apply(op){
     case 'columns':if(n.dataset.bsRow!=='custom')return false;setColumns(n,bounded(op.value,1,4));return true;
     case 'row-gap':if(n.dataset.bsRow!=='custom')return false;n.querySelector(':scope > .bs-row-inner').style.setProperty('--bs-gap',bounded(op.value,0,80)+'px');return true;
     case 'row-color':if(n.dataset.bsRow!=='custom'||!/^#[0-9a-f]{6}$/i.test(op.value))return false;n.style.setProperty('--bs-row-color',op.value);return true;
-    case 'text':if(!e||!['title','text','button','document','link','detail'].includes(k))return false;e.textContent=asString(op.value);return true;
+    case 'text':
+      if(!e||!['title','text','button','document','link','detail','subheading','quote','callout','accordion','bullets','numbered'].includes(k))return false;
+      if(listKind(k))setList(e,op.value);
+      else if(page[0]!=='home'&&k==='detail'&&e.hasAttribute('data-builder-attr')) {
+        const att=e.getAttribute('data-builder-attr');
+        if(!['placeholder','title','aria-label'].includes(att))return false;
+        e.setAttribute(att,asString(op.value));
+      } else e.textContent=asString(op.value);return true;
+    case 'part': {
+      const part=k==='accordion'?n.querySelector('summary'):k==='captioned'?n.querySelector('figcaption'):null;
+      if(!part)return false;part.textContent=asString(op.value,300);return true;
+    }
+    case 'space':
+      if(k!=='spacer'||!e)return false;
+      e.style.setProperty('--bs-spacer',bounded(op.value,8,200)+'px');return true;
+    case 'video': {
+      if(k!=='video'||!n.hasAttribute('data-bs-new')||!mediaValue(op.value,'video'))return false;
+      n.replaceChildren(addNative('video',{class:'bs-video',src:op.value,controls:'',playsinline:'',preload:'metadata'}));return true;
+    }
     case 'image':
-      if(k!=='image'||!okayData(op.value,k))return false;
+      if(!imageKind(k)||!okayData(op.value,'image'))return false;
       if(n.hasAttribute('data-bs-new')){
-        const alt=n.dataset.bsAlt||e?.alt||''; const im=addNative('img',{src:op.value,alt,decoding:'async'});n.replaceChildren(im);
-      } else {n.src=op.value;n.removeAttribute('srcset');n.removeAttribute('sizes');}
+        const alt=n.dataset.bsAlt||e?.alt||''; const im=addNative('img',{src:op.value,alt,decoding:'async'});if(k==='captioned')(e||n.querySelector('.bs-placeholder')).replaceWith(im);else n.replaceChildren(im);
+      } else {
+        n.src=op.value;n.removeAttribute('srcset');n.removeAttribute('sizes');
+        if(n.parentElement?.matches('picture'))n.parentElement.querySelectorAll(':scope > source').forEach(source=>source.remove());
+      }
       return true;
     case 'alt':
-      if(k!=='image')return false;
+      if(!imageKind(k))return false;
       const im=n.matches('img')?n:n.querySelector('img');
       n.dataset.bsAlt=asString(op.value,250);if(im)im.alt=n.dataset.bsAlt;return true;
     case 'file':
@@ -252,7 +325,7 @@ function apply(op){
       e.setAttribute('href',op.value);return true;
     case 'align': {
       if(!['original','left','center','right'].includes(op.value))return false;
-      if(k==='image'){
+      if(imageKind(k)){
         const img=n.matches('img')?n:n.querySelector('img');
         if(op.value==='original'){n.style.removeProperty('text-align');img?.style.removeProperty('margin-inline');}
         else {n.style.textAlign=op.value;if(img)img.style.marginInline=op.value==='center'?'auto':op.value==='left'?'0 auto':'auto 0';}
@@ -284,30 +357,30 @@ function validId(value){return typeof value==='string'&&/^[a-z0-9-]{1,96}$/i.tes
 function readDraft(raw){
   if(raw.length>MAX_JSON)throw Error('This draft is too large to import.');
   const obj=JSON.parse(raw);
-  if(obj?.version!==1||obj?.page!=='new-city-wellness-homepage'||!Array.isArray(obj.operations)||obj.operations.length>800)throw Error('Choose a draft exported by Homepage Studio.');
+  if(obj?.version!==1||obj?.page!==pageIdentity()||!Array.isArray(obj.operations)||obj.operations.length>800)throw Error('Choose a draft exported for '+page[1]+'.');
   const ops=obj.operations;
   if(ops.some(o=>!o||!validId(o.id)||(o.target&&!validId(o.target))||(o.pair&&!validId(o.pair))||(o.copy&&!validId(o.copy))||typeof o.kind!=='string'))throw Error('This draft contains invalid edits.');
   return ops;
 }
 function draftString(){
-  return JSON.stringify({version:1,page:'new-city-wellness-homepage',operations:list.slice(0,cursor),publishedBase:typeof StudioPublish!=='undefined'?StudioPublish.baseOfDraft():null});
+  return JSON.stringify({version:1,page:pageIdentity(),operations:list.slice(0,cursor),publishedBase:typeof StudioPublish!=='undefined'?StudioPublish.baseOfDraft():null});
 }
 let saveQueue=Promise.resolve();
 function save({quiet=false}={}){
-  const data=draftString(), undoStamp=list.slice(0,cursor);
+  const STORAGE=storageKey(), data=draftString(), undoStamp=list.slice(0,cursor);
   saveQueue=saveQueue.catch(()=>{}).then(async()=>{
     if(data.length<3500000){
       try{
         localStorage.setItem(STORAGE,data);
         if(window.indexedDB)await draftStore('readwrite',s=>s.delete(STORAGE)).catch(()=>{});
-        savedOps=undoStamp;showState();if(!quiet)flash('Draft saved in this browser. Nothing was published.');return;
+        savedOps=undoStamp;showState();if(!quiet)flash('Draft saved in this browser. Nothing was published.');return true;
       }catch{}
     }
     try{
       await draftStore('readwrite',s=>s.put(data,STORAGE));
       try{localStorage.setItem(STORAGE,'@indexeddb');}catch{}
-      savedOps=undoStamp;showState();if(!quiet)flash('Draft and media saved in this browser.');
-    }catch{flash('Browser storage is unavailable or full. Download the editable draft to keep it.');}
+      savedOps=undoStamp;showState();if(!quiet)flash('Draft and media saved in this browser.');return true;
+    }catch{flash('Browser storage is unavailable or full. Download the editable draft to keep it.');return false;}
   });
   return saveQueue;
 }
@@ -327,7 +400,7 @@ function fileRead(file,kind,done){
   };reader.onerror=()=>flash('This file could not be opened.');reader.readAsDataURL(file);
 }
 function exportStandalone(){
-  const url=new URL('canvas.html',location.href);
+  const url=new URL(canvasPath(),location.href), name=pageIdentity();
   const abs=(x,base=url)=>new URL(x,base).href;
   const cache=new Map();
   const inlined=async href=>{
@@ -370,7 +443,7 @@ function exportStandalone(){
     const script=document.createElement('script');
     script.textContent=behavior+'\nenableHomepageBehavior(document,()=>false,notice=>window.alert(notice));';
     root.querySelector('body').append(script);
-    exportFile('<!doctype html>\n'+root.outerHTML,'new-city-wellness-homepage-preview.html','text/html;charset=utf-8');
+    exportFile('<!doctype html>\n'+root.outerHTML,name+'-preview.html','text/html;charset=utf-8');
     flash('Standalone preview downloaded.');
   })().catch(()=>flash('The HTML export did not finish. Please retry, or download the draft JSON.'));
 }
@@ -459,6 +532,7 @@ function choose(n, edit=true){
 function useKeys(){
   if(!D)return;
   function handle(e){
+    if(switching)return;
     if(e.key==='Escape'){
       if(drag){finishDrag();return;}
       if(resizeDrag){stopResize(false);return;}
@@ -469,10 +543,10 @@ function useKeys(){
     }
     if(e.target?.matches('input,textarea,select,[contenteditable=true]'))return;
     if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'&&now()){e.preventDefault();cloneSelected(now());return;}
-    if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();history(e.shiftKey?1:-1);}
+    if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();stepHistory(e.shiftKey?1:-1);}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}
   }
-  document.addEventListener('keydown',handle);D.addEventListener('keydown',handle);
+  if(!useKeys.outer){document.addEventListener('keydown',handle);useKeys.outer=true;}D.addEventListener('keydown',handle);
 }
 function targetFrom(el,wholeCard=false){
   const card=therapyCard(el);
@@ -573,7 +647,7 @@ function openSettings(n) {
     place();return;
   }
   const k=n.dataset.bsKind, e=content(n);
-  if(n.hasAttribute('data-bs-zone')||!['title','text','button','document','link','image','detail'].includes(k)){
+  if(n.hasAttribute('data-bs-zone')||!['title','text','button','document','link','image','detail',...richKinds].includes(k)){
     const put=open(titleOf(n),'ELEMENT SETTINGS',n);
     const a=group();
     if(n.hasAttribute('data-bs-zone')){
@@ -588,13 +662,29 @@ function openSettings(n) {
     put();return;
   }
   const place=open(titleOf(n),'ELEMENT SETTINGS',n);
-  if(k==='image'){
+  if(imageKind(k)){
     replaceImageControl(body,n);
     if(therapyPhoto(n))para('Drag the image grip to adjust the crop. Select the whole card to move it with its image.');
     const token=Symbol();input(body,'Alternative text',n.dataset.bsAlt??e?.alt??'',{maxlength:250},el=>record({kind:'alt',id:idOf(n),value:el.value},token));
-  }else{
-    const token=Symbol(), current=textCopy(e);
-    input(body,k==='button'||k==='document'?'Label':'Text',current,{tag:k==='title'||k==='text'?'textarea':'input',class:'studio-text',maxlength:3000},el=>record({kind:'text',id:idOf(n),value:el.value},token));
+    if(k==='captioned'){
+      const cap=Symbol();input(body,'Caption',textCopy(n.querySelector('figcaption')),{maxlength:300},el=>record({kind:'part',id:idOf(n),value:el.value},cap));
+    }
+  }else if(k==='video'&&!isExisting(n)){
+    input(body,'Upload a video (MP4 or WebM, up to 20 MB)','',{type:'file',accept:'.mp4,.webm,video/mp4,video/webm'},el=>fileReadBg(el.files[0],'video',(value,fileName)=>{
+      if(n.isConnected&&record({kind:'video',id:idOf(n),value}))flash(fileName+' attached.');
+    }),'change');
+  }else if(k==='spacer'){
+    const token=Symbol();
+    input(body,'Height (px)',parseFloat(e.style.getPropertyValue('--bs-spacer'))||32,{type:'number',min:8,max:200},el=>record({kind:'space',id:idOf(n),value:el.value},token));
+  }else if(k==='divider'){
+    para('Use the padding controls to change spacing above or below the line.');
+  }else if(k!=='video'){
+    const token=Symbol(), current=listKind(k)?[...e.children].map(x=>x.textContent).join('\n'):
+      e.hasAttribute('data-builder-attr')?e.getAttribute(e.getAttribute('data-builder-attr'))||'':textCopy(e);
+    if(k==='accordion'){
+      const part=Symbol();input(body,'Question',textCopy(n.querySelector('summary')),{maxlength:300},el=>record({kind:'part',id:idOf(n),value:el.value},part));
+    }
+    input(body,k==='button'||k==='document'?'Label':listKind(k)?'List items (one per line)':k==='accordion'?'Answer':'Text',current,{tag:k==='title'||k==='text'||richKinds.includes(k)?'textarea':'input',class:'studio-text',maxlength:3000},el=>record({kind:'text',id:idOf(n),value:el.value},token));
     if(k==='button'&&!isExisting(n)){
       const urlToken=Symbol();input(body,'Button link',e.getAttribute('href'),{placeholder:'https://… or #section'},el=>{
         el.setCustomValidity(okayURL(el.value)?'':'Enter a public link or a section anchor.');
@@ -624,7 +714,7 @@ function openSettings(n) {
   const parent=n.parentElement?.closest('[data-bs-kind],[data-bs-column]');
   if(parent&&!therapyCard(n))button(actions,'Select parent '+titleOf(parent).toLowerCase(),()=>choose(parent));
   if(rowOf(n))button(actions,'Section settings',()=>choose(rowOf(n)));
-  if(k!=='image'&&e){
+  if(!imageKind(k)&&!['spacer','divider','video'].includes(k)&&e){
     const details=create('details',{class:'look'});details.append(create('summary',{},'Text appearance'));body.append(details);
     const font=Symbol(), color=Symbol();
     input(details,'Font size (px)',e.style.fontSize?Number.parseInt(e.style.fontSize):'',{type:'number',min:10,max:96,placeholder:'Original'},x=>record({kind:'font-size',id:idOf(n),value:x.value},font));
@@ -638,7 +728,7 @@ function openSettings(n) {
 function rowChoices(anchor,side='after'){
   const r=anchor&&rowOf(anchor);
   const place=open('Add a section','CHOOSE A SECTION LAYOUT',r);
-  para(r?'The new section will go '+(side==='before'?'above':'below')+' '+rowTitle(r)+'.':'The new section will go '+(side==='before'?'at the top of the homepage.':'before the footer.'));
+  para(r?'The new section will go '+(side==='before'?'above':'below')+' '+rowTitle(r)+'.':'The new section will go '+(side==='before'?'at the top of this page.':'before the footer.'));
   const choices=group('quick-grid');
   function add(cols,blank=false){
     const id=unique();record({kind:'row-add',id,cols,target:idOf(r)||null,side,blank});
@@ -654,9 +744,14 @@ function startAdd(n=now()) {
   if(n?.hasAttribute('data-bs-row')&&n.dataset.bsRow==='custom'&&!n.classList.contains('bs-blank-section'))n=n.querySelector(':scope > .bs-row-inner > .bs-col');
   const row=n&&rowOf(n), eligible=n&&(n.dataset.bsMove==='yes'||n.hasAttribute('data-bs-column'));
   const place=open('Add element','PAGE ELEMENTS',n);
-  para(eligible?'Add inside a column or beside the selected element.':'Select a new element. You can then choose where it goes on the homepage.');
-  const grid=group('quick-grid');
-  for(const [kind,[t]] of Object.entries(types)){
+  para(eligible?'Add inside a column or beside the selected element.':'Select a new element. You can then choose where it goes on this page.');
+  const sections={};
+  for(const [kind,[t,,description,category]] of Object.entries(types)){
+    if(!sections[category]){
+      body.append(create('h3',{class:'library-group'},category));
+      sections[category]=group('quick-grid');
+    }
+    const grid=sections[category];
     const b=button(grid,t,()=>{
       if(kind==='row'){rowChoices(row);return;}
       if(eligible){locationChoices(n,kind);return;}
@@ -665,7 +760,7 @@ function startAdd(n=now()) {
       flash('Click a text block or column to choose placement, or add a section.');
       $('hint').textContent='Click a heading, paragraph, movable button or column for placement.';
     });
-    b.append(create('small',{},({row:'Responsive columns',title:'Section heading',text:'Plain text block',image:'From your device',button:'Link or call to action',document:'Downloadable PDF'})[kind]));
+    b.append(create('small',{},description));
   }
   place();
 }
@@ -766,6 +861,7 @@ resizeControl.addEventListener('click',e=>{if(e.detail===0&&now())gridPanel(now(
 $('popup-close').onclick=close;
 $('preview').onclick=()=>{
   clearGridPick();mode=mode==='edit'?'preview':'edit';
+  if(mode==='edit'&&page[0]!=='home')replay();
   $('preview').textContent=mode==='preview'?'Back to editing':'Preview';$('preview').setAttribute('aria-pressed',String(mode==='preview'));
   $('hint').textContent=mode==='preview'?'Preview mode. The contact form does not send messages.':defaultHint();
   for(const id of ['add','add-section','grid-mode','grid-snap'])$(id).disabled=mode==='preview'; $('undo').disabled=mode==='preview'||!cursor;$('redo').disabled=mode==='preview'||cursor===list.length;
@@ -782,8 +878,8 @@ function switchView(b){
 }
 document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>switchView(b));
 $('add').onclick=()=>startAdd();
-$('undo').onclick=()=>history(-1);
-$('redo').onclick=()=>history(1);
+$('undo').onclick=()=>stepHistory(-1);
+$('redo').onclick=()=>stepHistory(1);
 $('save').onclick=save;
 function toggleMenu(val){
   $('menu').hidden=!val;$('more').setAttribute('aria-expanded',String(val));
@@ -791,48 +887,68 @@ function toggleMenu(val){
 }
 $('more').onclick=()=>toggleMenu($('menu').hidden);
 document.addEventListener('pointerdown',e=>{if(!e.target.closest('#menu,#more'))toggleMenu(false);});
-$('export-draft').onclick=()=>{toggleMenu(false);exportFile(draftString(),'new-city-wellness-homepage-draft.json','application/json');};
+$('export-draft').onclick=()=>{toggleMenu(false);exportFile(draftString(),pageIdentity()+'-draft.json','application/json');};
 $('import-draft').onclick=()=>{toggleMenu(false);$('import-file').value='';$('import-file').click();};
 $('import-file').onchange=async()=>{
-  const file=$('import-file').files[0];if(!file)return;
+  const file=$('import-file').files[0], epoch=canvasEpoch;if(!file)return;
   if(file.size>MAX_JSON){flash('This draft is too large to import.');return;}
-  try{const raw=await file.text();list=readDraft(raw);StudioPublish.bindSource(JSON.parse(raw).publishedBase||null);cursor=list.length;active=null;close();replay();flash('Draft imported. Save it to keep it in this browser.');}catch(e){flash(e.message);}
+  try{const raw=await file.text();if(epoch!==canvasEpoch)return;list=readDraft(raw);StudioPublish.bindSource(JSON.parse(raw).publishedBase||null);cursor=list.length;active=null;close();replay();flash('Draft imported. Save it to keep it in this browser.');}catch(e){flash(e.message);}
 };
 $('export-html').onclick=()=>{toggleMenu(false);exportStandalone();};
-$('compare').onclick=()=>{toggleMenu(false);window.open('canvas.html','_blank','noopener,noreferrer');};
+$('compare').onclick=()=>{toggleMenu(false);window.open(canvasPath(),'_blank','noopener,noreferrer');};
 $('help').onclick=()=>{
-  toggleMenu(false);const place=open('How to edit the homepage','QUICK GUIDE');
+  toggleMenu(false);const place=open('How to edit this page','QUICK GUIDE');
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
   para('Use Add nearby → Directly above or Directly below to insert without making a new row. Explicit inline moves and insertions can reposition other items.');
   para('Dragging moves only the selected element and preserves its original space. Desktop drags carry over to tablet and mobile. Use their previews to fine-tune placement if needed. Turn Snap off for finer placement.');
   para('Use Delete in the item settings to remove it from your draft. Undo restores deleted content.');
   para('Use Duplicate in settings or Ctrl+D. Add a blank or column-based section with + Section. Its settings include color, image, or video backgrounds.');
-  para('Save keeps edits in this browser. Download an editable draft to move it to another browser. Approved publisher accounts can publish the homepage from this editor.');
+  para('Save keeps edits in this browser. Download an editable draft to move it to another browser. Approved publisher accounts can publish the selected page from this editor.');
   place();
 };
 $('reset').onclick=()=>{
   toggleMenu(false);const place=open('Reset this draft?','DRAFT TOOLS');
-  para('This restores the original homepage copy and clears this browser’s saved draft. It does not affect the public website.');
+  para('This restores the original page layout and clears this browser’s saved draft. It does not affect the public website.');
   button(group(),'Reset to original',()=>{
+    const STORAGE=storageKey();
     saveQueue=saveQueue.catch(()=>{}).then(()=>{
       try{localStorage.removeItem(STORAGE);}catch{}
       return draftStore('readwrite',s=>s.delete(STORAGE));
     }).catch(()=>{});
-    list=[];cursor=0;savedOps=[];active=null;StudioPublish.bindSource(null);close();replay();flash('Original homepage restored.');
+    list=[];cursor=0;savedOps=[];active=null;StudioPublish.bindSource(null);close();replay();flash('Original page restored.');
   },{class:'danger'});place();
 };
+function wireBehavior(){
+  const stopShared=enableHomepageBehavior(D,()=>mode==='edit',flash);
+  const stopPage=page[0]!=='home'&&typeof enableStudioPageBehavior==='function'?enableStudioPageBehavior(D,()=>mode==='edit',true):null;
+  return ()=>{stopShared?.();stopPage?.();};
+}
+function busyCanvas(value){
+  for(const id of ['add','add-section','grid-mode','grid-snap','save','more','preview','publish','undo','redo'])$(id).disabled=value;
+}
 function boot(){
   if(baselineReady)return;
   D=frame.contentDocument;
-  if(!D?.querySelector('main[data-builder-page]'))return;
-  baselineReady=true;markCanvas();syncViewport();original=D.body.innerHTML;sizeObserver();
-  stopBehavior=enableHomepageBehavior(D,()=>mode==='edit',flash);
+  const expected=new URL(canvasPath(),location.href);
+  if(!D||D.URL.split('?')[0]!==expected.href.split('?')[0])return;
+  if(!D.querySelector('main[data-builder-page]')){
+    switching=false;if(picker)picker.disabled=false;$('saved').textContent='Page could not open';
+    flash('Could not open this page. Choose another page or reload Studio.');return;
+  }
+  const epoch=canvasEpoch, current=()=>canvasEpoch===epoch, STORAGE=storageKey();
+  baselineReady=true;markCanvas();syncViewport();original=D.body.innerHTML;stopSize=sizeObserver();
+  stopBehavior=wireBehavior();
   useKeys();
   D.addEventListener('click',e=>{
+    if(switching){e.preventDefault();return;}
     if(mode!=='edit')return;
     const anchor=e.target.closest('a');
     if(anchor)e.preventDefault();
     if(gridPick){e.preventDefault();commitPick(e);return;}
+    const summary=e.target.closest('summary');
+    if(summary&&!summary.closest('[data-bs-new]')&&!placement&&!e.altKey&&!anchor){
+      e.preventDefault();summary.parentElement.open=!summary.parentElement.open;return;
+    }
     if(e.target.closest('input,textarea,select,form button'))e.preventDefault();
     const n=therapyCard(e.target)?targetFrom(e.target,e.altKey):e.altKey
       ?e.target.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row]')||targetFrom(e.target):targetFrom(e.target);
@@ -847,17 +963,77 @@ function boot(){
   D.addEventListener('pointermove',updatePick,{passive:true});
   D.addEventListener('pointerleave',()=>{if(gridPick)hideGridVisual();});
   D.addEventListener('load',e=>{if(e.target?.closest?.('.bs-free-layer')){refreshFreeSizes();paint();}},true);
-  D.fonts?.ready.then(()=>{refreshFreeSizes();paint();});
-  D.addEventListener('submit',e=>{e.preventDefault();flash('The contact form is disabled in this preview.');},true);
+  D.fonts?.ready.then(()=>{if(current()){refreshFreeSizes();paint();}});
+  D.addEventListener('submit',e=>{e.preventDefault();},true);
   D.addEventListener('scroll',()=>{paint();if(!popup.hidden&&now())adjustPopup(now());},{passive:true,capture:true});
   D.defaultView.addEventListener('resize',()=>{refreshFreeSizes();paint();});
-  window.addEventListener('resize',()=>{syncViewport();paint();if(!popup.hidden)adjustPopup(now());});
-  const loadSaved=(raw)=>{if(!raw||cursor)return;list=readDraft(raw);pendingPublisherBase=JSON.parse(raw).publishedBase||null;if(typeof StudioPublish!=='undefined')StudioPublish.bindSource(pendingPublisherBase);cursor=list.length;savedOps=list.slice();replay();};
-  const warn=()=>flash('The saved draft could not be read. The original homepage is open.');
-  let raw=null;
-  try{raw=localStorage.getItem(STORAGE);if(raw&&raw!=='@indexeddb')loadSaved(raw);}catch{warn();}
-  if(!raw||raw==='@indexeddb')draftStore('readonly',s=>s.get(STORAGE)).then(loadSaved).catch(()=>{if(raw==='@indexeddb')warn();});
-  setGridMode(gridMode);showState();
+  function loadSaved(raw) {
+    if(!current()||!raw||cursor)return false;
+    list=readDraft(raw);
+    pendingPublisherBase=JSON.parse(raw).publishedBase||null;
+    if(typeof StudioPublish!=='undefined')StudioPublish.bindSource(pendingPublisherBase);
+    cursor=list.length;savedOps=list.slice();replay();return true;
+  }
+  const warn=()=>{if(current())flash('The saved draft could not be read. The original page is open.');};
+  (async()=>{
+    let raw=null;
+    try{raw=localStorage.getItem(STORAGE);}catch{}
+    try{
+      if(raw&&raw!=='@indexeddb'){loadSaved(raw);return;}
+      if(window.indexedDB&&loadSaved(await draftStore('readonly',s=>s.get(STORAGE))))return;
+      if(current()&&!cursor&&typeof StudioPublish!=='undefined'){
+        const saved=await StudioPublish.initialDraft();
+        if(current()&&!cursor&&saved)loadSaved(JSON.stringify(saved));
+      }
+    }catch{warn();}
+  })().finally(()=>{
+    if(!current())return;
+    busyCanvas(false);
+    if(mode==='preview')for(const id of ['add','add-section','grid-mode','grid-snap'])$(id).disabled=true;
+    switching=false;if(picker)picker.disabled=false;
+    setGridMode(gridMode);showState();
+  });
+}
+window.addEventListener('resize',()=>{if(!baselineReady)return;syncViewport();paint();if(!popup.hidden)adjustPopup(now());});
+async function openPage(next) {
+  if(!next||next===page||switching||typeof StudioPublish!=='undefined'&&StudioPublish.isBusy()){if(picker)picker.value=page[0];return;}
+  switching=true;if(picker)picker.disabled=true;
+  if(drag)finishDrag(false);
+  if(resizeDrag)stopResize(false);
+  clearGridPick();close();toggleMenu(false);
+  busyCanvas(true);
+  await saveQueue;
+  const dirty=cursor!==savedOps.length||savedOps.some((op,i)=>list[i]!==op);
+  if(baselineReady&&dirty&&!await save({quiet:true})){
+    switching=false;busyCanvas(false);showState();if(picker){picker.disabled=false;picker.value=page[0];}return;
+  }
+  canvasEpoch++;stopBehavior?.();stopSize?.();
+  stopBehavior=null;stopSize=null;baselineReady=false;active=null;D=null;
+  list=[];savedOps=[];cursor=0;pendingPublisherBase=null;
+  if(typeof StudioPublish!=='undefined')StudioPublish.bindSource(null);
+  page=next;
+  const url=new URL(location.href);
+  if(page[0]==='home')url.searchParams.delete('page');else url.searchParams.set('page',page[0]);
+  window.history.replaceState(null,'',url);
+  loadCanvas();
+}
+function loadCanvas(){
+  switching=true;busyCanvas(true);if(picker){picker.value=page[0];picker.disabled=true;}
+  $('saved').textContent='Opening '+page[1]+'…';
+  $('publish-status').textContent='Ready to edit';
+  frame.title='New City Wellness · '+page[1];
+  frame.src=canvasPath();
+  paint();
+}
+if(picker) {
+  picker.replaceChildren();
+  const therapies=create('optgroup',{label:'Therapy pages'});
+  for(const [id,label,route] of pages){
+    const option=create('option',{value:id},label);
+    if(route.startsWith('services/')){if(!therapies.parentNode)picker.append(therapies);therapies.append(option);}
+    else picker.append(option);
+  }
+  picker.addEventListener('change',()=>void openPage(pages.find(p=>p[0]===picker.value)));
 }
 frame.addEventListener('load',boot);
-boot();
+loadCanvas();

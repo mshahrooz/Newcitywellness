@@ -5,19 +5,22 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#152c25">
-<title>New City Wellness · Homepage Studio</title>
-<link rel="stylesheet" href="studio.css?v=larger-editor1">
-<script src="canvas-behavior.js" defer></script>
+<title>New City Wellness · Page Studio</title>
+<link rel="stylesheet" href="studio.css?v=all-pages1">
+<script src="pages.js?v=all-pages1" defer></script>
+<script src="canvas-behavior.js?v=all-pages1" defer></script>
+<script src="../homepage-studio/page-runtime.js?v=all-pages1" data-preview-runtime defer></script>
 <script src="../homepage-studio/responsive-offsets.js?v=2" defer></script>
-<script src="grid.js?v=therapy-cards1" defer></script>
-<script src="studio.js?v=larger-editor1" defer></script>
+<script src="grid.js?v=all-pages1" defer></script>
+<script src="studio.js?v=all-pages1" defer></script>
 <script src="studio-revision.js?v=publish2" defer></script>
 <script src="publisher-config.js" defer></script>
-<script src="publish.js?v=therapy-cards1" defer></script>
+<script src="publish.js?v=all-pages1" defer></script>
 </head>
 <body>
 <header class="studio-bar">
-  <div class="identity"><span class="brand-symbol" aria-hidden="true">✳</span><div><strong>Homepage Studio</strong><small>NEW CITY WELLNESS</small></div></div>
+  <div class="identity"><span class="brand-symbol" aria-hidden="true">✳</span><div><strong>Page Studio</strong><small>NEW CITY WELLNESS</small></div></div>
+  <label class="page-picker" for="page-picker"><span>Page</span><select id="page-picker" aria-label="Page to edit"><option value="home">Home</option></select></label>
   <div class="tools" aria-label="Page tools">
     <button class="accent" id="add" type="button"><b aria-hidden="true">＋</b> Add<span class="wide"> element</span></button>
     <button id="add-section" type="button" title="Add a page section"><b aria-hidden="true">＋</b> Section</button>
@@ -34,11 +37,11 @@
     <button type="button" id="preview" aria-pressed="false">Preview</button>
     <button type="button" id="more" aria-haspopup="menu" aria-expanded="false" aria-controls="menu">Draft<span class="wide"> tools</span> <span aria-hidden="true">▾</span></button>
     <button type="button" class="accent" id="save"><span class="wide">Save </span>draft</button>
-    <button type="button" class="publish-cta" id="publish">Publish<span class="wide"> homepage</span></button>
+    <button type="button" class="publish-cta" id="publish">Publish<span class="wide"> page</span></button>
   </div>
 </header>
-<div id="subbar" class="subbar"><div><span class="badge"><span>●</span> Editing sandbox</span><span class="hint" id="hint">Click an element to edit. Drag its grip without shifting other items.</span></div><span class="status-pair"><span id="publish-status" class="connection">Ready to edit</span><span class="saved" id="saved" role="status">Opening homepage…</span></span></div>
-<main id="stage" aria-label="Homepage editor canvas"><iframe id="canvas" title="New City Wellness homepage" src="canvas.html?v=therapy-cards1" sandbox="allow-same-origin allow-downloads allow-popups allow-popups-to-escape-sandbox"></iframe></main>
+<div id="subbar" class="subbar"><div><span class="badge"><span>●</span> Editing sandbox</span><span class="hint" id="hint">Click an element to edit. Drag its grip without shifting other items.</span></div><span class="status-pair"><span id="publish-status" class="connection">Ready to edit</span><span class="saved" id="saved" role="status">Opening page…</span></span></div>
+<main id="stage" aria-label="Page editor canvas"><iframe id="canvas" title="New City Wellness page canvas" sandbox="allow-same-origin allow-downloads allow-popups allow-popups-to-escape-sandbox"></iframe></main>
 <div id="outline" hidden></div>
 <div id="free-grid" aria-hidden="true" hidden></div>
 <div id="free-ghost" aria-hidden="true" hidden><span id="free-ghost-label"></span></div>
@@ -59,12 +62,12 @@
   <button type="button" role="menuitem" id="export-draft">Download editable draft</button>
   <button type="button" role="menuitem" id="import-draft">Import an editable draft</button>
   <button type="button" role="menuitem" id="export-html">Download standalone HTML</button>
-  <button type="button" role="menuitem" id="compare">View the untouched homepage copy ↗</button>
+  <button type="button" role="menuitem" id="compare">View original page ↗</button>
   <button type="button" role="menuitem" id="help">Editor guide</button>
   <button type="button" role="menuitem" id="reset" class="danger">Reset this draft</button>
 </div>
 <input type="file" id="import-file" accept=".json,application/json" hidden>
 <div id="toast" role="status" hidden></div>
-<noscript>Homepage Studio requires JavaScript. <a href="canvas.html?v=therapy-cards1">View the homepage copy.</a></noscript>
+<noscript>Page Studio requires JavaScript. <a href="canvas.html?v=therapy-cards1">View the homepage copy.</a></noscript>
 </body>
 </html>
