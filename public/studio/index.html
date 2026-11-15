@@ -8,11 +8,12 @@
 <title>New City Wellness · Homepage Studio</title>
 <link rel="stylesheet" href="studio.css?v=supabase1">
 <script src="canvas-behavior.js" defer></script>
-<script src="grid.js?v=preserve-layout1" defer></script>
-<script src="studio.js?v=preserve-layout1" defer></script>
+<script src="../homepage-studio/responsive-offsets.js?v=1" defer></script>
+<script src="grid.js?v=responsive-drag1" defer></script>
+<script src="studio.js?v=responsive-drag1" defer></script>
 <script src="studio-revision.js?v=publish2" defer></script>
 <script src="publisher-config.js" defer></script>
-<script src="publish.js?v=live-revision1" defer></script>
+<script src="publish.js?v=responsive-drag1" defer></script>
 </head>
 <body>
 <header class="studio-bar">
@@ -37,7 +38,7 @@
   </div>
 </header>
 <div id="subbar" class="subbar"><div><span class="badge"><span>●</span> Editing sandbox</span><span class="hint" id="hint">Click an element to edit. Drag its grip without shifting other items.</span></div><span class="status-pair"><span id="publish-status" class="connection">Ready to edit</span><span class="saved" id="saved" role="status">Opening homepage…</span></span></div>
-<main id="stage" aria-label="Homepage editor canvas"><iframe id="canvas" title="New City Wellness homepage" src="canvas.html?v=preserve-layout1" sandbox="allow-same-origin allow-downloads allow-popups allow-popups-to-escape-sandbox"></iframe></main>
+<main id="stage" aria-label="Homepage editor canvas"><iframe id="canvas" title="New City Wellness homepage" src="canvas.html?v=responsive-drag1" sandbox="allow-same-origin allow-downloads allow-popups allow-popups-to-escape-sandbox"></iframe></main>
 <div id="outline" hidden></div>
 <div id="free-grid" aria-hidden="true" hidden></div>
 <div id="free-ghost" aria-hidden="true" hidden><span id="free-ghost-label"></span></div>
@@ -63,6 +64,6 @@
 </div>
 <input type="file" id="import-file" accept=".json,application/json" hidden>
 <div id="toast" role="status" hidden></div>
-<noscript>Homepage Studio requires JavaScript. <a href="canvas.html?v=preserve-layout1">View the homepage copy.</a></noscript>
+<noscript>Homepage Studio requires JavaScript. <a href="canvas.html?v=responsive-drag1">View the homepage copy.</a></noscript>
 </body>
 </html>

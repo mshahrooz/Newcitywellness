@@ -115,6 +115,7 @@ const StudioPublish = (() => {
     if(!output.length||!root.querySelector('main[data-builder-page]'))throw Error('The homepage canvas is not ready.');
     const top=root.ownerDocument.createElement('div');
     output.forEach(n=>top.append(n.cloneNode(true)));
+    if(typeof StudioResponsiveOffsets!=='undefined')StudioResponsiveOffsets.strip(top);
     top.querySelectorAll('script,.bs-drag-ghost,template[data-bs-flow-origin]').forEach(n=>n.remove());
     top.querySelectorAll('input,textarea').forEach(n=>{n.removeAttribute('value');if(n.tagName==='TEXTAREA')n.textContent='';});
     top.querySelectorAll('.site-header,.header-nav,.nav-dropdown').forEach(n=>n.classList.remove('is-open','is-pinned','is-scrolled','open'));

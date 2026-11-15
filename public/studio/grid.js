@@ -113,7 +113,10 @@ function syncGridSize(layer){
   layer.classList.toggle('bs-mobile-stack',children.some(el=>!coords(el,'mobile')));
   surface.classList.toggle('bs-mobile-stack-surface',layer.classList.contains('bs-mobile-stack'));
 }
-function refreshFreeSizes(){D?.querySelectorAll('.bs-free-layer').forEach(syncGridSize);}
+function refreshFreeSizes(){
+  D?.querySelectorAll('.bs-free-layer').forEach(syncGridSize);
+  if(typeof StudioResponsiveOffsets!=='undefined')StudioResponsiveOffsets.recalc(D);
+}
 const preserveList=['font-family','font-weight','font-style','letter-spacing','line-height','text-transform','text-decoration','text-align','color','background-color','border-radius','object-fit','object-position','box-shadow'];
 function retainAppearance(n,reference=n){
   if(n.dataset.bsLook||n.hasAttribute('data-bs-new')||!n.dataset.bsKind)return;
@@ -311,7 +314,7 @@ function gridPanel(n){
   const z=zoneOf(n)||rowList()[0];if(!z)return;
   const begin=knownPosition(n,z,devicePlacement());
   const place=open('Grid placement','POSITION / SIZE / LAYER',n);
-  para('Dragging the grip moves only this element. These grid controls change how the element fits into its section and may affect spacing.');
+  para('Desktop drags carry over to tablet and mobile. Dragging on a smaller preview fine-tunes only that size. These grid controls may affect spacing.');
   const label=create('label',{},'Destination section');
   const selector=create('select',{'aria-label':'Destination section'});
   for(const option of allZones().filter(s=>!n.contains(s))){
@@ -398,17 +401,36 @@ function backgroundPanel(section){
 }
 function scrollToSelection(n){n.scrollIntoView({block:'nearest'});requestAnimationFrame(paint);}
 // Move the painted box, not its layout box. Old grid-place operations still replay unchanged.
+const dragScale={desktop:1,tablet:.75,mobile:.55};
+function dragValue(n,device,axis){
+  return parseFloat(n.style.getPropertyValue('--bs-drag-'+device+'-'+axis))||0;
+}
+function inheritedDrag(n,device){
+  return {x:dragValue(n,'desktop','x'),y:dragValue(n,'desktop','y')*dragScale[device]};
+}
 function dragOffset(n,device){
-  const read=axis=>parseFloat(n.style.getPropertyValue('--bs-drag-'+device+'-'+axis))||0;
-  return {x:read('x'),y:read('y')};
+  const shared=inheritedDrag(n,device);
+  if(device==='desktop')return shared;
+  return {x:shared.x+dragValue(n,device+'-adjust','x'),y:shared.y+dragValue(n,device+'-adjust','y')};
+}
+function dragOperation(n,device,p){
+  if(device==='desktop')return {kind:'drag-offset',id:idOf(n),device,p};
+  const base=inheritedDrag(n,device);
+  return {kind:'drag-offset',id:idOf(n),device,relative:true,
+    p:{x:Math.round((p.x-base.x)*10000)/10000,y:Math.round((p.y-base.y)*100)/100}};
 }
 function applyDragOffset(n,op){
-  if(!['desktop','tablet','mobile'].includes(op.device)||!canDragIndependently(n))return false;
-  const {x,y}=op.p||{};
+  if(!Object.hasOwn(dragScale,op.device)||!canDragIndependently(n))return false;
+  let {x,y}=op.p||{};
   if(!Number.isFinite(x)||!Number.isFinite(y))return false;
-  const key='--bs-drag-'+op.device;
-  n.style.setProperty(key+'-x',bounded(x,-100,100)+'vw');
-  n.style.setProperty(key+'-y',bounded(y,-GRID_CAP,GRID_CAP)+'px');
+  const desktop=op.device==='desktop';
+  if(!desktop&&!op.relative){
+    // Old drafts saved absolute offsets. Retain their appearance at this point in the edit history.
+    const base=inheritedDrag(n,op.device);x-=base.x;y-=base.y;
+  }
+  const key='--bs-drag-'+op.device+(desktop?'':'-adjust');
+  n.style.setProperty(key+'-x',bounded(x,desktop?-100:-200,desktop?100:200)+'vw');
+  n.style.setProperty(key+'-y',bounded(y,desktop?-GRID_CAP:-2*GRID_CAP,desktop?GRID_CAP:2*GRID_CAP)+'px');
   n.classList.add('bs-offset-item');
   // CSS transforms do not apply to regular inline boxes. Keep them inline and offset their paint instead.
   if(D.defaultView.getComputedStyle(n).display==='inline'&&!n.matches('img,video,input,textarea,select')){
@@ -422,7 +444,11 @@ function canDragIndependently(n){
 }
 function offsetDragStart(n){
   const win=D.defaultView, device=devicePlacement(), r=n.getBoundingClientRect();
-  return {device,r,base:dragOffset(n,device),scrollX:win.scrollX,scrollY:win.scrollY};
+  const base=dragOffset(n,device);
+  const safeX=n.style.getPropertyValue('--bs-safe-drag-x'),safeY=n.style.getPropertyValue('--bs-safe-drag-y');
+  if(safeX)base.x=parseFloat(safeX)*100/(win.innerWidth||1200);
+  if(safeY)base.y=parseFloat(safeY);
+  return {device,r,base,scrollX:win.scrollX,scrollY:win.scrollY};
 }
 function offsetDragTarget(n,start,dx,dy,snap=snapGrid){
   const win=D.defaultView, root=D.documentElement;
@@ -552,7 +578,7 @@ function commitPick(e){
   if(item.node&&canDragIndependently(item.node)){
     const start=offsetDragStart(item.node);
     const {p,device}=offsetDragTarget(item.node,start,e.clientX-start.r.left,e.clientY-start.r.top,gridMode==='grid'&&snapGrid);
-    if(record({kind:'drag-offset',id:idOf(item.node),device,p}))choose(item.node,false);
+    if(record(dragOperation(item.node,device,p)))choose(item.node,false);
     return true;
   }
   const dims=item.node?measure(item.node):{width:item.kind==='image'?240:250,height:62};
