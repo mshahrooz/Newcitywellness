@@ -13,6 +13,34 @@ TAGS = set("a article body br builder-copy button circle div footer form h1 h2 h
 BLOCKED_ATTRS = {"srcdoc", "action", "formaction", "ping", "nonce", "integrity", "contenteditable", "autofocus"}
 STYLE_BLOCKED = re.compile(r"url\s*\(|expression\s*\(|@import|javascript\s*:|\\|[<>]", re.I)
 ASSET_PATH = re.compile(r"(?:images/|media/homepage-studio/)[a-zA-Z0-9_./-]+$")
+EMBED_SANDBOX = {
+    "youtube": "allow-scripts allow-same-origin allow-presentation",
+    "remote": "allow-scripts allow-forms allow-presentation",
+    "html": "allow-scripts",
+}
+
+
+def studio_embed(attrs):
+    kind, src = attrs.get("data-ncw-embed"), attrs.get("src", "")
+    title = attrs.get("title", "")
+    if (kind not in EMBED_SANDBOX or attrs.get("sandbox") != EMBED_SANDBOX[kind]
+            or not title or not title.strip() or len(title) > 160
+            or attrs.get("referrerpolicy") != "strict-origin-when-cross-origin"
+            or attrs.get("allow") != "encrypted-media; fullscreen; picture-in-picture"):
+        return False
+    if kind == "youtube":
+        return bool(re.fullmatch(r"https://www\.youtube-nocookie\.com/embed/[A-Za-z0-9_-]{11}(?:\?start=[1-9][0-9]{0,5})?", src))
+    if kind == "html":
+        return len(src) <= 125000 and bool(re.fullmatch(r"data:text/html;charset=utf-8;base64,[A-Za-z0-9+/]+={0,2}", src))
+    if len(src) > 4096 or not src.startswith("https://") or re.search(r"[\x00-\x20\x7f\\]", src):
+        return False
+    try:
+        url = urlsplit(src)
+        return bool(url.hostname and url.username is None and url.password is None and url.port != 0)
+    except ValueError:
+        return False
+
+
 TREE_BUILDERS = (
     "src/content/editor-content.json",
     "src/content/grapes-designs.json",
@@ -89,8 +117,10 @@ class StudioPage(HTMLParser):
         self.main += tag == "main"
         self.form += tag == "form"
         forms = {"home": "contact-form", "faqs": "faq-form", "contact-us": "contact-page-form"}
-        if tag == "iframe" and (not self.embed or a.get("src") != self.embed):
-            raise ValueError("Unapproved Studio embed")
+        if tag == "iframe":
+            original = self.embed and a.get("src") == self.embed and not a.get("data-ncw-embed")
+            if len(a) != len(attrs) or not (original or studio_embed(a)):
+                raise ValueError("Unsupported Studio embed")
         if tag == "form" and not ((self.key in forms and forms[self.key] in (a.get("class") or "").split())
                                    or (self.key == "conditions-treated" and a.get("role") == "search")):
             raise ValueError("Only the existing contact form type is supported")
@@ -102,7 +132,7 @@ class StudioPage(HTMLParser):
                 raise ValueError("Unexpected CSS in homepage styles")
             if key in {"src", "poster"}:
                 if tag == "iframe":
-                    if key != "src" or not self.embed or v != self.embed:
+                    if key != "src":
                         raise ValueError("Unapproved Studio embed")
                 else:
                     self.asset(v)
@@ -191,6 +221,7 @@ def apply(root, output, prefix, key="home", route="", embed=None):
 
 def emit_studio(root, output, prefix):
     pages = registry(root, "PAGES")
+    (output / "studio/embeds.js").write_bytes((root / "supabase/functions/publish-homepage/embeds.js").read_bytes())
     embeds = registry(root, "EMBEDS")
     base = escape(prefix.rstrip("/") + "/", quote=True)
     css = output / "studio/canvas-edits.css"

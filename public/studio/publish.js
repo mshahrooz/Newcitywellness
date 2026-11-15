@@ -173,7 +173,8 @@ const StudioPublish = (() => {
         if(node.matches('.brand[href="#"], .footer-brand[href="#"]')||node.getAttribute('href')==='#'&&node.textContent.trim()==='Home')node.setAttribute('href',BASE);
       }
       if(tag==='iframe'){
-        if(typeof STUDIO_EMBEDS==='undefined'||!Object.hasOwn(STUDIO_EMBEDS,key)||node.getAttribute('src')!==STUDIO_EMBEDS[key])throw Error('This page has an unapproved embed.');
+        const original=typeof STUDIO_EMBEDS!=='undefined'&&Object.hasOwn(STUDIO_EMBEDS,key)&&node.getAttribute('src')===STUDIO_EMBEDS[key]&&!node.hasAttribute('data-ncw-embed');
+        if(!original&&!StudioEmbeds.safeFrame(name=>node.getAttribute(name)))throw Error('This page has an unsupported embed.');
       }else for(const attr of ['src','poster']){
         if(node.hasAttribute(attr))node.setAttribute(attr,await media(node.getAttribute(attr)));
       }

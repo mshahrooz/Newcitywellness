@@ -1,7 +1,9 @@
 /* Scoped additions. An untouched homepage has no nodes with these classes. */
 .bs-row{background:var(--bs-row-color,transparent)}
 .ncw .bs-row>.bs-row-inner{width:min(1320px,calc(100% - 64px));margin-inline:auto;padding-block:24px}
-.ncw .bs-grid,.ncw .bs-pair{display:grid;grid-template-columns:repeat(var(--bs-cols,2),minmax(0,1fr));gap:var(--bs-gap,18px);align-items:start}
+.ncw .bs-grid,.ncw .bs-pair{display:grid;gap:var(--bs-gap,18px);align-items:start}
+.ncw .bs-grid{grid-template-columns:var(--bs-tracks,repeat(var(--bs-cols,2),minmax(0,1fr)))}
+.ncw .bs-pair{grid-template-columns:repeat(2,minmax(0,1fr))}
 .bs-col,.bs-pair>*{min-width:0}
 .bs-col:empty::after{content:"";display:block;min-height:32px}
 .bs-new{margin:0!important;max-width:100%;overflow-wrap:anywhere;padding:12px 16px}
@@ -86,6 +88,19 @@
 .ncw .bs-captioned figcaption{margin-block-start:.45em;font-size:.85em;white-space:pre-line}
 .ncw .bs-video{display:block;width:100%;height:auto;max-height:70vh;object-fit:contain;background:#152c25;border-radius:5px}
 .ncw [hidden]{display:none!important}
+
+/* Editor affordances stay off the public site. */
+.bs-editor-mode .bs-embed-frame{pointer-events:none}
+.bs-editor-mode .ncw .bs-grid>.bs-col{outline:1px dashed #45866b80;outline-offset:-1px;min-height:38px}
+.bs-editor-mode .ncw .bs-grid>.bs-col:empty::after{content:"Add here";min-height:38px;display:grid;place-items:center;color:#34684f;font:600 11px system-ui}
+
+/* Embedded media and adjustable column widths. */
+.ncw .bs-embed-frame{display:block;width:100%;height:var(--bs-embed-height,auto);aspect-ratio:16/9;border:0;background:#172d25;border-radius:6px}
+@media(min-width:768px){
+  .ncw .bs-grid.bs-many-columns{min-width:calc(var(--bs-cols,1)*(100px + var(--bs-gap,18px)))}
+  .ncw .bs-row:has(>.bs-many-columns){overflow-x:auto}
+}
+@media(max-width:767px){.ncw .bs-embed-frame{max-height:75vh}}
 
 /* Desktop offsets are shared. Smaller screens can add their own adjustments. */
 .ncw .bs-offset-item{
