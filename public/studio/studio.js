@@ -14,7 +14,9 @@ const create=(tag,attrs={},label='')=>{const el=document.createElement(tag);for(
 const inside=(p,s)=>p?.closest(s);
 const isExisting=e=>!!e&&!e.closest('[data-bs-new]');
 const rowTitle=n=>n?.dataset.bsLabel||labels[n?.getAttribute('data-builder-section')]||'Section';
-const titleOf=n=>n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-zone')?rowTitle(n):n.hasAttribute('data-bs-column')?'Column':({image:'Image',button:'Button',document:'Document',title:'Heading',text:'Paragraph',link:'Link',component:'Component',detail:'Detail',form:'Form',field:'Form field',video:'Video'})[n.dataset.bsKind]||'Element';
+const therapyCard=n=>n?.closest('.therapy-card');
+const therapyPhoto=n=>n?.matches('.therapy-card .therapy-image > img');
+const titleOf=n=>n.matches('.therapy-card')?'Therapy card':n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-zone')?rowTitle(n):n.hasAttribute('data-bs-column')?'Column':({image:'Image',button:'Button',document:'Document',title:'Heading',text:'Paragraph',link:'Link',component:'Component',detail:'Detail',form:'Form',field:'Form field',video:'Video'})[n.dataset.bsKind]||'Element';
 const rowList=()=>[...main().children].filter(x=>x.hasAttribute('data-bs-row'));
 const unique=()=> 'new-'+crypto.randomUUID();
 const asString=(v,len=3000)=>typeof v==='string'?v.slice(0,len):'';
@@ -431,8 +433,15 @@ function useKeys(){
   }
   document.addEventListener('keydown',handle);D.addEventListener('keydown',handle);
 }
-function targetFrom(el){
+function targetFrom(el,wholeCard=false){
+  const card=therapyCard(el);
+  if(card&&wholeCard)return card;
   const exact=el.closest('[data-bs-kind]');
+  if(card){
+    if(therapyPhoto(exact)||exact?.matches('h3'))return exact;
+    const photo=el.closest('.therapy-image')?.querySelector('img[data-bs-kind="image"]');
+    return photo||card;
+  }
   if(exact)return exact;
   const col=el.closest('[data-bs-column]');if(col)return col;
   return el.closest('[data-bs-row],[data-bs-zone]');
@@ -463,8 +472,36 @@ function pickTarget(){
   for(const [side,t] of [['before','Above / inside'],['after','Below'],['left','To the left'],['right','To the right']])button(actions,t,()=>commit(side));
   place();
 }
+function replaceImageControl(parent,n,label='Replace image'){
+  input(parent,label+' (up to 2 MB)','',{type:'file',accept:'image/jpeg,image/png,image/webp,image/avif,image/gif'},el=>{
+    fileRead(el.files[0],'image',value=>{
+      if(n.isConnected&&record({kind:'image',id:idOf(n),value}))flash('Image replaced in your draft.');
+    });
+    el.value='';
+  },'change');
+}
+function dragResetControl(parent,n){
+  if(!n.classList.contains('bs-offset-item'))return;
+  const device=devicePlacement();
+  button(parent,device==='desktop'?'Reset shared drag position':'Use desktop drag position',()=>{
+    record({kind:'drag-offset',id:idOf(n),device:devicePlacement(),relative:true,p:{x:0,y:0}});
+    choose(n);
+  },{id:'reset-drag-position'});
+}
 function openSettings(n) {
   if(!n?.isConnected)return;
+  if(n.matches('.therapy-card')){
+    const place=open('Therapy card','CARD SETTINGS',n);
+    const title=n.querySelector('h3[data-bs-kind="title"]'), photo=n.querySelector('.therapy-image img[data-bs-kind="image"]');
+    if(title)para(textCopy(title));
+    para('Drag the grip to move the whole card, including its image. The other cards stay in place.');
+    if(photo)replaceImageControl(body,photo,'Replace card image');
+    const actions=group();
+    if(photo)button(actions,'Select card image',()=>choose(photo));
+    if(title)button(actions,'Edit card heading',()=>choose(title));
+    dragResetControl(actions,n);
+    place();return;
+  }
   if(n.hasAttribute('data-bs-column')){
     const place=open('Column settings','ROW / COLUMN',n);
     para('Use Add element to place content in this column. New row columns stack on phones.');
@@ -513,7 +550,8 @@ function openSettings(n) {
   }
   const place=open(titleOf(n),'ELEMENT SETTINGS',n);
   if(k==='image'){
-    input(body,'Replace image (up to 2 MB)','',{type:'file',accept:'image/jpeg,image/png,image/webp,image/avif,image/gif'},el=>fileRead(el.files[0],k,v=>{if(n.isConnected&&record({kind:'image',id:idOf(n),value:v}))paint();}),'change');
+    replaceImageControl(body,n);
+    if(therapyPhoto(n))para('Drag the image grip to adjust the crop. Select the whole card to move it with its image.');
     const token=Symbol();input(body,'Alternative text',n.dataset.bsAlt??e?.alt??'',{maxlength:250},el=>record({kind:'alt',id:idOf(n),value:el.value},token));
   }else{
     const token=Symbol(), current=textCopy(e);
@@ -539,19 +577,13 @@ function openSettings(n) {
     input(padGroup,edge[0].toUpperCase()+edge.slice(1),p?Number.parseFloat(p):'',{type:'number',min:0,max:220,placeholder:isExisting(n)?'Auto':(edge==='top'||edge==='bottom'?'12':'16')},el=>record({kind:'pad',id:idOf(n),edge,value:el.value},token));
   }
   const actions=group();
-  button(actions,'Grid placement',()=>gridPanel(n));
-  button(actions,'Duplicate',()=>cloneSelected(n));
+  if(!therapyPhoto(n)){button(actions,'Grid placement',()=>gridPanel(n));button(actions,'Duplicate',()=>cloneSelected(n));}
   if(n.dataset.bsMove==='yes')button(actions,'Move to…',()=>pickTarget(n));
-  if(n.classList.contains('bs-offset-item')){
-    const device=devicePlacement();
-    button(actions,device==='desktop'?'Reset shared drag position':'Use desktop drag position',()=>{
-      record({kind:'drag-offset',id:idOf(n),device:devicePlacement(),relative:true,p:{x:0,y:0}});
-      choose(n);
-    },{id:'reset-drag-position'});
-  }
-  button(actions,'Add nearby',()=>startAdd(n));
+  dragResetControl(actions,n);
+  if(therapyCard(n))button(actions,'Select whole card',()=>choose(therapyCard(n)));
+  if(!therapyPhoto(n))button(actions,'Add nearby',()=>startAdd(n));
   const parent=n.parentElement?.closest('[data-bs-kind],[data-bs-column]');
-  if(parent)button(actions,'Select parent '+titleOf(parent).toLowerCase(),()=>choose(parent));
+  if(parent&&!therapyCard(n))button(actions,'Select parent '+titleOf(parent).toLowerCase(),()=>choose(parent));
   if(rowOf(n))button(actions,'Section settings',()=>choose(rowOf(n)));
   if(n.hasAttribute('data-bs-new')||n.hasAttribute('data-bs-copy'))button(actions,'Remove',()=>{
     record({kind:'remove',id:idOf(n)});active=null;close();paint();
@@ -646,7 +678,9 @@ function finishDrag(commit=false){
   if(choice&&gesture.moved){
     const {device,p}=choice;
     if(record(dragOperation(gesture.node,device,p)))choose(gesture.node,false);
-  }else if(!gesture.moved)gridPanel(gesture.node);
+  }else if(!gesture.moved){
+    if(gesture.node.matches('.therapy-card')||therapyPhoto(gesture.node))openSettings(gesture.node);else gridPanel(gesture.node);
+  }
 }
 $('drag').addEventListener('pointerdown',e=>{
   const n=now();
@@ -659,7 +693,9 @@ $('drag').addEventListener('pointerdown',e=>{
 $('drag').addEventListener('pointermove',e=>updateDrag(e.clientX,e.clientY));
 $('drag').addEventListener('pointerup',e=>{if(drag?.moved)updateDrag(e.clientX,e.clientY);finishDrag(true);});
 $('drag').addEventListener('pointercancel',()=>finishDrag());
-$('drag').addEventListener('click',e=>{if(e.detail===0&&canDragIndependently(now()))gridPanel(now());});
+$('drag').addEventListener('click',e=>{if(e.detail===0&&canDragIndependently(now())){
+  const n=now();if(n.matches('.therapy-card')||therapyPhoto(n))openSettings(n);else gridPanel(n);
+}});
 $('selection-settings').onclick=()=>now()&&openSettings(now());
 $('selection-add').onclick=()=>startAdd();
 $('selection-duplicate').onclick=()=>now()&&cloneSelected(now());
@@ -761,7 +797,8 @@ function boot(){
     if(anchor)e.preventDefault();
     if(gridPick){e.preventDefault();commitPick(e);return;}
     if(e.target.closest('input,textarea,select,form button'))e.preventDefault();
-    const n=e.altKey?e.target.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row]')||targetFrom(e.target):targetFrom(e.target);
+    const n=therapyCard(e.target)?targetFrom(e.target,e.altKey):e.altKey
+      ?e.target.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row]')||targetFrom(e.target):targetFrom(e.target);
     if(placement){
       if(n&&(n.dataset.bsMove==='yes'||n.hasAttribute('data-bs-column'))){const kind=placement;placement=null;$('hint').textContent='Click text or an image to edit it.';choose(n,false);locationChoices(n,kind);}
       else flash('Select a heading, paragraph, movable button or custom column.');

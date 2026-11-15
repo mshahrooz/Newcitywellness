@@ -97,3 +97,12 @@
     --bs-active-drag-y:var(--bs-drag-mobile-y,calc(var(--bs-drag-desktop-y,0px) * .55 + var(--bs-drag-mobile-adjust-y,0px)))
   }
 }
+
+/* An independently dragged therapy photo pans inside its fixed-size image frame. */
+.ncw .therapy-card .therapy-image > img.bs-offset-item{
+  translate:clamp(-12%,var(--bs-active-drag-x),12%) clamp(-12%,var(--bs-active-drag-y),12%)!important;
+  scale:1.26
+}
+
+/* The decorative tint must not intercept photo selection. */
+.ncw .therapy-image::after{pointer-events:none}

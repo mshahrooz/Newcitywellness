@@ -448,6 +448,12 @@ function offsetDragStart(n){
   const safeX=n.style.getPropertyValue('--bs-safe-drag-x'),safeY=n.style.getPropertyValue('--bs-safe-drag-y');
   if(safeX)base.x=parseFloat(safeX)*100/(win.innerWidth||1200);
   if(safeY)base.y=parseFloat(safeY);
+  if(n.matches('.therapy-card .therapy-image > img')){
+    const crop=n.parentElement.getBoundingClientRect(),winWidth=win.innerWidth||1200;
+    base.x=bounded(base.x,-12*crop.width/winWidth,12*crop.width/winWidth);
+    base.y=bounded(base.y,-.12*crop.height,.12*crop.height);
+    return {device,r:crop,base,crop:true,scrollX:win.scrollX,scrollY:win.scrollY};
+  }
   return {device,r,base,scrollX:win.scrollX,scrollY:win.scrollY};
 }
 function offsetDragTarget(n,start,dx,dy,snap=snapGrid){
@@ -455,6 +461,13 @@ function offsetDragTarget(n,start,dx,dy,snap=snapGrid){
   const width=win.innerWidth||1200;
   const px=start.r.left+start.scrollX-win.scrollX;
   const py=start.r.top+start.scrollY-win.scrollY;
+  if(start.crop){
+    const {width:w,height:h}=start.r;
+    const x=bounded(start.base.x*width/100+dx,-w*.12,w*.12);
+    const y=bounded(start.base.y+dy,-h*.12,h*.12);
+    return {left:px+x,top:py+y,width:w,height:h,device:start.device,
+      p:{x:Math.round(x/width*1000000)/10000,y:Math.round(y*100)/100}};
+  }
   let left=0,right=root.clientWidth||width,top=-win.scrollY,bottom=Math.max(root.scrollHeight,win.innerHeight)-win.scrollY;
   for(let el=n.parentElement;el&&el!==root;el=el.parentElement){
     const css=win.getComputedStyle(el);
