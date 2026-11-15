@@ -13,6 +13,7 @@ const StudioResponsiveOffsets = (() => {
     }
     if(win.innerWidth>900||!win.innerWidth)return;
     for(const el of nodes){
+      if(el.matches?.('.therapy-card .therapy-image > img'))continue;
       const css=win.getComputedStyle(el);
       const inline=el.classList.contains('bs-offset-inline');
       const values=inline?[css.left,css.top]:css.translate?.split(/\s+/)||[];
