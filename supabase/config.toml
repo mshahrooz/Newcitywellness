@@ -1,0 +1,4 @@
+project_id = "newcitywellness"
+
+[functions.publish-homepage]
+verify_jwt = true

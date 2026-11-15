@@ -1,0 +1,458 @@
+'use strict';
+/* The editor is public. Live publishing requires a Supabase publisher account. */
+const StudioPublish = (() => {
+  const OWNER='mshahrooz';
+  const REPO='Newcitywellness';
+  const API='https://api.github.com';
+  const REPO_API='/repos/'+OWNER+'/'+REPO;
+  const LIVE='https://'+OWNER+'.github.io/'+REPO+'/';
+  const BASE='/'+REPO+'/';
+  const SOURCE='src/content/homepage-studio-published.json';
+  const DRAFT='public/homepage-studio/draft.json';
+  const MAIN_REF=REPO_API+'/git/ref/heads/main';
+  const SITE_ORIGIN=new URL(LIVE).origin;
+  const MAX_UPLOAD=24*1024*1024;
+  let publisherSession=null, loadedSource=null;
+  const VALID_SHA=/^[0-9a-f]{40}$/;
+  const SUPPORT=['scripts/apply-homepage-studio.py','public/homepage-studio/layout-v1.css','public/homepage-studio/homepage-v1.js'];
+  const GUARDED=[
+    'src/content/editor-content.json','src/content/grapes-designs.json',
+    'src/app/page.tsx','src/app/site-header.tsx','src/app/site-footer.tsx','src/app/layout.tsx',
+    'src/app/builder-page.tsx','src/app/editor-blocks.tsx','src/app/testimonial-slider.tsx',
+    'src/app/wellness.css','src/app/globals.css','src/app/local-fonts.css','src/app/builder-page.css','src/app/clinic-footer.css',
+    'src/app/floating-booking-link.tsx','src/app/floating-booking-link.css',
+  ];
+  const mediaMap={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif','image/gif':'gif','application/pdf':'pdf','video/mp4':'mp4','video/webm':'webm'};
+  const safeMedia=/^(?:images\/|media\/homepage-studio\/)[A-Za-z0-9_./-]+$/;
+  const SAMPLE_TAGS=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small'.split(' '));
+  const utf8=new TextEncoder(), decode=new TextDecoder();
+  const checkStyle=/(?:url\s*\(|expression\s*\(|@import|javascript\s*:|\\|[<>])/i;
+  let activeBaseline=null, busy=false;
+  const cap=(n,max)=>{if(n>max)throw Error('The publication is too large. Compress the uploaded media and try again.');};
+  function pack(view){
+    const chunks=[];
+    for(let i=0;i<view.length;i+=16384)chunks.push(String.fromCharCode(...view.subarray(i,i+16384)));
+    return btoa(chunks.join(''));
+  }
+  const unpack=s=>Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0));
+  const sha256=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
+  const details={LIVE,REPO_API,GUARDED,SUPPORT,SOURCE,DRAFT};
+  function pathUrl(path){return path.split('/').map(encodeURIComponent).join('/');}
+  async function gh(path){
+    let res;
+    try{
+      res=await fetch(API+path,{cache:'no-store',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',
+        headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}});
+    }catch{throw Error('Could not reach GitHub to check the homepage. Your draft is still here.');}
+    if(!res.ok){
+      if(res.status===429||res.status===403&&res.headers.get('x-ratelimit-remaining')==='0')throw Error('GitHub is temporarily limiting public requests. Save your draft and try again later.');
+      throw Error('GitHub could not verify the homepage ('+res.status+'). Your draft is still here.');
+    }
+    return res.json();
+  }
+  const fileAt=(path,parent)=>gh(REPO_API+'/contents/'+pathUrl(path)+'?ref='+encodeURIComponent(parent));
+  async function status(includeGuard=false){
+    const ref=await gh(MAIN_REF);
+    const parent=ref.object.sha;
+    if(!VALID_SHA.test(parent))throw Error('GitHub returned an invalid branch reference.');
+    const commit=await gh(REPO_API+'/git/commits/'+parent);
+    const snapshot=await gh(REPO_API+'/git/trees/'+commit.tree.sha+'?recursive=1');
+    if(snapshot.truncated)throw Error('GitHub did not return the full site tree. No homepage was published.');
+    const tree=new Map(snapshot.tree.filter(i=>i.type==='blob').map(i=>[i.path,i.sha]));
+    if(!SUPPORT.every(name=>tree.has(name)))throw Error('The Homepage Studio connection is not yet installed in GitHub.');
+    if(!tree.has('package.json'))throw Error('The Pages build configuration is missing.');
+    const rawPackage=await fileAt('package.json',parent);
+    if(!JSON.parse(decode.decode(unpack(rawPackage.content))).scripts?.['build:pages']?.includes('apply-homepage-studio.py'))throw Error('The homepage build connection is not enabled.');
+    const baseline={
+      parent,tree,source:tree.get(SOURCE)||null,
+      signature:GUARDED.map(name=>[name,tree.get(name)]),
+    };
+    if(includeGuard){
+      const bytes=await Promise.all(GUARDED.map(async name=>{
+        const file=await fileAt(name,parent);
+        if(!file.content||file.sha!==tree.get(name))throw Error('Could not verify '+name+'. No changes were submitted.');
+        return [name,await sha256(unpack(file.content))];
+      }));
+      baseline.guard=Object.fromEntries(bytes);
+    }
+    return baseline;
+  }
+  function canonicalAsset(path){
+    const p=decodeURIComponent(path).replace(/^\/+|\/+$/g,'');
+    if(!safeMedia.test(p)||p.split('/').some(n=>!n||n==='..'||n==='.'))throw Error('The draft contains an invalid local media path.');
+    return p;
+  }
+  async function fromData(value){
+    const m=/^data:([a-z/+-]+);base64,([A-Za-z0-9+/=]+)$/.exec(value);
+    if(!m||!mediaMap[m[1]])throw Error('A file in the draft is not a supported local image, PDF, or video.');
+    const bytes=unpack(m[2]);
+    cap(bytes.byteLength,20*1024*1024);
+    const ext=mediaMap[m[1]],digest=await sha256(bytes);
+    return {bytes,encoded:m[2],name:digest.slice(0,32)+'.'+ext,ext};
+  }
+  function safeLink(value){
+    if(!value||/[\x00-\x20\\]/.test(value)||value.startsWith('//'))throw Error('A button or link has an invalid address.');
+    if(value==='#')return value;
+    if(value[0]==='#')return value;
+    const url=new URL(value,LIVE);
+    if(!['http:','https:','mailto:','tel:'].includes(url.protocol)||url.username||url.password)throw Error('A button or link has an invalid address.');
+    if(url.origin===new URL(LIVE).origin&&url.pathname.startsWith(BASE)){
+      return url.pathname+url.search+url.hash;
+    }
+    return url.href;
+  }
+  async function prepare(root,revision,context){
+    const output=Array.from(root.querySelectorAll('.ncw,.floating-booking-link')).filter(n=>n.parentNode===root);
+    if(!output.length||!root.querySelector('main[data-builder-page]'))throw Error('The homepage canvas is not ready.');
+    const top=root.ownerDocument.createElement('div');
+    output.forEach(n=>top.append(n.cloneNode(true)));
+    top.querySelectorAll('script,.bs-drag-ghost,template[data-bs-flow-origin]').forEach(n=>n.remove());
+    top.querySelectorAll('input,textarea').forEach(n=>{n.removeAttribute('value');if(n.tagName==='TEXTAREA')n.textContent='';});
+    top.querySelectorAll('.site-header,.header-nav,.nav-dropdown').forEach(n=>n.classList.remove('is-open','is-pinned','is-scrolled','open'));
+    top.querySelectorAll('.mobile-toggle,.nav-dropdown-toggle').forEach(n=>n.setAttribute('aria-expanded','false'));
+    top.querySelectorAll('.mobile-toggle').forEach(n=>{n.setAttribute('aria-label','Open menu');n.querySelector('path')?.setAttribute('d','M4 7h16M4 12h16M4 17h16');});
+    const files=new Map(), cache=new Map();
+    const clonedOperations=revision.operations.map(op=>({...op}));
+    async function media(value,isDoc=false){
+      if(!value||value==='#')return value;
+      if(value.startsWith('data:')){
+        if(!cache.has(value))cache.set(value,(async()=>{
+          const f=await fromData(value);
+          if(isDoc&&f.ext!=='pdf')throw Error('Only a PDF can be published as an attached document.');
+          const path=(['png','jpg','webp','avif','gif'].includes(f.ext)?'images/homepage-studio/':'media/homepage-studio/')+f.name;
+          files.set('public/'+path,f.encoded);
+          return BASE+path;
+        })());
+        return cache.get(value);
+      }
+      const here=new URL(context?.canvas||new URL('canvas.html',location.href)), url=new URL(value,here);
+      if((url.origin!==here.origin&&url.origin!==new URL(LIVE).origin)||url.search||url.hash){
+        throw Error('Linked background media must be uploaded before publishing. Download the image or MP4/WebM and upload it using Section settings, then try again.');
+      }
+      const path=canonicalAsset(url.pathname.startsWith(BASE)?url.pathname.slice(BASE.length):url.pathname);
+      if(!context?.tree?.has('public/'+path))throw Error('The required site asset is missing from GitHub: '+path);
+      return BASE+path;
+    }
+    for(const node of top.querySelectorAll('*')){
+      const tag=node.localName;
+      if(!SAMPLE_TAGS.has(tag))throw Error('This element cannot be published: '+tag);
+      for(const attr of [...node.attributes]){
+        const key=attr.name, value=attr.value;
+        if(key.startsWith('on')||['srcdoc','formaction','action','ping','nonce','integrity','contenteditable','autofocus'].includes(key))node.removeAttribute(key);
+        else if(key.startsWith('data-bs-')&&!['data-bs-bg','data-bs-look','data-bs-coord-mobile'].includes(key))node.removeAttribute(key);
+        else if(key==='style'&&checkStyle.test(value))throw Error('The draft contains an unsupported design setting.');
+      }
+      if(node.hasAttribute('href')){
+        const href=node.getAttribute('href');
+        node.setAttribute('href',href.startsWith('data:')?await media(href,true):safeLink(href));
+        if(node.getAttribute('target')==='_blank'){
+          const link=node.getAttribute('href');
+          const external=/^https?:\/\//.test(link);
+          if(external||node.classList.contains('floating-booking-link'))node.setAttribute('rel','noopener noreferrer');
+          else{node.removeAttribute('target');node.removeAttribute('rel');}
+        }
+        if(node.matches('.brand[href="#"], .footer-brand[href="#"]')||node.getAttribute('href')==='#'&&node.textContent.trim()==='Home')node.setAttribute('href',BASE);
+      }
+      for(const key of ['src','poster']){
+        if(node.hasAttribute(key))node.setAttribute(key,await media(node.getAttribute(key)));
+      }
+      if(node.hasAttribute('srcset')){
+        const parts=node.getAttribute('srcset').split(',');
+        const rebuilt=[];
+        for(const part of parts){const [url,width]=part.trim().split(/\s+/);rebuilt.push(await media(url)+(width?' '+width:''));}
+        node.setAttribute('srcset',rebuilt.join(', '));
+      }
+    }
+    for(const op of clonedOperations){
+      if((['image','file'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')){
+        // Preserve full edit history but upload only media referenced by the final canvas.
+        if(cache.has(op.value)){
+          const name=(await cache.get(op.value)).slice(BASE.length);
+          op.value={studioAsset:name};
+        }
+      }
+    }
+    // Intermediate media overwritten later should not bloat the public repository or expose unused uploads.
+    const ops=clonedOperations.filter(op=>!((['image','file'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')));
+    const portable={version:1,page:'new-city-wellness-homepage',operations:ops};
+    const plain=utf8.encode(JSON.stringify(portable)+'\n');
+    let draftText;
+    if(typeof CompressionStream==='function'){
+      const zip=new Blob([plain]).stream().pipeThrough(new CompressionStream('gzip'));
+      draftText=JSON.stringify({encoding:'gzip-base64',data:pack(new Uint8Array(await new Response(zip).arrayBuffer()))})+'\n';
+    }else draftText=decode.decode(plain);
+    const content=JSON.stringify({version:1,id:crypto.randomUUID(),baseRevision:context.parent,guard:context.guard,draftSha256:await sha256(utf8.encode(draftText)),html:top.innerHTML})+'\n';
+    cap(utf8.encode(content).length,850000);cap(utf8.encode(draftText).length,850000);
+    let size=0;
+    for(const value of files.values())size+=value.length*.75;
+    cap(size,65*1024*1024);
+    return {content,draftText,files,id:JSON.parse(content).id};
+  }
+  async function connect(){
+    try{
+      const s=await status();
+      activeBaseline=s;
+      $('publish-status').textContent=s.source?'Connected to GitHub Pages':'GitHub Pages connected';
+      if(!s.source)return;
+
+      const rawPub=await fileAt(SOURCE,s.parent);
+      const pub=JSON.parse(decode.decode(unpack(rawPub.content)));
+      if(!s.signature.every(([name,h])=>h&&pub.guard?.[name]))throw Error('The published homepage could not be matched to its source.');
+      const draft=await fileAt(DRAFT,s.parent);
+      const bytes=unpack(draft.content);
+      if(await sha256(bytes)!==pub.draftSha256)throw Error('The published homepage draft did not pass its integrity check.');
+      let assetContext=JSON.parse(decode.decode(bytes));
+      if(assetContext.encoding==='gzip-base64'){
+        const stream=new Blob([unpack(assetContext.data)]).stream().pipeThrough(new DecompressionStream('gzip'));
+        assetContext=JSON.parse(await new Response(stream).text());
+      }
+      const visible=await fetch(LIVE+'?studio_revision='+encodeURIComponent(pub.id),{cache:'no-store',signal:AbortSignal.timeout(10000)}).then(r=>r.ok?r.text():'').catch(()=>'');
+      activeBaseline.live=visible.includes('name="homepage-studio-publication" content="'+pub.id+'"');
+      if(!activeBaseline.live)$('publish-status').textContent='Homepage commit on GitHub';
+      activeBaseline.publicDraft=assetContext;
+
+    }catch(e){
+      $('publish-status').textContent='Publishing check unavailable';
+    }
+  }
+  async function remoteDraft(){
+    if(!activeBaseline?.publicDraft)throw Error('There is no saved Studio publication to load yet.');
+    const ops=await Promise.all(activeBaseline.publicDraft.operations.map(async op=>{
+      if(!op.value||typeof op.value!=='object'||!op.value.studioAsset)return op;
+      const path=canonicalAsset(op.value.studioAsset),ext=path.split('.').pop();
+      const type=Object.keys(mediaMap).find(k=>mediaMap[k]===ext);
+      if(!type)throw Error('The published draft contains an unknown media format.');
+      let answer=await fetch(LIVE+path,{cache:'force-cache'}).catch(()=>null);
+      if(!answer?.ok)answer=await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/'+activeBaseline.parent+'/'+pathUrl('public/'+path),{cache:'force-cache'});
+      if(!answer.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
+      return {...op,value:'data:'+type+';base64,'+pack(new Uint8Array(await answer.arrayBuffer()))};
+    }));
+    return {...activeBaseline.publicDraft,operations:ops};
+  }
+  async function checkedPackage(update){
+    if(!activeBaseline)throw Error('Could not verify the GitHub connection. Reload the editor and try again.');
+    if(!cursor)throw Error('Make or load a homepage edit first.');
+    if(activeBaseline.source && loadedSource!==activeBaseline.source)throw Error('Load the last published homepage first so you do not overwrite someone else’s edits. You can download your current draft before loading it.');
+    const baseline=activeBaseline;
+    update('Checking for newer homepage changes…');
+    const current=await status(true);
+    if(current.source!==baseline.source||JSON.stringify(current.signature)!==JSON.stringify(baseline.signature)){
+      throw Error('The homepage changed on GitHub while this editor was open. Save or download your draft and reload before publishing.');
+    }
+    if(!GUARDED.every(name=>!STUDIO_SOURCE_REVISION[name]||STUDIO_SOURCE_REVISION[name]===current.guard[name])){
+      throw Error('This editor is based on an older version of the original site. Its homepage publishing connection needs to be refreshed.');
+    }
+    update('Preparing the homepage and its local media…');
+    const snapshot=draftString();
+    const ready=await prepare(D.body,JSON.parse(snapshot),{...current,canvas:frame.contentDocument.URL});
+    if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
+    const files=new Map(ready.files);
+    files.set(DRAFT,pack(utf8.encode(ready.draftText)));
+    files.set(SOURCE,pack(utf8.encode(ready.content)));
+    return {current,ready,files};
+  }
+  const crcTable=Uint32Array.from({length:256},(_,n)=>{
+    for(let i=0;i<8;i++)n=(n>>>1)^((n&1)?0xedb88320:0);
+    return n>>>0;
+  });
+  function uploadZip(files){
+    const entries=[],index=[];
+    let offset=0,totalIndex=0;
+    for(const [path,encoded] of files){
+      const name=utf8.encode(path),data=unpack(encoded);
+      let crc=0xffffffff;
+      for(const n of data)crc=(crc>>>8)^crcTable[(crc^n)&255];
+      crc=(crc^0xffffffff)>>>0;
+      const local=new Uint8Array(30), l=new DataView(local.buffer);
+      l.setUint32(0,0x04034b50,true);l.setUint16(4,20,true);l.setUint16(6,0x800,true);
+      l.setUint16(12,33,true);l.setUint32(14,crc,true);l.setUint32(18,data.length,true);
+      l.setUint32(22,data.length,true);l.setUint16(26,name.length,true);
+      const record=new Uint8Array(46), c=new DataView(record.buffer);
+      c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);
+      c.setUint16(8,0x800,true);c.setUint16(14,33,true);c.setUint32(16,crc,true);
+      c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);
+      c.setUint32(42,offset,true);
+      entries.push(local,name,data);
+      index.push(record,name);
+      offset+=local.length+name.length+data.length;
+      totalIndex+=record.length+name.length;
+    }
+    const end=new Uint8Array(22), e=new DataView(end.buffer);
+    e.setUint32(0,0x06054b50,true);e.setUint16(8,files.size,true);e.setUint16(10,files.size,true);
+    e.setUint32(12,totalIndex,true);e.setUint32(16,offset,true);
+    return new Blob([...entries,...index,end],{type:'application/zip'});
+  }
+  async function preparedRevision(update=()=>{}){
+    const {files,current}=await checkedPackage(update);
+    const latest=await gh(MAIN_REF);
+    if(latest.object?.sha!==current.parent)throw Error('Main changed while the package was being prepared. Please generate a fresh package.');
+    return {zip:uploadZip(files),head:current.parent};
+  }
+  async function githubPackage(update=()=>{}){
+    return (await preparedRevision(update)).zip;
+  }
+  function supabaseReady(){
+    return /^https:\/\/[a-z0-9]+\.supabase\.co$/.test(STUDIO_AUTH.url)
+      && /^sb_publishable_[A-Za-z0-9_-]+$/.test(STUDIO_AUTH.key);
+  }
+  function signedIn(){
+    return !!publisherSession && publisherSession.exp>Date.now();
+  }
+  async function signIn(email,password){
+    const response=await fetch(STUDIO_AUTH.url+'/auth/v1/token?grant_type=password',{
+      method:'POST',mode:'cors',cache:'no-store',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(12000),
+      headers:{apikey:STUDIO_AUTH.key,'Content-Type':'application/json'},body:JSON.stringify({email,password}),
+    }).catch(()=>null);
+    const info=await response?.json().catch(()=>null);
+    if(!response)throw Error('Could not reach Supabase sign-in. Try again.');
+    if(response.status===429)throw Error('Too many sign-in attempts. Try again later.');
+    if(!response.ok||!info?.access_token||!info?.user?.email)throw Error('Sign-in did not work. Check the email and password for your publisher account.');
+    publisherSession={token:info.access_token, email:info.user.email, exp:Date.now()+(info.expires_in||3600)*1000-5000};
+  }
+  async function signOut(){
+    const token=publisherSession?.token;
+    publisherSession=null;
+    if(token)await fetch(STUDIO_AUTH.url+'/auth/v1/logout?scope=local',{
+      method:'POST',cache:'no-store',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(4000),
+      headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+token},
+    }).catch(()=>null);
+  }
+  async function publisher(action, zip){
+    if(!signedIn())throw Error('Your session expired. Sign in again.');
+    let response;
+    try{
+      response=await fetch(STUDIO_AUTH.url+'/functions/v1/publish-homepage?action='+action,{
+        method:'POST',credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(145000),
+        headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+publisherSession.token,...(zip?{'Content-Type':'application/zip'}:{})},
+        ...(zip?{body:zip}:{}),
+      });
+    }catch{throw Error('Could not confirm publishing. Check the GitHub Pages build before retrying.');}
+    const result=await response.json().catch(()=>null);
+    if(response.status===401)publisherSession=null;
+    if(response.status===413)throw Error('The publication exceeds the upload limit. Reduce the uploaded media and try again.');
+    if(!response.ok||!result?.ok)throw Error(result?.error||(response.status===401?'Your session expired. Sign in again.':'The editor could not confirm publishing.'));
+    return result;
+  }
+  function bindSource(source){
+    loadedSource=source;
+
+  }
+  function baseOfDraft(){return loadedSource;}
+  function panel(){
+    if(busy)return;
+    const pos=open('Publish homepage changes','GITHUB PAGES');
+    para('Anyone can edit and preview. Only approved Supabase accounts can publish changes to the homepage.');
+    const links=group();
+    links.append(create('a',{href:LIVE,target:'_blank',rel:'noopener noreferrer'},'View live homepage ↗'));
+    const identity=create('p',{class:'muted',role:'status'});
+    const authArea=group('publisher-auth');
+    authArea.before(identity);
+    const activeDraft=!!cursor&&mode==='edit';
+    if(activeBaseline?.publicDraft){
+      button(group(),'Load published homepage into editor',async e=>{
+        const b=e.currentTarget;
+        if(cursor){const useBackup=window.confirm('Load the latest GitHub version over the currently open draft? Download your draft first if you need a copy.');if(!useBackup)return;}
+        b.disabled=true;
+        try{
+          const source=activeBaseline.source;
+          const got=await remoteDraft();
+          list=readDraft(JSON.stringify(got));cursor=list.length;bindSource(source);active=null;close();replay();flash('Latest published homepage loaded.');
+        }catch(error){flash(error.message);b.disabled=false;}
+      });
+    }
+    if(!activeDraft)para(!cursor?'Make a homepage edit or load a saved draft to publish it.':'Use Back to editing before publishing.');
+    const feedback=create('p',{role:'status',class:'publish-feedback'});
+    body.append(feedback);
+    const controls=group();
+    const publishedLinks=group();
+    const progress=message=>{feedback.textContent=message;};
+    const running=value=>{
+      busy=value;
+      test.disabled=value||!signedIn();
+      if(direct)direct.disabled=value||!signedIn();
+      if(download)download.disabled=value;
+      $('publish').disabled=value;
+      authArea.querySelectorAll('button,input').forEach(el=>{el.disabled=value;});
+    };
+    const test=button(controls,'Test publishing access',async()=>{
+      if(busy||!signedIn())return;
+      running(true);
+      try{
+        progress('Checking access without publishing…');
+        await publisher('check');
+        progress('GitHub confirmed write access. No files, commits or deployments were changed.');
+      }catch(e){progress(e.message);}
+      finally{running(false);if(!signedIn())showAuth();pos();}
+    });
+    const direct=activeDraft?button(controls,'Publish to GitHub Pages',async()=>{
+      if(busy||!signedIn())return;
+      running(true);
+      try{
+        publishedLinks.replaceChildren();
+        const {zip}=await preparedRevision(progress);
+        cap(zip.size,MAX_UPLOAD);
+        progress('Publishing the homepage and its media…');
+        const result=await publisher('publish',zip);
+        progress('Committed to GitHub. The live homepage updates after the Pages build succeeds.');
+        publishedLinks.replaceChildren(
+          create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/commit/'+result.sha,target:'_blank',rel:'noopener noreferrer'},'View GitHub commit ↗'),
+          create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/actions/workflows/deploy.yml',target:'_blank',rel:'noopener noreferrer'},'Watch Pages build ↗'));
+        await connect();
+        if(activeBaseline?.parent===result.sha)bindSource(activeBaseline.source);
+      }catch(e){progress(e.message);}
+      finally{running(false);if(!signedIn())showAuth();pos();}
+    },{class:'publish-cta'}):null;
+    const download=activeDraft?button(controls,'Download GitHub upload package',async()=>{
+      if(busy)return;
+      running(true);
+      try{
+        const zip=await githubPackage(progress);
+        exportFile(zip,'new-city-wellness-github-upload.zip','application/zip');
+        progress('Package ready. Nothing was published.');
+      }catch(e){progress(e.message);}
+      finally{running(false);pos();}
+    }):null;
+    function showAuth(){
+      authArea.replaceChildren();
+      const ready=supabaseReady()&&location.origin===SITE_ORIGIN;
+      if(!ready){
+        identity.textContent=!supabaseReady()?'Publishing setup is not complete.':'Open Homepage Studio on GitHub Pages to sign in and publish.';
+      }else if(signedIn()){
+        identity.textContent='Signed in as '+publisherSession.email+'.';
+        button(authArea,'Sign out',async()=>{
+          running(true);
+          await signOut();
+          running(false);
+          showAuth();
+        });
+      }else{
+        identity.textContent='Sign in with your publisher email and password. No GitHub login or token is needed.';
+        const form=create('form',{class:'publisher-form'});
+        const email=input(form,'Email','',{type:'email',autocomplete:'username',required:''},()=>{});
+        const password=input(form,'Password','',{type:'password',autocomplete:'current-password',required:''},()=>{});
+        const submit=create('button',{type:'submit'},'Sign in');
+        form.append(submit);authArea.append(form);
+        form.addEventListener('submit',async event=>{
+          event.preventDefault();
+          if(busy)return;
+          const address=email.value.trim(),secret=password.value;
+          running(true);progress('Signing in…');
+          try{await signIn(address,secret);progress('');showAuth();}
+          catch(e){progress(e.message);}
+          finally{password.value='';running(false);pos();}
+        });
+      }
+      running(busy);pos();
+    }
+    showAuth();
+  }
+  const start=()=>{
+    if(!$('publish'))return;
+    bindSource(pendingPublisherBase);
+    $('publish').onclick=panel;
+    void connect();
+  };
+  return {start,details,status,prepare,connect,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft};
+})();
+
+StudioPublish.start();
