@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Install a validated Studio homepage into a completed Next.js static export.
-An absent publication leaves every exported byte unchanged.
+"""Install a validated Studio homepage and emit its live revision for GitHub Pages.
 """
 import argparse
 import hashlib
@@ -8,6 +7,7 @@ import json
 import re
 from html.parser import HTMLParser
 from pathlib import Path
+from html import escape
 from urllib.parse import urlsplit
 
 TAGS = set("a article body br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small".split())
@@ -139,18 +139,48 @@ def apply(root, output, prefix):
     )
     changed = re.sub(r"""<link\b[^>]*(?:\bas=["']script["']|\brel=["']modulepreload["'])[^>]*>""", "", changed, flags=re.I)
     base = prefix.rstrip("/") + "/"
+    def versioned(file):
+        asset = output / file
+        if not asset.is_file():
+            raise ValueError("Missing Homepage Studio runtime: " + file)
+        version = hashlib.sha256(asset.read_bytes()).hexdigest()[:16]
+        return base + file + "?v=" + version
+
     inject = (
         '<meta name="homepage-studio-publication" content="' + obj["id"] + '">'
-        '<link rel="stylesheet" href="' + base + 'homepage-studio/layout-v1.css">'
-        '<script defer src="' + base + 'homepage-studio/homepage-v1.js"></script>'
+        '<link rel="stylesheet" href="' + versioned("homepage-studio/layout-v1.css") + '">'
+        '<script defer src="' + versioned("homepage-studio/homepage-v1.js") + '"></script>'
     )
-    for file in ("homepage-studio/layout-v1.css", "homepage-studio/homepage-v1.js"):
-        if not (output / file).is_file():
-            raise ValueError("Missing Homepage Studio runtime: " + file)
     changed = HEAD_END.sub(lambda m: inject + m[0], changed, count=1)
     root_page.write_text(changed)
     print(f"Homepage Studio publication {obj['id']} applied to index.html only.")
     return True
+
+
+def add_freshness(output, prefix, published):
+    """Run after applying the publication, so the manifest reflects what was actually deployed."""
+    asset_name = "homepage-studio/fresh-home.js"
+    asset = output / asset_name
+    asset_hash = hashlib.sha256(asset.read_bytes()).hexdigest()[:16]
+    base = escape(prefix.rstrip("/") + "/", quote=True)
+    script = f'<script defer src="{base}{asset_name}?v={asset_hash}"></script>'
+    root_page = output / "index.html"
+    html = root_page.read_text(encoding="utf-8")
+    revision = hashlib.sha256(html.encode("utf-8") + asset_hash.encode("ascii")).hexdigest()[:24]
+    publication = re.search(r'<meta name="homepage-studio-publication" content="([a-f0-9-]{36})">', html) if published else None
+    root_page.write_text(HEAD_END.sub(
+        lambda m: f'<meta name="ncw-home-revision" content="{revision}">' + script + m[0], html, count=1),
+        encoding="utf-8",
+    )
+    # Only public Next pages need to route Home links to the full published document.
+    for page in output.rglob("index.html"):
+        first = page.relative_to(output).parts[0]
+        if page == root_page or first in {"admin", "api", "studio", "homepage-studio", "_next", "_not-found"}:
+            continue
+        content = page.read_text(encoding="utf-8")
+        page.write_text(HEAD_END.sub(lambda m: script + m[0], content, count=1), encoding="utf-8")
+    manifest = {"revision": revision, "publication": publication[1] if publication else None}
+    (output / "homepage-studio/live-revision.json").write_text(json.dumps(manifest) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
@@ -159,4 +189,5 @@ if __name__ == "__main__":
     cli.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     cli.add_argument("--base-path", default="/Newcitywellness")
     args = cli.parse_args()
-    apply(args.root, args.export, args.base_path)
+    published = apply(args.root, args.export, args.base_path)
+    add_freshness(args.export, args.base_path, published)
