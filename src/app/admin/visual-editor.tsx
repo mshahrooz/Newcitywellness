@@ -81,6 +81,7 @@ export function VisualEditor() {
   const app = useRef<HTMLElement>(null)
   const focusTarget = useRef<HTMLElement | null>(null)
   const events = useRef<(() => void) | null>(null)
+  const preparedFrame = useRef<Document | null>(null)
   const clickPicker = useRef<(target: CopyTarget, node: HTMLElement) => void>(() => {})
   const images = useRef(new Map<HTMLImageElement, Record<string, string | null>>())
   const pictureSources = useRef(new Map<HTMLSourceElement, string>())
@@ -160,10 +161,15 @@ export function VisualEditor() {
   }
 
   const preparePreview = useCallback(() => {
-    events.current?.()
     const doc = frame.current?.contentDocument
-    const main = doc?.querySelector<HTMLElement>("[data-builder-page]")
-    if (!doc || !main || !doc.defaultView) { setCanvas(null); setError("This page couldn’t be loaded in the builder. Try Reload preview."); return }
+    if (!doc || doc.URL === "about:blank" || doc.readyState === "loading") return false
+    if (preparedFrame.current === doc) return true
+    const main = doc.querySelector<HTMLElement>("[data-builder-page]")
+    if (!main || !doc.defaultView) {
+      if (doc.readyState === "complete") setError("This page couldn’t be loaded in the builder. Try Reload preview.")
+      return false
+    }
+    events.current?.()
     const css = doc.createElement("style")
     css.textContent = canvasCss
     doc.head.append(css)
@@ -256,11 +262,29 @@ export function VisualEditor() {
       handles.forEach(handle => handle.remove())
       root.remove()
       css.remove()
+      if (preparedFrame.current === doc) preparedFrame.current = null
     }
+    preparedFrame.current = doc
     setEntries(text)
     setCanvas({ main, native, anchors, root, legacy, publishedOrder, preserved, hosts: new Map() })
     setError("")
+    return true
   }, [])
+
+  useEffect(() => {
+    // The first iframe can finish before React attaches its onLoad listener.
+    // The document can also be usable before a slow third-party embed completes.
+    if (preparePreview()) return
+    const start = Date.now()
+    const timer = window.setInterval(() => {
+      if (preparePreview()) window.clearInterval(timer)
+      else if (Date.now() - start > 15_000) {
+        window.clearInterval(timer)
+        setError("The page preview took too long. Choose More → Reload preview to try again.")
+      }
+    }, 120)
+    return () => window.clearInterval(timer)
+  }, [page, revision, preparePreview])
 
   useEffect(() => {
     if (window.matchMedia("(max-width: 650px)").matches) setWidth("Mobile")
@@ -580,7 +604,7 @@ export function VisualEditor() {
         </div>
         <div className="editor-frame-scroll" ref={frameArea}>
           <div className="editor-frame-device" style={{ width: screenWidth * scale, height: screenHeight * scale }}>
-            <iframe key={`${page}-${revision}`} ref={frame} title={`${active[2]} canvas`} src={base + active[1]} onLoad={preparePreview}
+            <iframe key={`${page}-${revision}`} ref={frame} title={`${active[2]} canvas`} src={base + active[1]} onLoad={() => { preparePreview() }}
               sandbox="allow-same-origin" referrerPolicy="no-referrer" style={{ width: screenWidth, height: screenHeight, transform: `scale(${scale})` }} />
           </div>
         </div>
