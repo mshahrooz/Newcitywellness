@@ -145,11 +145,11 @@ function attachFree(n,zone,device,p,baseline=null){
   const dest=mkLayer(zone);
   if(!shell){
     retainAppearance(n);
-    if(n.isConnected&&!oldParent.classList.contains('bs-pair')){
+    if(n.isConnected&&!oldParent.matches('.bs-pair,.bs-auto-col')){
       const origin=addNative('template',{'data-bs-flow-origin':idOf(n)});n.before(origin);
     }
     shell=addNative('div',{class:'bs-free-item'});shell.append(n);
-    dePair(oldParent);
+    dePair(oldParent);StudioFlow.cleanupAutoColumn(oldParent);
   }
   if(device!=='desktop'&&!coords(shell,'desktop')){
     const base=oldZone===zone?desktop:{...p,x:Math.min(p.x,100-p.w)};

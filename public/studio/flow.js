@@ -15,10 +15,18 @@ const StudioFlow = (() => {
     return !el.parentElement?.closest(blocked)&&!el.matches('input,select,textarea,form')&&
       !el.querySelector('form,input,select,textarea');
   }
+  const isSide=side=>side==='left'||side==='right';
+  const autoParent=el=>el?.parentElement?.matches('.bs-auto-col')?el.parentElement:null;
+  const autoGrid=el=>autoParent(el)?.parentElement;
+  function sideAnchor(t){
+    const el=unit(t);
+    return autoParent(el)||el;
+  }
   function target(n,t,side) {
     if(!source(n)||!t?.isConnected||!rowOf(t)||t===n||n.contains(t)||t.contains(n))return false;
     const el=unit(t), origin=unit(n);
     if(origin===el||origin.contains(el)||el.contains(origin)||el.closest('.bs-free-layer')||el.parentElement?.closest(blocked))return false;
+    if(isSide(side))return !!sideTarget(t);
     if(side==='inside')return t.hasAttribute('data-bs-column')&&t.children.length===0;
     return ['before','after'].includes(side)&&t.dataset.bsMove==='yes'&&!!el.parentElement;
   }
@@ -41,15 +49,19 @@ const StudioFlow = (() => {
   }
   function move(n,t,side) {
     if(!target(n,t,side))return false;
-    const el=unit(n), dest=unit(t), shell=freeShell(n);
+    const el=unit(n), dest=unit(t), shell=freeShell(n), old=el.parentElement;
     if(side==='inside')dest.append(el);else dest[side](el);
+    clearOffsets(n,shell);
+    if(shell)removeFreeContainer(shell);
+    else cleanupAutoColumn(old);
+    return true;
+  }
+  function clearOffsets(n,shell){
     for(const prop of Array.from(n.style))if(prop.startsWith('--bs-drag-')||prop.startsWith('--bs-safe-drag-'))n.style.removeProperty(prop);
     n.classList.remove('bs-offset-item','bs-offset-inline');
     if(shell) {
-      removeFreeContainer(shell);
       for(const slot of D.querySelectorAll('template[data-bs-flow-origin]'))if(slot.dataset.bsFlowOrigin===idOf(n))slot.remove();
     }
-    return true;
   }
   function edges(rect,x,y){
     if(rect.width<12||rect.height<6||x<rect.left-10||x>rect.right+10)return [];
@@ -59,6 +71,7 @@ const StudioFlow = (() => {
   function find(n,x,y) {
     let best=null;
     if(!source(n)||!freeShell(n)&&['absolute','fixed'].includes(D.defaultView.getComputedStyle(unit(n)).position))return null;
+    const side=sideHit(x,y,n);if(side)return side;
     const hit=D.elementFromPoint?.(x,y);
     // Include targets on either side of a gap, not just the one under the pointer.
     const row=hit?.closest('[data-bs-row]')||rowList().find(r=>{
@@ -121,6 +134,7 @@ const StudioFlow = (() => {
     if(!row)return {node:null,side:'section-end',row:true};
     const bounds=row.getBoundingClientRect();
     if(kind==='row')return {node:row,side:y<(bounds.top+bounds.bottom)/2?'before':'after',row:true};
+    const side=sideHit(x,y,null,row);if(side)return side;
     let best=null;
     const col=hit?.closest('[data-bs-column]');
     const scope=col||row;
@@ -136,5 +150,79 @@ const StudioFlow = (() => {
     if(col&&libraryParent(col,'inside'))return {node:col,side:'inside'};
     return {node:row,side:y<(bounds.top+bounds.bottom)/2?'section-start':'section-end'};
   }
-  return {unit,source,target,move,edges,find,noop,libraryTarget,placeNew};
+  function sideTarget(t){
+    if(!t?.isConnected||!rowOf(t)||t.dataset.bsMove!=='yes')return false;
+    const el=unit(t), parent=el.parentElement, grid=autoGrid(el);
+    if(!parent||el.closest('.bs-free-layer')||parent.closest(blocked))return false;
+    return !grid||grid.children.length<StudioColumns.LIMIT;
+  }
+  function sideEdges(r,x,y){
+    if(r.width<36||r.height<8)return [];
+    const inset=Math.min(22,r.height*.24);
+    if(y<r.top+inset||y>r.bottom-inset)return [];
+    const band=Math.min(28,Math.max(12,r.width*.11));
+    return [['left',Math.abs(x-r.left)],['right',Math.abs(x-r.right)]].filter(([,d])=>d<=band);
+  }
+  function sideHit(x,y,n=null,selectedRow=null){
+    if(!D.defaultView.matchMedia?.('(min-width: 768px)')?.matches)return null;
+    const hit=D.elementFromPoint?.(x,y);
+    const row=selectedRow||hit?.closest('[data-bs-row]')||rowList().find(r=>{
+      const rect=r.getBoundingClientRect();return y>=rect.top&&y<=rect.bottom&&x>=rect.left-28&&x<=rect.right+28;
+    });
+    if(!row)return null;
+    let best=null;
+    for(const t of row.querySelectorAll('[data-bs-move="yes"]')){
+      if(t.closest('[hidden],details:not([open])'))continue;
+      if(n?!target(n,t,'left'):!sideTarget(t))continue;
+      const el=unit(t), r=sideAnchor(t).getBoundingClientRect();
+      if(!autoGrid(el)&&!lane(el))continue;
+      for(const [side,d] of sideEdges(r,x,y)){
+        const score=d+(hit&&el.contains(hit)?-.5:0);
+        if(!best||score<best.score)best={node:t,side,score};
+      }
+    }
+    return best;
+  }
+  function cleanupAutoColumn(column){
+    const grid=column?.matches('.bs-auto-col')&&column.parentElement;
+    if(!grid||column.children.length)return;
+    const widths=StudioColumns.read(grid);
+    widths.splice(Array.from(grid.children).indexOf(column),1);
+    column.remove();compactAutoGrid(grid,widths);
+  }
+  function compactAutoGrid(grid,widths){
+    if(!grid.children.length)grid.remove();
+    else if(grid.children.length===1)grid.replaceWith(...grid.firstElementChild.childNodes);
+    else StudioColumns.set(grid,widths);
+  }
+  function alongside(n,t,side,id,fromLibrary=false){
+    if(!isSide(side)||!validId(id)||!validId(id+'-c1')||byId(id)||byId(id+'-c0')||byId(id+'-c1')||
+       (fromLibrary?!sideTarget(t):!target(n,t,side)))return false;
+    const el=unit(n), anchor=unit(t), old=el.parentElement, shell=freeShell(n);
+    let grid=autoGrid(anchor);
+    const current=autoParent(anchor);
+    if(grid&&old?.parentElement===grid&&old!==current&&old.children.length===1){
+      const columns=Array.from(grid.children), widths=StudioColumns.read(grid);
+      current[side==='left'?'before':'after'](old);
+      StudioColumns.set(grid,Array.from(grid.children,c=>widths[columns.indexOf(c)]));
+    }else if(grid){
+      const widths=StudioColumns.read(grid), at=Array.from(grid.children).indexOf(current);
+      const column=addNative('div',{class:'bs-col bs-auto-col','data-bs-id':id+'-c0','data-bs-column':''});
+      current[side==='left'?'before':'after'](column);
+      const actual=widths[at]/2;
+      widths[at]=actual;widths.splice(at+(side==='left'?0:1),0,actual);
+      column.append(el);StudioColumns.set(grid,widths);
+    }else{
+      grid=addNative('div',{class:'bs-grid bs-auto-columns','data-bs-id':id});
+      const a=addNative('div',{class:'bs-col bs-auto-col','data-bs-id':id+'-c0','data-bs-column':''});
+      const b=addNative('div',{class:'bs-col bs-auto-col','data-bs-id':id+'-c1','data-bs-column':''});
+      anchor.before(grid);grid.append(a,b);
+      (side==='left'?a:b).append(el);(side==='left'?b:a).append(anchor);
+      StudioColumns.set(grid,[1,1]);
+    }
+    clearOffsets(n,shell);
+    if(shell)removeFreeContainer(shell);else cleanupAutoColumn(old);
+    return true;
+  }
+  return {unit,source,target,move,edges,find,noop,libraryTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
 })();

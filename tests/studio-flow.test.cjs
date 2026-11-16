@@ -14,7 +14,7 @@ test('drop bands are limited to the top and bottom of a block',()=>{
 });
 
 test('ordinary drop moves the responsive picture as one unit and clears free offsets',()=>{
-  const row={}, parent={closest:()=>null};
+  const row={}, parent={closest:()=>null,matches:()=>false};
   const removed=[], applied=[];
   const node=(x={})=>({
     isConnected:true,dataset:{bsMove:'yes'},parentElement:parent,hasAttribute:()=>false,
@@ -78,4 +78,14 @@ test('library drops prefer the selected column or nearest safe block and ignore 
   assert.equal(flow.libraryTarget('title',420,90).side,'inside');
   hit=header;
   assert.equal(flow.libraryTarget('title',150,20),null);
+});
+
+test('horizontal edge targets leave the top and bottom available for stacking',()=>{
+  const flow=vm.runInNewContext(code+'\nStudioFlow');
+  const r={left:100,right:400,width:300,top:100,bottom:260,height:160};
+  assert.equal(flow.sideEdges(r,103,170)[0][0],'left');
+  assert.equal(flow.sideEdges(r,407,170)[0][0],'right');
+  assert.equal(flow.sideEdges(r,103,102).length,0);
+  assert.equal(flow.sideEdges(r,397,258).length,0);
+  assert.equal(flow.sideEdges(r,240,170).length,0);
 });

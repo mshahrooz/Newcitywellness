@@ -22,6 +22,7 @@ function setup({photo=false,zone=false,row=false,grid=false}={}){
   const env=vm.createContext({
     idOf:()=> 'item',therapyPhoto:()=>photo,freeShell:()=>grid?'shell':null,
     removeFreeContainer:value=>calls.push(value),dePair:()=>calls.push('pair-check'),
+    StudioFlow:{cleanupAutoColumn:()=>{}},
     D:{querySelectorAll:q=>q.startsWith('template')?[slot]:[reference],getElementById:()=>null},
   });
   vm.runInContext(source,env);
