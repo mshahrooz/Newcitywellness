@@ -98,7 +98,7 @@
 @media(max-width:767px){.ncw .bs-embed-frame{max-height:75vh}}
 
 /* Desktop offsets are shared. Smaller screens can add their own adjustments. */
-.ncw .bs-offset-item{
+.ncw .bs-offset-item,.floating-booking-link.bs-offset-item{
   /* Reset inherited custom properties so two nested edited elements don't share offsets. */
   --bs-safe-drag-x:initial;--bs-safe-drag-y:initial;
   --bs-drag-desktop-x:initial;--bs-drag-desktop-y:initial;
@@ -110,17 +110,17 @@
   --bs-active-drag-y:var(--bs-drag-desktop-y,0px);
   translate:var(--bs-safe-drag-x,var(--bs-active-drag-x)) var(--bs-safe-drag-y,var(--bs-active-drag-y))!important
 }
-.ncw .bs-offset-inline{
+.ncw .bs-offset-inline,.floating-booking-link.bs-offset-inline{
   position:relative;left:var(--bs-safe-drag-x,var(--bs-active-drag-x));top:var(--bs-safe-drag-y,var(--bs-active-drag-y));translate:none!important
 }
 @media(max-width:900px){
-  .ncw .bs-offset-item{
+  .ncw .bs-offset-item,.floating-booking-link.bs-offset-item{
     --bs-active-drag-x:var(--bs-drag-tablet-x,calc(var(--bs-drag-desktop-x,0px) + var(--bs-drag-tablet-adjust-x,0px)));
     --bs-active-drag-y:var(--bs-drag-tablet-y,calc(var(--bs-drag-desktop-y,0px) * .75 + var(--bs-drag-tablet-adjust-y,0px)))
   }
 }
 @media(max-width:600px){
-  .ncw .bs-offset-item{
+  .ncw .bs-offset-item,.floating-booking-link.bs-offset-item{
     --bs-active-drag-x:var(--bs-drag-mobile-x,calc(var(--bs-drag-desktop-x,0px) + var(--bs-drag-mobile-adjust-x,0px)));
     --bs-active-drag-y:var(--bs-drag-mobile-y,calc(var(--bs-drag-desktop-y,0px) * .55 + var(--bs-drag-mobile-adjust-y,0px)))
   }

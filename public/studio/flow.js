@@ -3,7 +3,11 @@
 /* Normal-flow drops are intentionally limited to content that can move without
    detaching part of a native card, form, menu, or image mask. */
 const StudioFlow = (() => {
-  const blocked = 'a,button,form,nav,label,p,ul,ol,dl,li,details,summary,.hero-actions,.therapy-card,.testimonial-card,.reviews-card,.condition-card,.clinic-hours,.contact-form-wrap,.page-hero-photo,.bs-pair';
+  // Keep connected widgets intact during structural moves. Their individual
+  // pieces can still be positioned visually in their original container.
+  const blocked = 'a,button,form,nav,label,p,ul,ol,dl,li,details,summary,.therapy-card,.testimonial-card,.reviews-card,.condition-card,.clinic-hours,.contact-form-wrap,.page-hero-photo,.bs-pair';
+  const nativeLane = '.therapy-grid,.testimonial-grid,.reviews-grid,.hero-actions';
+  const strictLane = nativeLane+',.faq-list';
   function unit(n) {
     if(n?.matches('img')&&n.parentElement?.matches('picture'))return n.parentElement;
     return n;
@@ -12,8 +16,7 @@ const StudioFlow = (() => {
     if(!n?.isConnected||!rowOf(n)||n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-column')||
       n.dataset.bsMove!=='yes'&&!freeShell(n))return false;
     const el=unit(n);
-    return !el.parentElement?.closest(blocked)&&!el.matches('input,select,textarea,form')&&
-      !el.querySelector('form,input,select,textarea');
+    return (!el.parentElement?.closest(blocked)||el.parentElement?.matches(nativeLane))&&!el.matches('input,select,textarea,label');
   }
   const isSide=side=>side==='left'||side==='right';
   const autoParent=el=>el?.parentElement?.matches('.bs-auto-col')?el.parentElement:null;
@@ -22,12 +25,18 @@ const StudioFlow = (() => {
     const el=unit(t);
     return autoParent(el)||el;
   }
+  function isNativeSibling(el,dest){
+    return el.parentElement===dest.parentElement&&!!el.parentElement?.matches(strictLane);
+  }
   function target(n,t,side) {
     if(!source(n)||!t?.isConnected||!rowOf(t)||t===n||n.contains(t)||t.contains(n))return false;
     const el=unit(t), origin=unit(n);
-    if(origin===el||origin.contains(el)||el.contains(origin)||el.closest('.bs-free-layer')||el.parentElement?.closest(blocked))return false;
-    if(isSide(side))return !!sideTarget(t);
-    if(side==='inside')return t.hasAttribute('data-bs-column')&&t.children.length===0;
+    if(origin===el||origin.contains(el)||el.contains(origin)||el.closest('.bs-free-layer'))return false;
+    if(isNativeSibling(origin,el))return ['before','after'].includes(side)||isSide(side)&&origin.parentElement.matches(nativeLane);
+    if(el.parentElement?.closest(blocked)||origin.parentElement?.matches(strictLane))return false;
+    if(isSide(side))return sideTarget(t);
+    if(side==='section-start'||side==='section-end')return t.hasAttribute('data-bs-row')&&t.parentElement===main();
+    if(side==='inside')return t.hasAttribute('data-bs-column');
     return ['before','after'].includes(side)&&t.dataset.bsMove==='yes'&&!!el.parentElement;
   }
   function lane(el) {
@@ -44,13 +53,15 @@ const StudioFlow = (() => {
     return peer;
   }
   function noop(n,t,side) {
+    if(!['before','after'].includes(side))return false;
     const el=unit(t), origin=unit(n);
     return !n.classList.contains('bs-offset-item')&&origin.parentElement===el.parentElement&&neighboring(el,side)===origin;
   }
   function move(n,t,side) {
     if(!target(n,t,side))return false;
     const el=unit(n), dest=unit(t), shell=freeShell(n), old=el.parentElement;
-    if(side==='inside')dest.append(el);else dest[side](el);
+    if(side==='section-start'||side==='section-end'){if(!placeNew(el,t,side))return false;}
+    else if(side==='inside')dest.append(el);else dest[side](el);
     clearOffsets(n,shell);
     if(shell)removeFreeContainer(shell);
     else cleanupAutoColumn(old);
@@ -83,7 +94,7 @@ const StudioFlow = (() => {
       if(t.closest('[hidden]')||t.closest('details:not([open])')&&!t.closest('summary'))continue;
       const rect=unit(t).getBoundingClientRect();
       if(rect.width<12||rect.height<6)continue;
-      if(x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom&&target(n,t,'inside'))
+      if(!t.children.length&&x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom&&target(n,t,'inside'))
         return {node:t,side:'inside'};
       const candidates=edges(rect,x,y);
       if(!candidates.length||!lane(unit(t)))continue;
@@ -93,7 +104,14 @@ const StudioFlow = (() => {
         if(!best||score<best.score)best={node:t,side,score};
       }
     }
-    return best;
+    if(best)return best;
+    const column=hit?.closest('[data-bs-column]');
+    if(column&&target(n,column,'inside'))return {node:column,side:'inside'};
+    // Use a clear section edge for cross-section drops. Do not hijack arbitrary
+    // drags over existing content that are intended as pixel offsets.
+    const r=row.getBoundingClientRect();
+    const sideAt=y<r.top+36?'section-start':y>r.bottom-36?'section-end':null;
+    return sideAt&&target(n,row,sideAt)?{node:row,side:sideAt}:null;
   }
   function libraryParent(t,side) {
     if(t?.parentElement===main()&&t.hasAttribute('data-bs-row')&&['section-start','section-end'].includes(side))
@@ -121,6 +139,15 @@ const StudioFlow = (() => {
   }
   function distance(r,x,y){
     return Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom));
+  }
+  function sectionTarget(n,x,y){
+    const hit=D.elementFromPoint?.(x,y);
+    if(hit&&!main().contains(hit))return null;
+    const rows=rowList().filter(t=>t!==n&&t.getBoundingClientRect().height>1);
+    const node=rows.reduce((best,t)=>!best||distance(t.getBoundingClientRect(),x,y)<distance(best.getBoundingClientRect(),x,y)?t:best,null);
+    if(!node)return null;
+    const r=node.getBoundingClientRect();
+    return {node,side:y<(r.top+r.bottom)/2?'before':'after',row:true};
   }
   function libraryTarget(kind,x,y){
     const hit=D.elementFromPoint?.(x,y);
@@ -153,35 +180,62 @@ const StudioFlow = (() => {
   function sideTarget(t){
     if(!t?.isConnected||!rowOf(t)||t.dataset.bsMove!=='yes')return false;
     const el=unit(t), parent=el.parentElement, grid=autoGrid(el);
-    if(!parent||el.closest('.bs-free-layer')||parent.closest(blocked))return false;
+    if(!parent||el.closest('.bs-free-layer')||parent.closest(blocked)||parent.matches(strictLane))return false;
     return !grid||grid.children.length<StudioColumns.LIMIT;
   }
   function sideEdges(r,x,y){
-    if(r.width<36||r.height<8)return [];
-    const inset=Math.min(22,r.height*.24);
-    if(y<r.top+inset||y>r.bottom-inset)return [];
-    const band=Math.min(28,Math.max(12,r.width*.11));
-    return [['left',Math.abs(x-r.left)],['right',Math.abs(x-r.right)]].filter(([,d])=>d<=band);
+    if(r.width<16||r.height<5)return [];
+    const overlap=Math.min(28,r.height*.3+6);
+    if(y<r.top-overlap||y>r.bottom+overlap)return [];
+    const outer=Math.max(64,Math.min(200,r.width*.58));
+    const inner=Math.min(100,r.width*.36);
+    const nearEnd=y<r.top+Math.min(27,r.height*.20)||y>r.bottom-Math.min(27,r.height*.20);
+    const inset=nearEnd?Math.min(10,inner):inner;
+    const vertical=Math.max(r.top-y,0,y-r.bottom);
+    return [
+      ['left', x>=r.left-outer&&x<=r.left+inset, Math.abs(x-r.left)+vertical*1.65],
+      ['right', x<=r.right+outer&&x>=r.right-inset, Math.abs(x-r.right)+vertical*1.65]
+    ].filter(([,ok])=>ok).map(([side,,score])=>[side,score]);
   }
   function sideHit(x,y,n=null,selectedRow=null){
     if(!D.defaultView.matchMedia?.('(min-width: 768px)')?.matches)return null;
     const hit=D.elementFromPoint?.(x,y);
     const row=selectedRow||hit?.closest('[data-bs-row]')||rowList().find(r=>{
-      const rect=r.getBoundingClientRect();return y>=rect.top&&y<=rect.bottom&&x>=rect.left-28&&x<=rect.right+28;
+      const rect=r.getBoundingClientRect();return y>=rect.top-14&&y<=rect.bottom+14&&x>=rect.left-200&&x<=rect.right+200;
     });
     if(!row)return null;
-    let best=null;
+    // Top and bottom insertion take priority when directly over those edges.
+    const column=hit?.closest('[data-bs-column]');
+    if(column){
+      const c=column.getBoundingClientRect(), inset=Math.min(44,c.width*.15);
+      if(x>c.left+inset&&x<c.right-inset&&!column.querySelector('[data-bs-move="yes"]'))return null;
+    }
+    let best=null, stack=Infinity;
     for(const t of row.querySelectorAll('[data-bs-move="yes"]')){
-      if(t.closest('[hidden],details:not([open])'))continue;
+      if(t.closest('[hidden]')||t.parentElement?.closest('details:not([open])'))continue;
+      const el=unit(t), native=n&&isNativeSibling(unit(n),el)&&el.parentElement.matches(nativeLane);
       if(n?!target(n,t,'left'):!sideTarget(t))continue;
-      const el=unit(t), r=sideAnchor(t).getBoundingClientRect();
-      if(!autoGrid(el)&&!lane(el))continue;
-      for(const [side,d] of sideEdges(r,x,y)){
-        const score=d+(hit&&el.contains(hit)?-.5:0);
-        if(!best||score<best.score)best={node:t,side,score};
+      const anchor=sideAnchor(t), r=anchor.getBoundingClientRect();
+      const probes=sideEdges(r,x,y);
+      if(!probes.length)continue;
+      if(!autoGrid(el)&&!native&&!lane(el))continue;
+      const candidateColumn=el.closest('[data-bs-column]');
+      const vertical=el.getBoundingClientRect();
+      if(!native&&(!column||candidateColumn===column)&&x>=vertical.left+9&&x<=vertical.right-9){
+        for(const [,distance] of edges(vertical,x,y))stack=Math.min(stack,distance);
+      }
+      for(const [side,d] of probes){
+        const outside=x<r.left||x>r.right;
+        if(column&&column!==candidateColumn&&!outside)continue;
+        const group=autoGrid(el);
+        const owned=column&&group?.contains(column);
+        const score=d+(column&&column!==candidateColumn&&!owned?38:0)+(hit&&el.contains(hit)?-3:0);
+        if(!best||score<best.score)best={node:t,side,score,native};
       }
     }
-    return best;
+    // A small overlap of the two zones is intentional. A close horizontal
+    // edge keeps precise side drops possible while top/bottom wins in the middle.
+    return best&&best.score<=stack+26?best:null;
   }
   function cleanupAutoColumn(column){
     const grid=column?.matches('.bs-auto-col')&&column.parentElement;
@@ -196,9 +250,13 @@ const StudioFlow = (() => {
     else StudioColumns.set(grid,widths);
   }
   function alongside(n,t,side,id,fromLibrary=false){
-    if(!isSide(side)||!validId(id)||!validId(id+'-c1')||byId(id)||byId(id+'-c0')||byId(id+'-c1')||
+    if(!n||!isSide(side)||!validId(id)||!validId(id+'-c1')||byId(id)||byId(id+'-c0')||byId(id+'-c1')||
        (fromLibrary?!sideTarget(t):!target(n,t,side)))return false;
     const el=unit(n), anchor=unit(t), old=el.parentElement, shell=freeShell(n);
+    if(isNativeSibling(el,anchor)){
+      anchor[side==='left'?'before':'after'](el);
+      clearOffsets(n,shell);return true;
+    }
     let grid=autoGrid(anchor);
     const current=autoParent(anchor);
     if(grid&&old?.parentElement===grid&&old!==current&&old.children.length===1){
@@ -224,5 +282,5 @@ const StudioFlow = (() => {
     if(shell)removeFreeContainer(shell);else cleanupAutoColumn(old);
     return true;
   }
-  return {unit,source,target,move,edges,find,noop,libraryTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
+  return {unit,source,target,move,edges,find,noop,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
 })();

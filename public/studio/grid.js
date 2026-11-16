@@ -445,7 +445,7 @@ function applyDragOffset(n,op){
 }
 function canDragIndependently(n){
   return !!(n?.isConnected&&(n.dataset.bsKind||n.hasAttribute('data-bs-column'))
-    && !n.hasAttribute('data-bs-row')&&!n.hasAttribute('data-bs-zone')&&!n.closest('.floating-booking-link'));
+    && !n.hasAttribute('data-bs-row')&&!n.hasAttribute('data-bs-zone'));
 }
 function offsetDragStart(n){
   const win=D.defaultView, device=devicePlacement(), r=n.getBoundingClientRect();

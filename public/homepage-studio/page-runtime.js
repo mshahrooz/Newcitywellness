@@ -7,7 +7,7 @@ function enableStudioPageBehavior(doc, editing = () => false, preview = false) {
   const faq = [...doc.querySelectorAll('.faq-list > details')];
   const photos = [...doc.querySelectorAll('.faq-media [data-photo]')];
   const highlight = item => {
-    const index = faq.indexOf(item);
+    const index = item.hasAttribute('data-ncw-faq-photo') ? Number(item.dataset.ncwFaqPhoto) : faq.indexOf(item);
     photos.forEach(photo => photo.classList.toggle('is-active', Number(photo.dataset.photo) === index));
   };
   for (const item of faq) on(item, 'toggle', () => { if (item.open) highlight(item); });
