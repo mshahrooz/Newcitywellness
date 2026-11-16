@@ -140,4 +140,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 @media(pointer:coarse){.quick-grid .palette-block{min-height:48px}}
 
 #drop-guide.side-guide{border:0;border-radius:4px;background:#278662;box-shadow:0 0 0 1px #fff}
-#drop-guide.side-guide #guide-label{top:4px;left:0;transform:translateX(-50%)}
+#drop-guide.side-guide #guide-label{top:4px}
+
+#drop-target-outline{position:fixed;z-index:4;pointer-events:none;border:3px dotted #167550;border-radius:6px;background:#45a47512;box-shadow:0 0 0 1px #fff9}
+#selection #selection-up,#selection #selection-down{min-width:28px;font-size:16px;padding-inline:5px}
+#selection button:disabled{opacity:.42;cursor:default}
+#selection-label{display:inline-block;max-width:clamp(54px,18vw,135px);overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}

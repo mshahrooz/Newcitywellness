@@ -37,7 +37,7 @@ const StudioFlow = (() => {
     if(isSide(side))return sideTarget(t);
     if(side==='section-start'||side==='section-end')return t.hasAttribute('data-bs-row')&&t.parentElement===main();
     if(side==='inside')return t.hasAttribute('data-bs-column');
-    return ['before','after'].includes(side)&&t.dataset.bsMove==='yes'&&!!el.parentElement;
+    return ['before','after'].includes(side)&&(t.dataset.bsMove==='yes'||t.matches('.bs-auto-columns[data-bs-id]'))&&!!el.parentElement;
   }
   function lane(el) {
     const win=D.defaultView, css=win.getComputedStyle(el.parentElement);
@@ -51,6 +51,23 @@ const StudioFlow = (() => {
     let peer=side==='before'?el.previousElementSibling:el.nextElementSibling;
     while(peer?.matches('[hidden],template,[data-bs-drop-slot]'))peer=side==='before'?peer.previousElementSibling:peer.nextElementSibling;
     return peer;
+  }
+  // Reordering controls follow the rendered lane, never a descendant of the
+  // next block. Treat a responsive picture and an automatic group as units.
+  function stepTarget(n,step){
+    if(!source(n)||![1,-1].includes(step))return null;
+    const el=unit(n), side=step<0?'before':'after';
+    const nodeIn=peer=>{
+      if(peer.matches('[data-bs-move="yes"]'))return peer;
+      if(peer.matches('picture'))return peer.querySelector('img[data-bs-move="yes"]');
+      if(peer.matches('.bs-auto-columns[data-bs-id]'))return peer;
+      return null;
+    };
+    for(let peer=neighboring(el,side);peer;peer=neighboring(peer,side)){
+      const t=nodeIn(peer);
+      if(t&&target(n,t,side))return {node:t,side};
+    }
+    return null;
   }
   function noop(n,t,side) {
     if(!['before','after'].includes(side))return false;
@@ -282,5 +299,5 @@ const StudioFlow = (() => {
     if(shell)removeFreeContainer(shell);else cleanupAutoColumn(old);
     return true;
   }
-  return {unit,source,target,move,edges,find,noop,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
+  return {unit,source,target,move,edges,find,noop,stepTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
 })();
