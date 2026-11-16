@@ -6,19 +6,19 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#152c25">
 <title>New City Wellness · Page Studio</title>
-<link rel="stylesheet" href="studio.css?v=flex-columns1">
-<script src="pages.js?v=flex-columns1" defer></script>
-<script src="canvas-behavior.js?v=flex-columns1" defer></script>
-<script src="../homepage-studio/page-runtime.js?v=flex-columns1" data-preview-runtime defer></script>
+<link rel="stylesheet" href="studio.css?v=drag-guides1">
+<script src="pages.js?v=drag-guides1" defer></script>
+<script src="canvas-behavior.js?v=drag-guides1" defer></script>
+<script src="../homepage-studio/page-runtime.js?v=drag-guides1" data-preview-runtime defer></script>
 <script src="../homepage-studio/responsive-offsets.js?v=2" defer></script>
-<script src="embeds.js?v=flex-columns1" defer></script>
-<script src="columns.js?v=flex-columns1" defer></script>
-<script src="grid.js?v=flex-columns1" defer></script>
-<script src="flow.js?v=flex-columns1" defer></script>
-<script src="studio.js?v=flex-columns1" defer></script>
+<script src="embeds.js?v=drag-guides1" defer></script>
+<script src="columns.js?v=drag-guides1" defer></script>
+<script src="grid.js?v=drag-guides1" defer></script>
+<script src="flow.js?v=drag-guides1" defer></script>
+<script src="studio.js?v=drag-guides1" defer></script>
 <script src="studio-revision.js?v=publish2" defer></script>
 <script src="publisher-config.js" defer></script>
-<script src="publish.js?v=flex-columns1" defer></script>
+<script src="publish.js?v=drag-guides1" defer></script>
 </head>
 <body>
 <header class="studio-bar">
@@ -50,13 +50,14 @@
 <div id="free-grid" aria-hidden="true" hidden></div>
 <div id="free-ghost" aria-hidden="true" hidden><span id="free-ghost-label"></span></div>
 <div id="palette-drag-chip" aria-hidden="true" hidden></div>
-<div id="drop-guide" hidden><span id="guide-label"></span></div>
+<div id="drop-target-outline" aria-hidden="true" hidden></div>
+<div id="drop-guide" aria-hidden="true" hidden><span id="guide-label"></span></div>
 <div id="selection" hidden role="toolbar" aria-label="Selected item tools">
     <button id="drag" type="button" title="Drag to position or insert this item. Hold Shift for free movement." aria-label="Move selected item">⠿</button>
     <button id="selection-settings" type="button" title="Edit selected item"><span aria-hidden="true">✎</span> <span id="selection-label">Edit</span></button>
     <button id="selection-duplicate" type="button" title="Duplicate selected element" aria-label="Duplicate selected element">⧉</button>
-    <button id="selection-up" type="button" title="Move section up" aria-label="Move section up" hidden>↑</button>
-    <button id="selection-down" type="button" title="Move section down" aria-label="Move section down" hidden>↓</button>
+    <button id="selection-up" type="button" title="Move element up" aria-label="Move element up" hidden>↑</button>
+    <button id="selection-down" type="button" title="Move element down" aria-label="Move element down" hidden>↓</button>
     <button id="selection-add" type="button" title="Add an element here" aria-label="Add an element here">＋</button>
 </div>
 <button id="resize-selection" type="button" title="Drag to resize this grid item" aria-label="Resize grid item" hidden></button>

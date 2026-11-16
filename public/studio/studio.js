@@ -5,7 +5,7 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=flex-columns1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=drag-guides1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
 const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
 let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
 const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
@@ -584,7 +584,12 @@ function paint(){
   $('drag').hidden=!canDragCanvas(n);
   $('selection-add').hidden=false;
   for(const [id,step] of [['selection-up',-1],['selection-down',1]]){
-    const control=$(id);control.hidden=!row;control.disabled=!row||!sectionNeighbor(n,step);
+    const control=$(id), direction=step<0?'up':'down';
+    const label='Move '+(row?'section ':'element ')+direction;
+    control.hidden=!canDragCanvas(n);
+    control.disabled=!canStepSelection(n,step);
+    control.setAttribute('aria-label',label);
+    control.title=control.disabled?'No movable item '+(step<0?'above':'below'):label;
   }
   $('selection-duplicate').hidden=false;
   const resize=$('resize-selection');resize.hidden=!freeShell(n)||drag?.moved||!!resizeDrag||!!gridPick;
@@ -649,12 +654,17 @@ function useKeys(){
       if(!$('menu').hidden){toggleMenu(false);$('more').focus();return;}
       active=null;paint();return;
     }
-    if(e.target?.matches('input,textarea,select,[contenteditable=true]'))return;
+    if(e.target?.closest?.('input,textarea,select,[contenteditable],[role="textbox"],[role="slider"]'))return;
+    if(!e.defaultPrevented&&mode==='edit'&&!drag&&!paletteDrag&&!columnDrag&&!resizeDrag&&!gridPick&&!placement
+      &&!e.ctrlKey&&!e.metaKey&&handleSelectionArrow(e))return;
     if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'&&now()){e.preventDefault();cloneSelected(now());return;}
     if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();stepHistory(e.shiftKey?1:-1);}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}
   }
-  const release=e=>{if(e.key==='Shift'&&drag?.moved)updateDrag(drag.x,drag.y,false);};
+  const release=e=>{
+    if(e.key==='Shift'&&drag?.moved)updateDrag(drag.x,drag.y,false);
+    if(e.key?.startsWith('Arrow'))endKeyboardNudge();
+  };
   if(!useKeys.outer){document.addEventListener('keydown',handle);document.addEventListener('keyup',release);useKeys.outer=true;}
   D.addEventListener('keydown',handle);D.addEventListener('keyup',release);
 }
@@ -683,6 +693,53 @@ function moveInDirection(n,step,{scroll=true}={}){
   if(!peer||!record({kind:'move',id:idOf(n),target:idOf(peer),side:step<0?'before':'after'}))return false;
   if(scroll)n.scrollIntoView({block:'nearest'});
   paint();return true;
+}
+function canStepSelection(n,step){
+  if(!n)return false;
+  return n.hasAttribute('data-bs-row')?!!sectionNeighbor(n,step):!!StudioFlow.stepTarget(n,step);
+}
+function stepSelection(n,step){
+  if(!n)return false;
+  if(n.hasAttribute('data-bs-row')){
+    const moved=moveInDirection(n,step);
+    if(moved&&!popup.hidden)adjustPopup(n);
+    return moved;
+  }
+  const choice=StudioFlow.stepTarget(n,step);
+  if(!choice||!record({kind:'flow-move',id:idOf(n),target:idOf(choice.node),side:choice.side}))return false;
+  n.scrollIntoView({block:'nearest'});paint();
+  if(!popup.hidden)adjustPopup(n);
+  return true;
+}
+const arrowSteps={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+let keyboardNudge=null;
+function endKeyboardNudge(){
+  if(keyboardNudge?.token===gesture)gesture=null;
+  keyboardNudge=null;
+}
+function handleSelectionArrow(e){
+  if(!Object.hasOwn(arrowSteps,e.key))return false;
+  const n=now();if(!canDragCanvas(n))return false;
+  const [dx,dy]=arrowSteps[e.key];
+  const section=n.hasAttribute('data-bs-row');
+  if(section&&(!dy||e.altKey))return false;
+  e.preventDefault();
+  if(dy&&!e.altKey&&(section||canStepSelection(n,dy))){
+    endKeyboardNudge();
+    stepSelection(n,dy);
+    return true;
+  }
+  if(!canDragIndependently(n))return true;
+  const device=devicePlacement(), id=idOf(n), amount=e.shiftKey?10:2;
+  const previous=dragOffset(n,device);
+  const current=offsetDragStart(n);
+  if(!keyboardNudge||keyboardNudge.id!==id||keyboardNudge.key!==e.key||keyboardNudge.device!==device){
+    keyboardNudge={id,key:e.key,device,token:Symbol()};
+  }
+  const {p}=offsetDragTarget(n,current,dx*amount,dy*amount,false);
+  if(Math.abs(p.x-previous.x)<.0001&&Math.abs(p.y-previous.y)<.01)return true;
+  if(record(dragOperation(n,device,p),keyboardNudge.token)&&!popup.hidden)adjustPopup(n);
+  return true;
 }
 function sectionOrder(focusId,focusStep){
   const put=open('Section order','PAGE LAYOUT');
@@ -1042,6 +1099,7 @@ function clearFlowPreview(){
   flowPreview?.slot?.remove();
   flowPreview=null;
   $('drop-guide').hidden=true;
+  $('drop-target-outline').hidden=true;
 }
 function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=false){
   if(StudioFlow.isSide(choice.side)){
@@ -1058,18 +1116,33 @@ function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=f
   flowPreview={...choice,slot};
   positionFlowGuide(f);
 }
+function showTargetOutline(f,r){
+  const outline=$('drop-target-outline');
+  const left=Math.max(1,r.left), right=Math.min(f.width-1,r.right);
+  const top=Math.max(1,r.top), bottom=Math.min(f.height-1,r.bottom);
+  outline.hidden=right-left<6||bottom-top<6;
+  if(!outline.hidden)Object.assign(outline.style,{left:(f.left+left)+'px',top:(f.top+top)+'px',
+    width:(right-left)+'px',height:(bottom-top)+'px'});
+}
 function positionFlowGuide(f){
   const marker=$('drop-guide'), side=flowPreview.side, vertical=StudioFlow.isSide(side);
-  const anchor=vertical?StudioFlow.sideAnchor(flowPreview.node).getBoundingClientRect():null;
-  const r=vertical?{left:anchor[side]-2,right:anchor[side]+2,top:anchor.top,bottom:anchor.bottom}:flowPreview.slot.getBoundingClientRect();
+  const target=flowPreview.node;
+  const anchor=target&&StudioFlow.unit(target).getBoundingClientRect();
+  if(anchor)showTargetOutline(f,anchor);
+  const track=vertical?StudioFlow.sideAnchor(target).getBoundingClientRect():null;
+  const line=vertical?Math.max(3,Math.min(f.width-3,track[side])):null;
+  const r=vertical?{left:line-2,right:line+2,top:track.top,bottom:track.bottom}:flowPreview.slot.getBoundingClientRect();
   marker.classList.toggle('side-guide',vertical);
   const left=Math.max(0,r.left), right=Math.min(f.width,r.right);
   const top=Math.max(0,r.top), bottom=Math.min(f.height,r.bottom);
   if(right<=left||bottom<=top){marker.hidden=true;return;}
-  $('guide-label').textContent=vertical?(flowPreview.native?'Move ':'Add column ')+side:side==='inside'?'Place in column':
-    flowPreview.side==='before'||flowPreview.side==='section-start'?'Insert above':'Insert below';
+  const label=$('guide-label');
+  label.textContent=vertical?(flowPreview.native?'Move ':'Add column ')+side:side==='inside'?'Place in column':
+    side==='before'||side==='section-start'?'Insert above':'Insert below';
   Object.assign(marker.style,{left:(f.left+left)+'px',top:(f.top+top)+'px',width:(right-left)+'px',height:(bottom-top)+'px'});
   marker.hidden=false;
+  const labelWidth=label.offsetWidth;
+  label.style.left=Math.max(4-left,Math.min(vertical?-labelWidth/2:5,f.width-left-labelWidth-4))+'px';
 }
 function updateDrag(x,y,free=drag?.free){
   if(!drag)return;
@@ -1197,8 +1270,8 @@ $('drag').addEventListener('click',e=>{if(e.detail===0&&canDragCanvas(now())){
   const n=now();if(n.hasAttribute('data-bs-row')||n.matches('.therapy-card')||therapyPhoto(n))openSettings(n);else gridPanel(n);
 }});
 $('section-order').onclick=()=>sectionOrder();
-$('selection-up').onclick=()=>moveInDirection(now(),-1);
-$('selection-down').onclick=()=>moveInDirection(now(),1);
+$('selection-up').onclick=()=>stepSelection(now(),-1);
+$('selection-down').onclick=()=>stepSelection(now(),1);
 $('selection-settings').onclick=()=>now()&&openSettings(now());
 $('selection-add').onclick=()=>startAdd();
 $('selection-duplicate').onclick=()=>now()&&cloneSelected(now());
@@ -1359,7 +1432,7 @@ $('help').onclick=()=>{
   toggleMenu(false);const place=open('How to edit this page','QUICK GUIDE');
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
   para('Drag a block into the space beside another block. Release when the side guide appears. Use the green divider to adjust widths. Columns stack on phones.');
-  para('Drag a selected section on the canvas, or use its up/down arrows to change its order.');
+  para('Use the up/down buttons on a selected block to move it directly above or below its neighbour. The arrow keys also move the selection. Hold Alt with an arrow key to nudge without reordering.');
   para('Select an element, then press and drag it directly on the canvas or use its grip. The grid shows while dragging. Drop at an Insert above or Insert below marker to make room for it.');
   para('For independent movement without reordering, hold Shift while dragging. Layout moves apply on every device.');
   para('Use Delete in the item settings to remove it from your draft. Undo restores deleted content.');

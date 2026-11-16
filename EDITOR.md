@@ -47,6 +47,7 @@ The **Add element** palette groups text, media and links, and layout blocks. Use
 - **YouTube video** accepts watch, share, Shorts, and live URLs and renders the video automatically. Use **Preview** to play it.
 - **Embed code** accepts an HTTPS embed URL, iframe code, or HTML snippets. Custom code runs in an isolated frame. Some providers limit where embeds work.
 - Drop a block into the space to the left or right of another block to create columns without adding a row first. Drop at the edge of an existing automatic column to extend the group.
+- The dotted outline identifies the active drop target. The selected block’s up/down arrows reorder adjacent content. Arrow keys move the selection, and Alt plus an arrow nudges without reordering.
 - **Columns** accepts a custom count from 1 to 100. Click the row or a column, then drag the green divider between two columns. A focused divider also supports keyboard arrow keys. Rows stack on phones. Very wide rows can scroll horizontally on larger screens.
 
 See [the publisher setup and rollback guide](supabase/README.md). GitHub is the source and host. Vercel is not part of this publishing flow.

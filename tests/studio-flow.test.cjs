@@ -105,3 +105,21 @@ test('native visual groups permit moving sibling cards while a form field stays 
   assert.equal(flow.source(element(form,true)),false);
   assert.equal(flow.target(a,a,'left'),false);
 });
+
+test('adjacent layout moves skip hidden anchors and do not move inside nested content',()=>{
+  const row={}, parent={closest:()=>null,matches:()=>false};
+  const node=(x={})=>({
+    isConnected:true,dataset:{bsMove:'yes'},parentElement:parent,hasAttribute:()=>false,
+    matches:()=>false,querySelector:()=>null,contains:()=>false,closest:()=>null,...x,
+  });
+  const above=node({matches:q=>q==='[data-bs-move="yes"]'}), below=node({matches:q=>q==='[data-bs-move="yes"]'});
+  const marker=node({matches:()=>true,previousElementSibling:above});
+  const n=node({previousElementSibling:marker,nextElementSibling:below});
+  const flow=vm.runInNewContext(code+'\nStudioFlow',{rowOf:()=>row,freeShell:()=>null});
+  assert.equal(flow.stepTarget(n,-1).node,above);
+  assert.equal(flow.stepTarget(n,-1).side,'before');
+  assert.equal(flow.stepTarget(n,1).node,below);
+  assert.equal(flow.stepTarget(n,1).side,'after');
+  n.nextElementSibling=null;
+  assert.equal(flow.stepTarget(n,1),null);
+});
