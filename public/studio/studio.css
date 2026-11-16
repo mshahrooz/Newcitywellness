@@ -138,3 +138,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .palette-grip{position:absolute;right:6px;top:3px;min-width:20px;min-height:32px;display:grid;place-items:center;touch-action:none;color:#608878;font-size:13px}
 #palette-drag-chip{position:fixed;pointer-events:none;z-index:10;padding:6px 11px;border:1px solid #fff;border-radius:6px;background:#235e4b;color:white;font-size:12px;font-weight:700;box-shadow:0 2px 9px #123f2b60}
 @media(pointer:coarse){.quick-grid .palette-block{min-height:48px}}
+
+#drop-guide.side-guide{border:0;border-radius:4px;background:#278662;box-shadow:0 0 0 1px #fff}
+#drop-guide.side-guide #guide-label{top:4px;left:0;transform:translateX(-50%)}

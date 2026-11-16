@@ -5,7 +5,7 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=palette-drag1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=auto-columns1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
 const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
 let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
 const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
@@ -253,9 +253,12 @@ function deleteElement(n){
   const removed=therapyPhoto(n)&&parent.children.length===1?parent:n;
   const ids=new Set([removed,...removed.querySelectorAll('[id]')].map(el=>el.id).filter(Boolean));
   removed.remove();
-  if(widths)StudioColumns.set(parent,widths);
+  if(widths){
+    if(parent.matches('.bs-auto-columns'))StudioFlow.compactAutoGrid(parent,widths);
+    else StudioColumns.set(parent,widths);
+  }
   if(shell)removeFreeContainer(shell);
-  else dePair(parent);
+  else {dePair(parent);StudioFlow.cleanupAutoColumn(parent);}
   for(const slot of D.querySelectorAll('template[data-bs-flow-origin]')){
     if(slot.dataset.bsFlowOrigin===idOf(n))slot.remove();
   }
@@ -291,7 +294,8 @@ function apply(op){
     return true;
   }
   if(op.kind==='palette-add'&&!n&&target&&Object.hasOwn(types,op.type)&&op.type!=='row'){
-    return StudioFlow.placeNew(makeBlock(op.type,op.id),target,op.side);
+    const block=makeBlock(op.type,op.id);
+    return StudioFlow.isSide(op.side)?StudioFlow.alongside(block,target,op.side,op.pair,true):StudioFlow.placeNew(block,target,op.side);
   }
   if(op.kind==='add'&&!n&&target&&Object.hasOwn(types,op.type)&&op.type!=='row'){
     return insertNear(makeBlock(op.type,op.id),target,op.side,op.id+'-pair');
@@ -319,7 +323,7 @@ function apply(op){
       const el=surfaceOf(n), h=bounded(op.value,0,2500);
       el.classList.toggle('bs-manual-size',h>0);
       el.style.setProperty('--bs-manual-height',h+'px');return true;
-    case 'flow-move':return StudioFlow.move(n,target,op.side);
+    case 'flow-move':return StudioFlow.isSide(op.side)?StudioFlow.alongside(n,target,op.side,op.pair):StudioFlow.move(n,target,op.side);
     case 'move': {
       if(n.hasAttribute('data-bs-row')){
         if(!target?.hasAttribute('data-bs-row')||target===n||n.parentElement!==main()||target.parentElement!==main())return false;
@@ -334,7 +338,7 @@ function apply(op){
       if(n.dataset.bsRow!=='custom'||!StudioColumns.count(op.value))return false;
       setColumns(n,Number(op.value));return true;
     case 'column-widths':
-      return n.dataset.bsRow==='custom'&&StudioColumns.set(n.querySelector(':scope > .bs-row-inner'),op.value);
+      return StudioColumns.set(n.matches('.bs-auto-columns')?n:n.dataset.bsRow==='custom'?n.querySelector(':scope > .bs-row-inner'):null,op.value);
     case 'embed':
       return applyEmbed(n,k,op.value);
     case 'embed-title':
@@ -693,7 +697,7 @@ function pickTarget(){
   const actions=group();
   const commit=(s)=>{
     const peer=byId(sel.value), side=peer.hasAttribute('data-bs-column')?'inside':s;
-    if(!record({kind:'move',id:idOf(n),target:idOf(peer),side,pair:unique()})){flash('Choose another destination.');return;}
+    if(!record({kind:StudioFlow.isSide(side)?'flow-move':'move',id:idOf(n),target:idOf(peer),side,pair:unique()})){flash('Choose another destination.');return;}
     n.scrollIntoView({block:'nearest'});choose(n);
   };
   for(const [side,t] of [['before','Above / inside'],['after','Below'],['left','To the left'],['right','To the right']])button(actions,t,()=>commit(side));
@@ -902,7 +906,7 @@ function rowChoices(anchor,side='after',columnsOnly=false){
 function startAdd(n=now()) {
   clearGridPick();
   const place=open('Add element','PAGE ELEMENTS',n);
-  para('Drag a block onto the page. The highlighted gap shows where it will go. You can also select a block and click to place it.');
+  para('Drag a block onto the page. Drop at a left or right edge to make columns, or at a top or bottom edge to stack blocks.');
   const sections={};
   for(const [kind,[t,,description,category]] of Object.entries(types)){
     if(!sections[category]){
@@ -958,7 +962,7 @@ function updatePaletteDrag(x,y){
     d.choice=null;clearFlowPreview();hideGridVisual();return;
   }
   showDragGrid(f);
-  const slot=flowPreview?.slot,r=slot?.getBoundingClientRect();
+  const r=flowPreview?.slot?.getBoundingClientRect();
   if(r&&r.width>0&&r.height>0&&px>=r.left-8&&px<=r.right+8&&py>=r.top-9&&py<=r.bottom+9){
     positionFlowGuide(f);return;
   }
@@ -977,7 +981,7 @@ function placePaletteBlock(kind,choice){
   const id=unique(), target=idOf(choice.node)||null;
   const addRow=choice.row;
   if(!record(addRow?{kind:'row-add',id,target,side:choice.side==='before'?'before':'after',cols:kind==='row'?2:1,...(kind==='row'?{}:{type:kind})}
-    :{kind:'palette-add',id,target,type:kind,side:choice.side}))return false;
+    :{kind:'palette-add',id,target,type:kind,side:choice.side,pair:StudioFlow.isSide(choice.side)?unique():undefined}))return false;
   const fresh=byId(addRow&&kind!=='row'?id+'-block':id);
   $('hint').textContent=defaultHint();
   fresh.scrollIntoView({block:'nearest'});choose(fresh);
@@ -1010,11 +1014,14 @@ for(const name of ['pointercancel','lostpointercapture'])document.addEventListen
 window.addEventListener('blur',()=>{if(paletteDrag)finishPaletteDrag();});
 let flowPreview=null;
 function clearFlowPreview(){
-  flowPreview?.slot.remove();
+  flowPreview?.slot?.remove();
   flowPreview=null;
   $('drop-guide').hidden=true;
 }
 function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=false){
+  if(StudioFlow.isSide(choice.side)){
+    flowPreview=choice;positionFlowGuide(f);return;
+  }
   const el=choice.node&&StudioFlow.unit(choice.node);
   const slot=addNative('div',{'data-bs-drop-slot':'','aria-hidden':'true'});
   // This placeholder participates in layout, so the page shows the gap before release.
@@ -1027,11 +1034,14 @@ function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=f
   positionFlowGuide(f);
 }
 function positionFlowGuide(f){
-  const r=flowPreview.slot.getBoundingClientRect(), marker=$('drop-guide');
+  const marker=$('drop-guide'), side=flowPreview.side, vertical=StudioFlow.isSide(side);
+  const anchor=vertical?StudioFlow.sideAnchor(flowPreview.node).getBoundingClientRect():null;
+  const r=vertical?{left:anchor[side]-2,right:anchor[side]+2,top:anchor.top,bottom:anchor.bottom}:flowPreview.slot.getBoundingClientRect();
+  marker.classList.toggle('side-guide',vertical);
   const left=Math.max(0,r.left), right=Math.min(f.width,r.right);
   const top=Math.max(0,r.top), bottom=Math.min(f.height,r.bottom);
   if(right<=left||bottom<=top){marker.hidden=true;return;}
-  $('guide-label').textContent=flowPreview.side==='inside'?'Place in column':
+  $('guide-label').textContent=vertical?'Add column '+side:side==='inside'?'Place in column':
     flowPreview.side==='before'||flowPreview.side==='section-start'?'Insert above':'Insert below';
   Object.assign(marker.style,{left:(f.left+left)+'px',top:(f.top+top)+'px',width:(right-left)+'px',height:(bottom-top)+'px'});
   marker.hidden=false;
@@ -1058,7 +1068,7 @@ function updateDrag(x,y,free=drag?.free){
   showDragGrid(f);
   if(!free){
     const px=x-f.left, py=y-f.top;
-    if(flowPreview){
+    if(flowPreview?.slot){
       const r=flowPreview.slot.getBoundingClientRect();
       if(px>=r.left-10&&px<=r.right+10&&py>=r.top-12&&py<=r.bottom+12){
         positionFlowGuide(f);return;
@@ -1095,8 +1105,8 @@ function finishDrag(commit=false){
   if(gesture.capture.hasPointerCapture?.(gesture.pointer))gesture.capture.releasePointerCapture(gesture.pointer);
   if(!commit){paint();return;}
   if(choice&&gesture.moved){
-    if(choice.node&&StudioFlow.noop(gesture.node,choice.node,choice.side)){paint();return;}
-    const op=choice.node?{kind:'flow-move',id:idOf(gesture.node),target:idOf(choice.node),side:choice.side}:dragOperation(gesture.node,choice.device,choice.p);
+    if(choice.node&&!StudioFlow.isSide(choice.side)&&StudioFlow.noop(gesture.node,choice.node,choice.side)){paint();return;}
+    const op=choice.node?{kind:'flow-move',id:idOf(gesture.node),target:idOf(choice.node),side:choice.side,pair:StudioFlow.isSide(choice.side)?unique():undefined}:dragOperation(gesture.node,choice.device,choice.p);
     if(record(op)){
       if(choice.node)gesture.node.scrollIntoView({block:'nearest'});
       choose(gesture.node,false);
@@ -1170,6 +1180,7 @@ $('add-section').onclick=()=>rowChoices(now());
 const handles=$('column-handles');
 let columnDrag=null, handleGrid=null;
 function directColumnGrid(n){
+  const auto=n?.closest('.bs-auto-columns');if(auto)return auto;
   const row=rowOf(n);
   return row?.dataset.bsRow==='custom'?row.querySelector(':scope > .bs-row-inner'):null;
 }
@@ -1181,7 +1192,7 @@ function columnMin(grid,widths){
 function paintColumnHandles(){
   if(!handles)return;
   const grid=columnDrag?.grid||directColumnGrid(now());
-  const row=grid?.parentElement;
+  const row=grid?.matches('.bs-auto-columns')?grid:grid?.parentElement;
   const visible=D&&mode==='edit'&&!switching&&!drag?.moved&&!paletteDrag?.moved&&!resizeDrag&&!gridPick&&grid?.children.length>1
     &&D.defaultView.matchMedia('(min-width: 768px)').matches;
   if(!visible){handles.hidden=true;return;}
@@ -1245,7 +1256,7 @@ function endColumnDrag(commit,e){
   columnDrag=null;handles.classList.remove('dragging');
   if(r.control.hasPointerCapture(r.pointer))r.control.releasePointerCapture(r.pointer);
   if(!r.grid.isConnected)return;
-  if(commit&&r.next?.some((v,i)=>Math.abs(v-r.widths[i])>0.0001))record({kind:'column-widths',id:idOf(r.grid.parentElement),value:r.next});
+  if(commit&&r.next?.some((v,i)=>Math.abs(v-r.widths[i])>0.0001))record({kind:'column-widths',id:idOf(r.grid.matches('.bs-auto-columns')?r.grid:r.grid.parentElement),value:r.next});
   else {StudioColumns.set(r.grid,r.widths);paint();}
 }
 
@@ -1320,7 +1331,7 @@ $('compare').onclick=()=>{toggleMenu(false);window.open(canvasPath(),'_blank','n
 $('help').onclick=()=>{
   toggleMenu(false);const place=open('How to edit this page','QUICK GUIDE');
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
-  para('Open Add element, then drag a block from the library. Release when you see the insertion gap.');
+  para('Drag a block from Add element to the left or right edge of another block to create columns. Use the green divider to adjust widths. Columns stack on phones.');
   para('Open Sections in the top bar, or use the selected section’s arrows to change its order.');
   para('Select an element, then press and drag it directly on the canvas or use its grip. The grid shows while dragging. Drop at an Insert above or Insert below marker to make room for it.');
   para('For independent movement without reordering, hold Shift while dragging. Layout moves apply on every device.');
