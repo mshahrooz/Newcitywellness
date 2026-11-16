@@ -5,7 +5,7 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=auto-columns1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=flex-columns1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
 const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
 let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
 const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
@@ -46,7 +46,7 @@ const isExisting=e=>!!e&&!e.closest('[data-bs-new]');
 const rowTitle=n=>n?.dataset.bsLabel||labels[n?.getAttribute('data-builder-section')]||'Section';
 const therapyCard=n=>n?.closest('.therapy-card');
 const therapyPhoto=n=>n?.matches('.therapy-card .therapy-image > img');
-const titleOf=n=>n.matches('.therapy-card')?'Therapy card':n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-zone')?rowTitle(n):n.hasAttribute('data-bs-column')?'Column':({image:'Image',button:'Button',document:'Document',title:'Heading',text:'Paragraph',link:'Link',component:'Component',detail:'Detail',form:'Form',field:'Form field',video:'Video'})[n.dataset.bsKind]||types[n.dataset.bsKind]?.[0]||'Element';
+const titleOf=n=>n.matches('.therapy-card')?'Therapy card':n.matches('.testimonial-card,.reviews-card')?'Testimonial card':n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-zone')?rowTitle(n):n.hasAttribute('data-bs-column')?'Column':({image:'Image',button:'Button',document:'Document',title:'Heading',text:'Paragraph',link:'Link',component:'Component',detail:'Detail',form:'Form',field:'Form field',video:'Video',media:'Embedded media'})[n.dataset.bsKind]||types[n.dataset.bsKind]?.[0]||'Element';
 const rowList=()=>[...main().children].filter(x=>x.hasAttribute('data-bs-row'));
 const unique=()=> 'new-'+crypto.randomUUID();
 const asString=(v,len=3000)=>typeof v==='string'?v.slice(0,len):'';
@@ -112,7 +112,26 @@ function markCanvas() {
       } else if(el.matches('a.btn')&&!el.closest('.hero-actions')||page[0]!=='home'&&el.matches('img')&&!el.closest('.page-hero-photo')){el.dataset.bsMove='yes';}
     });
   });
-  registerExtraNodes();
+  registerExtraNodes();markMoreDraggables();
+}
+function markMoreDraggables(){
+  // Mark after legacy IDs so previously saved drafts retain their anchors.
+  const selectors='img,svg,iframe,video,audio,blockquote,figcaption,hr,dl,dt,dd,summary,details,aside,table,tr,th,td,legend,strong,em,small,span,div';
+  D.querySelectorAll('.faq-list > details').forEach((item,index)=>{item.dataset.ncwFaqPhoto=String(index);});
+  const flowUnits='h1,h2,h3,h4,h5,h6,p,img,figure,iframe,video,blockquote,hr,dl,details,aside,table,form,a.btn,.hero-actions,.hero-seal,.therapy-card,.condition-card,.testimonial-card,.reviews-card,.contact-form-wrap,.contact-map-frame,.insurance-frame,[data-builder-zone]';
+  let serial=0;
+  for(const el of D.querySelectorAll(selectors)){
+    if(idOf(el)||!zoneOf(el)||el.closest('script,style,template,[hidden]')||el.hasAttribute('data-builder-anchor'))continue;
+    if(el.closest('svg,[aria-hidden="true"]')&&!el.matches('img,svg,iframe'))continue;
+    if(el.matches('div,span')&&!el.matches(flowUnits)&&!el.className&&!el.id&&el.childElementCount===0)continue;
+    el.dataset.bsId='detail-new-'+(++serial);
+    el.dataset.bsKind=el.matches('img')?'image':el.matches('iframe,video,audio')?'media':el.matches('span,strong,em,small,figcaption,dt,dd,legend')&&!el.children.length?'detail':'component';
+  }
+  for(const el of D.querySelectorAll(flowUnits)){
+    if(!el.dataset.bsKind||!rowOf(el)||el.closest('.page-hero-photo,.hero-media'))continue;
+    if(el.matches('img')&&el.parentElement?.classList.contains('therapy-image'))continue;
+    el.dataset.bsMove='yes';
+  }
 }
 function content(el){
   if(el.hasAttribute('data-bs-new')){
@@ -538,8 +557,11 @@ function adjustPopup(n, stable=false){
   popup.style.top=Math.max(6,Math.min(top,wh-h-6))+'px';
 }
 let canvasDragTarget=null;
+function canDragCanvas(n){
+  return canDragIndependently(n)||!!(n?.isConnected&&n.hasAttribute('data-bs-row')&&n.parentElement===main());
+}
 function syncCanvasDragTarget(n){
-  const next=mode==='edit'&&canDragIndependently(n)?n:null;
+  const next=mode==='edit'&&canDragCanvas(n)?n:null;
   if(next===canvasDragTarget)return;
   canvasDragTarget?.removeAttribute('data-bs-drag-ready');
   next?.setAttribute('data-bs-drag-ready','');
@@ -559,7 +581,7 @@ function paint(){
   Object.assign(outline.style,{left:l+'px',top:top+'px',width:(rt-l)+'px',height:(bt-top)+'px'});
   outline.hidden=false;
   $('selection-label').textContent=titleOf(n);
-  $('drag').hidden=!canDragIndependently(n);
+  $('drag').hidden=!canDragCanvas(n);
   $('selection-add').hidden=false;
   for(const [id,step] of [['selection-up',-1],['selection-down',1]]){
     const control=$(id);control.hidden=!row;control.disabled=!row||!sectionNeighbor(n,step);
@@ -640,6 +662,8 @@ function targetFrom(el,wholeCard=false){
   const card=therapyCard(el);
   if(card&&wholeCard)return card;
   const exact=el.closest('[data-bs-kind]');
+  const interactive=el.closest('a[href][data-bs-kind],button[data-bs-kind],label[data-bs-kind],summary[data-bs-kind]');
+  if(!wholeCard&&interactive&&exact?.dataset.bsId?.startsWith('detail-new-'))return interactive;
   if(card){
     if(therapyPhoto(exact)||exact?.matches('h3'))return exact;
     const photo=el.closest('.therapy-image')?.querySelector('img[data-bs-kind="image"]');
@@ -859,7 +883,8 @@ function openSettings(n) {
   if(!therapyPhoto(n)){button(actions,'Position and size',()=>gridPanel(n));button(actions,'Duplicate',()=>cloneSelected(n));}
   if(n.dataset.bsMove==='yes')button(actions,'Move to…',()=>pickTarget(n));
   dragResetControl(actions,n);
-  if(therapyCard(n))button(actions,'Select whole card',()=>choose(therapyCard(n)));
+  const groupParent=n.parentElement?.closest('.therapy-card,.reviews-card,.testimonial-card,form,details,figure,[data-bs-column]');
+  if(groupParent&&idOf(groupParent))button(actions,'Select whole '+titleOf(groupParent).toLowerCase(),()=>choose(groupParent));
   if(!therapyPhoto(n))button(actions,'Add nearby',()=>startAdd(n));
   const parent=n.parentElement?.closest('[data-bs-kind],[data-bs-column]');
   if(parent&&!therapyCard(n))button(actions,'Select parent '+titleOf(parent).toLowerCase(),()=>choose(parent));
@@ -1027,7 +1052,7 @@ function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=f
   // This placeholder participates in layout, so the page shows the gap before release.
   slot.style.height=Math.max(24,Math.min(height,240))+'px';
   if(!el)main().append(slot);
-  else if(fromPalette&&!choice.row){if(!StudioFlow.placeNew(slot,choice.node,choice.side))return;}
+  else if(!choice.row&&(fromPalette||choice.side.startsWith('section-'))){if(!StudioFlow.placeNew(slot,choice.node,choice.side))return;}
   else if(choice.side==='inside')el.append(slot);
   else el[choice.side](slot);
   flowPreview={...choice,slot};
@@ -1041,7 +1066,7 @@ function positionFlowGuide(f){
   const left=Math.max(0,r.left), right=Math.min(f.width,r.right);
   const top=Math.max(0,r.top), bottom=Math.min(f.height,r.bottom);
   if(right<=left||bottom<=top){marker.hidden=true;return;}
-  $('guide-label').textContent=vertical?'Add column '+side:side==='inside'?'Place in column':
+  $('guide-label').textContent=vertical?(flowPreview.native?'Move ':'Add column ')+side:side==='inside'?'Place in column':
     flowPreview.side==='before'||flowPreview.side==='section-start'?'Insert above':'Insert below';
   Object.assign(marker.style,{left:(f.left+left)+'px',top:(f.top+top)+'px',width:(right-left)+'px',height:(bottom-top)+'px'});
   marker.hidden=false;
@@ -1066,7 +1091,7 @@ function updateDrag(x,y,free=drag?.free){
     guide=null;clearFlowPreview();hideGridVisual();return;
   }
   showDragGrid(f);
-  if(!free){
+  if(!free||drag.section){
     const px=x-f.left, py=y-f.top;
     if(flowPreview?.slot){
       const r=flowPreview.slot.getBoundingClientRect();
@@ -1075,12 +1100,13 @@ function updateDrag(x,y,free=drag?.free){
       }
     }
     clearFlowPreview();
-    const choice=StudioFlow.find(drag.node,px,py);
+    const choice=drag.section?StudioFlow.sectionTarget(drag.node,px,py):StudioFlow.find(drag.node,px,py);
     if(choice){
       guide=choice;
       freeGhostHide();showFlowPreview(choice,f);return;
     }
   } else clearFlowPreview();
+  if(drag.section){guide=null;freeGhostHide();return;}
   guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,false);
   const {left,top,width,height}=guide;
   drawGhost(drag.node,f.left+left,f.top+top,width,height);
@@ -1105,22 +1131,23 @@ function finishDrag(commit=false){
   if(gesture.capture.hasPointerCapture?.(gesture.pointer))gesture.capture.releasePointerCapture(gesture.pointer);
   if(!commit){paint();return;}
   if(choice&&gesture.moved){
-    if(choice.node&&!StudioFlow.isSide(choice.side)&&StudioFlow.noop(gesture.node,choice.node,choice.side)){paint();return;}
-    const op=choice.node?{kind:'flow-move',id:idOf(gesture.node),target:idOf(choice.node),side:choice.side,pair:StudioFlow.isSide(choice.side)?unique():undefined}:dragOperation(gesture.node,choice.device,choice.p);
+    if(choice.node&&!gesture.section&&!StudioFlow.isSide(choice.side)&&StudioFlow.noop(gesture.node,choice.node,choice.side)){paint();return;}
+    const op=choice.node?{kind:gesture.section?'move':'flow-move',id:idOf(gesture.node),target:idOf(choice.node),side:choice.side,pair:StudioFlow.isSide(choice.side)?unique():undefined}:dragOperation(gesture.node,choice.device,choice.p);
     if(record(op)){
       if(choice.node)gesture.node.scrollIntoView({block:'nearest'});
       choose(gesture.node,false);
     }else paint();
   }else if(!gesture.moved&&!gesture.direct){
-    if(gesture.node.matches('.therapy-card')||therapyPhoto(gesture.node))openSettings(gesture.node);else gridPanel(gesture.node);
+    if(gesture.section||gesture.node.matches('.therapy-card')||therapyPhoto(gesture.node))openSettings(gesture.node);else gridPanel(gesture.node);
   }else paint();
 }
 function beginItemDrag(e,n,capture,direct=false,cancelClick=null){
-  if(e.button!==0||e.isPrimary===false||switching||mode!=='edit'||drag||paletteDrag||resizeDrag||columnDrag||!canDragIndependently(n))return;
+  if(e.button!==0||e.isPrimary===false||switching||mode!=='edit'||drag||paletteDrag||resizeDrag||columnDrag||!canDragCanvas(n))return;
   if(!direct){e.preventDefault();clearGridPick();capture.setPointerCapture(e.pointerId);}
   const f=frame.getBoundingClientRect(), x=e.clientX+(direct?f.left:0), y=e.clientY+(direct?f.top:0);
-  const layout=offsetDragStart(n);
-  drag={node:n,pointer:e.pointerId,capture,direct,cancelClick,startX:x,startY:y,x,y,moved:false,free:e.shiftKey,layout};
+  const section=n.hasAttribute('data-bs-row');
+  const layout=section?{r:(surfaceOf(n)||n).getBoundingClientRect(),device:devicePlacement()}:offsetDragStart(n);
+  drag={node:n,section,pointer:e.pointerId,capture,direct,cancelClick,startX:x,startY:y,x,y,moved:false,free:e.shiftKey,layout};
   viewportTick=requestAnimationFrame(duringDrag);
 }
 function itemPointerMove(e,direct){
@@ -1149,7 +1176,7 @@ function bindCanvasDragging(doc){
     if(e.isPrimary===false)return;
     dragged=false;
     const n=now(), hit=e.target;
-    if(placement||gridPick||!n?.contains(hit)||hit.closest('input,select,textarea,button,[contenteditable]'))return;
+    if(placement||gridPick||!n?.contains(hit)||hit.closest('[contenteditable]'))return;
     // Don't capture a simple click. Once the pointer moves, capture on a stable
     // node so it stays active as the element or insertion gap moves.
     beginItemDrag(e,n,doc.documentElement,true,()=>{dragged=true;});
@@ -1166,8 +1193,8 @@ function bindCanvasDragging(doc){
     dragged=false;e.preventDefault();e.stopImmediatePropagation();
   },true);
 }
-$('drag').addEventListener('click',e=>{if(e.detail===0&&canDragIndependently(now())){
-  const n=now();if(n.matches('.therapy-card')||therapyPhoto(n))openSettings(n);else gridPanel(n);
+$('drag').addEventListener('click',e=>{if(e.detail===0&&canDragCanvas(now())){
+  const n=now();if(n.hasAttribute('data-bs-row')||n.matches('.therapy-card')||therapyPhoto(n))openSettings(n);else gridPanel(n);
 }});
 $('section-order').onclick=()=>sectionOrder();
 $('selection-up').onclick=()=>moveInDirection(now(),-1);
@@ -1331,8 +1358,8 @@ $('compare').onclick=()=>{toggleMenu(false);window.open(canvasPath(),'_blank','n
 $('help').onclick=()=>{
   toggleMenu(false);const place=open('How to edit this page','QUICK GUIDE');
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
-  para('Drag a block from Add element to the left or right edge of another block to create columns. Use the green divider to adjust widths. Columns stack on phones.');
-  para('Open Sections in the top bar, or use the selected section’s arrows to change its order.');
+  para('Drag a block into the space beside another block. Release when the side guide appears. Use the green divider to adjust widths. Columns stack on phones.');
+  para('Drag a selected section on the canvas, or use its up/down arrows to change its order.');
   para('Select an element, then press and drag it directly on the canvas or use its grip. The grid shows while dragging. Drop at an Insert above or Insert below marker to make room for it.');
   para('For independent movement without reordering, hold Shift while dragging. Layout moves apply on every device.');
   para('Use Delete in the item settings to remove it from your draft. Undo restores deleted content.');
@@ -1382,9 +1409,9 @@ function boot(){
     if(gridPick){e.preventDefault();commitPick(e);return;}
     const summary=e.target.closest('summary');
     if(summary&&!summary.closest('[data-bs-new]')&&!placement&&!e.altKey&&!anchor){
-      e.preventDefault();summary.parentElement.open=!summary.parentElement.open;return;
+      e.preventDefault();summary.parentElement.open=!summary.parentElement.open;choose(summary.parentElement,false);return;
     }
-    if(e.target.closest('input,textarea,select,form button'))e.preventDefault();
+    if(e.target.closest('input,textarea,select,button'))e.preventDefault();
     const n=therapyCard(e.target)?targetFrom(e.target,e.altKey):e.altKey
       ?e.target.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row]')||targetFrom(e.target):targetFrom(e.target);
     if(placement){

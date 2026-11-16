@@ -85,7 +85,23 @@ test('horizontal edge targets leave the top and bottom available for stacking',(
   const r={left:100,right:400,width:300,top:100,bottom:260,height:160};
   assert.equal(flow.sideEdges(r,103,170)[0][0],'left');
   assert.equal(flow.sideEdges(r,407,170)[0][0],'right');
-  assert.equal(flow.sideEdges(r,103,102).length,0);
-  assert.equal(flow.sideEdges(r,397,258).length,0);
+  assert.equal(flow.sideEdges(r,160,102).length,0);
+  assert.equal(flow.sideEdges(r,340,258).length,0);
   assert.equal(flow.sideEdges(r,240,170).length,0);
+  assert.equal(flow.sideEdges(r,40,160)[0][0],'left');
+  assert.equal(flow.sideEdges(r,550,165)[0][0],'right');
+  assert.equal(flow.sideEdges(r,320,170)[0][0],'right');
+});
+
+test('native visual groups permit moving sibling cards while a form field stays within its form',()=>{
+  const row={}, grid={matches:q=>q.includes('.therapy-grid'),closest:()=>null}, form={matches:()=>false,closest:()=>true};
+  const element=(parent,isInput=false)=>({
+    isConnected:true,dataset:{bsMove:'yes'},parentElement:parent,hasAttribute:()=>false,
+    matches:q=>isInput&&q.includes('input'),contains:()=>false,closest:()=>null,
+  });
+  const flow=vm.runInNewContext(code+'\nStudioFlow',{rowOf:()=>row,freeShell:()=>null});
+  const a=element(grid), b=element(grid);
+  assert.equal(flow.target(a,b,'left'),true);
+  assert.equal(flow.source(element(form,true)),false);
+  assert.equal(flow.target(a,a,'left'),false);
 });
