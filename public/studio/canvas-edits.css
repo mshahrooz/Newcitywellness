@@ -105,6 +105,11 @@
 /* A temporary layout slot shows the space that the drop will create. */
 .bs-editor-mode [data-bs-drop-slot]{display:block!important;box-sizing:border-box;flex:none;pointer-events:none;width:100%;min-width:0;margin:0;grid-column:auto}
 
+/* Only the selected item grabs a pointer; the rest of the canvas still scrolls. */
+.bs-editor-mode [data-bs-drag-ready]{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.bs-editor-mode [data-bs-drag-ready] :not(input,textarea,select,button,[contenteditable]){cursor:inherit}
+.bs-editor-mode.bs-dragging,.bs-editor-mode.bs-dragging *{cursor:grabbing!important}
+
 /* Desktop offsets are shared. Smaller screens can add their own adjustments. */
 .ncw .bs-offset-item{
   /* Reset inherited custom properties so two nested edited elements don't share offsets. */
