@@ -124,7 +124,7 @@ const StudioPublish = (() => {
     const top=root.ownerDocument.createElement('div');
     output.forEach(n=>top.append(n.cloneNode(true)));
     if(typeof StudioResponsiveOffsets!=='undefined')StudioResponsiveOffsets.strip(top);
-    top.querySelectorAll('script,link,style,.bs-drag-ghost,template[data-bs-flow-origin],[data-studio-runtime]').forEach(n=>n.remove());
+    top.querySelectorAll('script,link,style,.bs-drag-ghost,template[data-bs-flow-origin],[data-studio-runtime],[data-bs-drop-slot]').forEach(n=>n.remove());
     top.querySelectorAll('input,textarea').forEach(n=>{n.removeAttribute('value');if(n.tagName==='TEXTAREA')n.textContent='';});
     top.querySelectorAll('.site-header,.header-nav,.nav-dropdown').forEach(n=>n.classList.remove('is-open','is-pinned','is-scrolled','open'));
     top.querySelectorAll('.mobile-toggle,.nav-dropdown-toggle').forEach(n=>n.setAttribute('aria-expanded','false'));

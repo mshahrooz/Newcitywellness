@@ -2,7 +2,7 @@
 /* A placement layer is created only in sections that receive free-positioned content. */
 const GRID_COLS=48, GRID_STEP=12, GRID_CAP=24000, VIDEO_LIMIT=20*1024*1024;
 const MEDIA_TYPES={image:{jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',avif:'image/avif',gif:'image/gif'},video:{mp4:'video/mp4',webm:'video/webm'}};
-let gridMode='grid', snapGrid=true, gridPick=null, resizeDrag=null;
+let gridMode='flow', snapGrid=true, gridPick=null, resizeDrag=null;
 const freeShell=n=>n?.parentElement?.classList.contains('bs-free-item')?n.parentElement:null;
 const specialZone=n=>n?.closest('[data-bs-zone]');
 function surfaceOf(zone){
@@ -520,11 +520,11 @@ function setGridMode(next){
   const btn=$('grid-mode');
   btn.setAttribute('aria-pressed',String(next==='grid'));
   btn.innerHTML=next==='grid'?'<span aria-hidden="true">▦</span> Grid':'<span aria-hidden="true">≡</span> Flow';
-  btn.title=next==='grid'?'Grid snapping and grid insertion. Click to switch to inline insertion.':'Inline insertion. Dragging still leaves other items in place.';
+  btn.title=next==='grid'?'Free positioning. Switch to Flow to insert above or below other blocks.':'Flow insertion. Switch to Grid to drag without reordering.';
   if(mode==='edit')$('hint').textContent=defaultHint();
 }
 function defaultHint(){
-  return gridMode==='grid'?'Click an element to edit. Drag its grip to move it without shifting other items.':'Drag without shifting other items. Use Move to… for inline reordering.';
+  return gridMode==='grid'?'Click an element to edit. Drag its grip to move it without shifting other items.':'Drag near a block’s top or bottom edge to insert. Hold Shift or switch to Grid for free positioning.';
 }
 function markerFrame(rect){
   const x=Math.max(rect.f.left,rect.left), y=Math.max(rect.f.top,rect.top);
@@ -558,7 +558,8 @@ function drawGhost(n,left,top,w,h){
   const f=frame.getBoundingClientRect();
   if(liveGhostSource!==n||!liveGhost?.isConnected){
     freeGhostHide();liveGhost=addNative('div',{class:'bs-drag-ghost','aria-hidden':'true'});
-    const c=n.cloneNode(true);c.classList.add('bs-drag-look');c.removeAttribute('id');c.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+    const c=n.cloneNode(true);
+    c.querySelectorAll('iframe').forEach(el=>el.replaceWith(D.createTextNode(el.title||'Embedded content')));c.classList.add('bs-drag-look');c.removeAttribute('id');c.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
     const look=D.defaultView.getComputedStyle(n);
     for(const key of [...preserveList,'font-size','padding-top','padding-bottom','padding-left','padding-right','display']){const value=look.getPropertyValue(key);if(value)c.style.setProperty(key,value);}
     for(const v of c.querySelectorAll('video')){v.removeAttribute('autoplay');v.removeAttribute('src');v.querySelectorAll('source').forEach(s=>s.removeAttribute('src'));}

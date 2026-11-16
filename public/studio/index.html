@@ -6,18 +6,19 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#152c25">
 <title>New City Wellness · Page Studio</title>
-<link rel="stylesheet" href="studio.css?v=embed-columns1">
-<script src="pages.js?v=embed-columns1" defer></script>
-<script src="canvas-behavior.js?v=embed-columns1" defer></script>
-<script src="../homepage-studio/page-runtime.js?v=embed-columns1" data-preview-runtime defer></script>
+<link rel="stylesheet" href="studio.css?v=flow-layout1">
+<script src="pages.js?v=flow-layout1" defer></script>
+<script src="canvas-behavior.js?v=flow-layout1" defer></script>
+<script src="../homepage-studio/page-runtime.js?v=flow-layout1" data-preview-runtime defer></script>
 <script src="../homepage-studio/responsive-offsets.js?v=2" defer></script>
-<script src="embeds.js?v=embed-columns1" defer></script>
-<script src="columns.js?v=embed-columns1" defer></script>
-<script src="grid.js?v=embed-columns1" defer></script>
-<script src="studio.js?v=embed-columns1" defer></script>
+<script src="embeds.js?v=flow-layout1" defer></script>
+<script src="columns.js?v=flow-layout1" defer></script>
+<script src="grid.js?v=flow-layout1" defer></script>
+<script src="flow.js?v=flow-layout1" defer></script>
+<script src="studio.js?v=flow-layout1" defer></script>
 <script src="studio-revision.js?v=publish2" defer></script>
 <script src="publisher-config.js" defer></script>
-<script src="publish.js?v=embed-columns1" defer></script>
+<script src="publish.js?v=flow-layout1" defer></script>
 </head>
 <body>
 <header class="studio-bar">
@@ -26,10 +27,11 @@
   <div class="tools" aria-label="Page tools">
     <button class="accent" id="add" type="button"><b aria-hidden="true">＋</b> Add<span class="wide"> element</span></button>
     <button id="add-section" type="button" title="Add a page section"><b aria-hidden="true">＋</b> Section</button>
+    <button id="section-order" type="button" title="Reorder page sections">↕ Sections</button>
     <button class="icon" id="undo" type="button" title="Undo (Ctrl + Z)" aria-label="Undo">↶</button>
     <button class="icon" id="redo" type="button" title="Redo (Ctrl + Shift + Z)" aria-label="Redo">↷</button>
   </div>
-  <div class="tools grid-tools" role="group" aria-label="Placement mode"><button id="grid-mode" type="button" aria-pressed="true"><span aria-hidden="true">▦</span> Grid</button><button id="grid-snap" type="button" title="Toggle snapping to grid" aria-pressed="true">Snap</button></div>
+  <div class="tools grid-tools" role="group" aria-label="Placement mode"><button id="grid-mode" type="button" aria-pressed="false"><span aria-hidden="true">≡</span> Flow</button><button id="grid-snap" type="button" title="Toggle snapping to grid" aria-pressed="true">Snap</button></div>
   <div class="devices" role="group" aria-label="Canvas width">
     <button type="button" data-view="desktop" title="Desktop" aria-label="Desktop" aria-pressed="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v4m-4 0h8"/></svg></button>
     <button type="button" data-view="tablet" title="Tablet" aria-label="Tablet" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M11 18h2"/></svg></button>
@@ -42,7 +44,7 @@
     <button type="button" class="publish-cta" id="publish">Publish<span class="wide"> page</span></button>
   </div>
 </header>
-<div id="subbar" class="subbar"><div><span class="badge"><span>●</span> Editing sandbox</span><span class="hint" id="hint">Click an element to edit. Drag its grip without shifting other items.</span></div><span class="status-pair"><span id="publish-status" class="connection">Ready to edit</span><span class="saved" id="saved" role="status">Opening page…</span></span></div>
+<div id="subbar" class="subbar"><div><span class="badge"><span>●</span> Editing sandbox</span><span class="hint" id="hint">Click an element to edit. Drag near another item’s edge to insert above or below.</span></div><span class="status-pair"><span id="publish-status" class="connection">Ready to edit</span><span class="saved" id="saved" role="status">Opening page…</span></span></div>
 <main id="stage" aria-label="Page editor canvas"><iframe id="canvas" title="New City Wellness page canvas" sandbox="allow-scripts allow-same-origin allow-presentation allow-downloads allow-popups allow-popups-to-escape-sandbox" allowfullscreen></iframe></main>
 <div id="outline" hidden></div>
 <div id="column-handles" role="group" aria-label="Resize column widths" hidden></div>
@@ -50,9 +52,11 @@
 <div id="free-ghost" aria-hidden="true" hidden><span id="free-ghost-label"></span></div>
 <div id="drop-guide" hidden><span id="guide-label"></span></div>
 <div id="selection" hidden role="toolbar" aria-label="Selected item tools">
-    <button id="drag" type="button" title="Drag to move only this item, or click for options" aria-label="Move selected item">⠿</button>
+    <button id="drag" type="button" title="Drag to position or insert this item. Hold Shift for free movement." aria-label="Move selected item">⠿</button>
     <button id="selection-settings" type="button" title="Edit selected item"><span aria-hidden="true">✎</span> <span id="selection-label">Edit</span></button>
     <button id="selection-duplicate" type="button" title="Duplicate selected element" aria-label="Duplicate selected element">⧉</button>
+    <button id="selection-up" type="button" title="Move section up" aria-label="Move section up" hidden>↑</button>
+    <button id="selection-down" type="button" title="Move section down" aria-label="Move section down" hidden>↓</button>
     <button id="selection-add" type="button" title="Add an element here" aria-label="Add an element here">＋</button>
 </div>
 <button id="resize-selection" type="button" title="Drag to resize this grid item" aria-label="Resize grid item" hidden></button>
