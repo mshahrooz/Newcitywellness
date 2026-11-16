@@ -83,9 +83,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .look[open] summary{margin-bottom:9px}
 .look button{border:1px solid var(--edge);border-radius:7px;background:white;color:#244536;padding:5px 8px;font-size:11px}
 
-.grid-tools{gap:0;border:1px solid #446255;border-radius:8px;padding:1px}
-.studio-bar .grid-tools button{min-height:32px;padding-inline:8px;border-radius:6px;font-size:12px}
-.studio-bar .grid-tools button[aria-pressed=true]{color:#e2f8bd;background:#355f4c}
 #free-grid,#free-ghost{position:fixed;pointer-events:none;z-index:4}
 #free-grid{background-image:linear-gradient(to right,#44847969 1px,transparent 1px),linear-gradient(to bottom,#62c1bd69 1px,transparent 1px);background-color:#31bfd215;border:1px solid #58b5be8a}
 #free-ghost{border:2px solid #80e2e2;background:#137e9a21;border-radius:3px;box-shadow:0 0 0 1px #20445b}
@@ -97,7 +94,6 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .bg-controls:not(:empty){margin-top:9px}
 .bg-controls input[type="range"]{padding:0;accent-color:#275d49}
 .grid-controls{display:grid;grid-template-columns:1fr 1fr;gap:4px 9px}
-@media(max-width:700px){.studio-bar .grid-tools button{padding-inline:4px;min-height:28px;font-size:11px}}
 @media(max-width:460px){.studio-bar{gap:5px}.studio-bar .devices{border:0;padding-left:0}.studio-bar #add-section{padding-inline:5px}.studio-bar .right{margin-left:auto}}
 
 .studio-bar .publish-cta{background:#ecf7ea;color:#183c2d;font-weight:750;border-color:#a4bea8}
@@ -137,3 +133,8 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .section-order-list .section-name{background:transparent;border-color:transparent;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:650;padding:3px 5px}
 
 #stage.bs-dragging,#selection #drag:active{cursor:grabbing}
+
+.quick-grid .palette-block{position:relative;cursor:grab;touch-action:pan-y;user-select:none;padding-right:23px}
+.palette-grip{position:absolute;right:6px;top:3px;min-width:20px;min-height:32px;display:grid;place-items:center;touch-action:none;color:#608878;font-size:13px}
+#palette-drag-chip{position:fixed;pointer-events:none;z-index:10;padding:6px 11px;border:1px solid #fff;border-radius:6px;background:#235e4b;color:white;font-size:12px;font-weight:700;box-shadow:0 2px 9px #123f2b60}
+@media(pointer:coarse){.quick-grid .palette-block{min-height:48px}}

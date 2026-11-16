@@ -43,7 +43,7 @@ Use the [GitHub Pages Page Studio](https://mshahrooz.github.io/Newcitywellness/s
 The **Add element** palette groups text, media and links, and layout blocks. Use **Preview** and the device buttons to check placement before publishing.
 
 - **Sections** in the top bar lists the current order. Move a section up or down from the list or with its selection toolbar arrows.
-- Select an element, then hold and drag it directly on the canvas or use its grip. The grid is visible while dragging. **Flow** mode previews an insertion gap when you drag a block near another block’s top or bottom edge. Drop into the gap to make the page reflow, or use **Grid** or hold **Shift** to move without changing the order.
+- Select an element, then hold and drag it directly on the canvas or use its grip. The grid is visible while dragging. Drag a block from **Add element** onto an insertion gap to place it. Drag an existing block near another block’s edge to reorder it. Hold **Shift** to move without changing the order.
 - **YouTube video** accepts watch, share, Shorts, and live URLs and renders the video automatically. Use **Preview** to play it.
 - **Embed code** accepts an HTTPS embed URL, iframe code, or HTML snippets. Custom code runs in an isolated frame. Some providers limit where embeds work.
 - **Columns** accepts a custom count from 1 to 100. Click the row or a column, then drag the green divider between two columns. A focused divider also supports keyboard arrow keys. Rows stack on phones. Very wide rows can scroll horizontally on larger screens.
