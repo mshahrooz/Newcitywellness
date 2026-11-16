@@ -127,3 +127,11 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .column-handle::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:#268165;box-shadow:0 0 0 1px #fff6}
 .column-handle span{position:relative;display:grid;place-items:center;width:20px;height:28px;border-radius:5px;background:#267b5f;border:1px solid #fff;font:700 13px system-ui;box-shadow:0 2px 7px #0c372641}
 .column-handle:hover span,.column-handle:focus-visible span,#column-handles.dragging .column-handle:hover span{background:#125542}
+
+#drop-guide{z-index:5;background:#20835526;border:2px dashed #2b8e65;border-radius:6px;box-shadow:0 0 0 1px #fff9}
+#guide-label{top:4px;left:5px;background:#195a42;white-space:nowrap}
+.section-order-list{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.section-order-list li{display:grid;grid-template-columns:23px minmax(0,1fr) 30px 30px;gap:4px;align-items:center;background:#f4f8f5;border:1px solid #dce8df;border-radius:7px;padding:4px}
+.section-index{color:#426c56;font-size:11px;font-weight:700;text-align:center}
+.section-order-list button{min-width:0;min-height:28px;border:1px solid #c7dacd;border-radius:5px;background:white;color:#224936;font-size:14px}
+.section-order-list .section-name{background:transparent;border-color:transparent;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:650;padding:3px 5px}
