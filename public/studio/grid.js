@@ -2,7 +2,8 @@
 /* A placement layer is created only in sections that receive free-positioned content. */
 const GRID_COLS=48, GRID_STEP=12, GRID_CAP=24000, VIDEO_LIMIT=20*1024*1024;
 const MEDIA_TYPES={image:{jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',avif:'image/avif',gif:'image/gif'},video:{mp4:'video/mp4',webm:'video/webm'}};
-let gridMode='flow', snapGrid=true, gridPick=null, resizeDrag=null;
+const snapGrid=true;
+let gridPick=null, resizeDrag=null;
 const freeShell=n=>n?.parentElement?.classList.contains('bs-free-item')?n.parentElement:null;
 const specialZone=n=>n?.closest('[data-bs-zone]');
 function surfaceOf(zone){
@@ -317,7 +318,7 @@ function fileReadBg(f,kind,done){
 function gridPanel(n){
   const z=zoneOf(n)||rowList()[0];if(!z)return;
   const begin=knownPosition(n,z,devicePlacement());
-  const place=open('Grid placement','POSITION / SIZE / LAYER',n);
+  const place=open('Position and size','POSITION / SIZE / LAYER',n);
   para('Desktop drags carry over to tablet and mobile. Dragging on a smaller preview fine-tunes only that size. These grid controls may affect spacing.');
   const label=create('label',{},'Destination section');
   const selector=create('select',{'aria-label':'Destination section'});
@@ -340,7 +341,7 @@ function gridPanel(n){
   input(inputs,'Layer',initial.z,{type:'number',min:-90,max:250},e=>{if(e.value!=='')update('z',e.value);});
   selector.addEventListener('change',()=>{update();scrollToSelection(n);});
   const actions=group();
-  button(actions,'Place on grid',()=>{update();scrollToSelection(n);});
+  button(actions,'Apply position',()=>{update();scrollToSelection(n);});
   button(actions,'Pick a spot',()=>startGridPick({node:n}));
   button(actions,'Nudge left',()=>{update('x',initial.x-100/GRID_COLS);gridPanel(n);});
   button(actions,'Nudge right',()=>{update('x',initial.x+100/GRID_COLS);gridPanel(n);});
@@ -505,26 +506,18 @@ function cloneSelected(n){
   scrollToSelection(el);choose(el);
   flash(el.hasAttribute('data-bs-row')?'Section duplicated.':'Element duplicated.');
 }
-function startGridPick({node=null,kind=null}){
-  close();gridPick={node,kind};stage.classList.add('bs-placement-mode');
+function startGridPick({node}){
+  close();gridPick={node};stage.classList.add('bs-placement-mode');
   $('hint').textContent='Click anywhere on the page grid to place the element. Esc cancels.';
-  flash(node?'Click to move only the selected item.':'Click anywhere on the page to place the element.');
+  flash('Click to move only the selected item.');
 }
 function clearGridPick(){
   if(!gridPick)return;
   gridPick=null;stage.classList.remove('bs-placement-mode');hideGridVisual();
   if(mode==='edit')$('hint').textContent=defaultHint();
 }
-function setGridMode(next){
-  gridMode=next;
-  const btn=$('grid-mode');
-  btn.setAttribute('aria-pressed',String(next==='grid'));
-  btn.innerHTML=next==='grid'?'<span aria-hidden="true">▦</span> Grid':'<span aria-hidden="true">≡</span> Flow';
-  btn.title=next==='grid'?'Free positioning. Switch to Flow to insert above or below other blocks.':'Flow insertion. Switch to Grid to drag without reordering.';
-  if(mode==='edit')$('hint').textContent=defaultHint();
-}
 function defaultHint(){
-  return gridMode==='grid'?'Select an element, then drag it directly or use its grip. Other items stay in place.':'Select and drag an element directly. Drop near an edge to insert, or hold Shift for free positioning.';
+  return 'Drag blocks onto the page, or select and drag an existing element.';
 }
 function markerFrame(rect){
   const x=Math.max(rect.f.left,rect.left), y=Math.max(rect.f.top,rect.top);
@@ -585,13 +578,13 @@ function updatePick(e){
   const device=devicePlacement();
   if(gridPick.node&&canDragIndependently(gridPick.node)){
     const n=gridPick.node,start=offsetDragStart(n);
-    const target=offsetDragTarget(n,start,e.clientX-start.r.left,e.clientY-start.r.top,gridMode==='grid'&&snapGrid);
+    const target=offsetDragTarget(n,start,e.clientX-start.r.left,e.clientY-start.r.top,false);
     const frameRect=frame.getBoundingClientRect();
     showDragGrid(frameRect);
     drawGhost(n,frameRect.left+target.left,frameRect.top+target.top,target.width,target.height);
     return;
   }
-  const dims=gridPick.node?measure(gridPick.node):{width:gridPick.kind==='image'?240:250,height:62};
+  const dims=measure(gridPick.node);
   const p=gridPoint(z,e.clientX,e.clientY,dims,device);
   showGridVisual(z,p,gridPick.node);
 }
@@ -603,16 +596,13 @@ function commitPick(e){
   const d=devicePlacement();
   if(item.node&&canDragIndependently(item.node)){
     const start=offsetDragStart(item.node);
-    const {p,device}=offsetDragTarget(item.node,start,e.clientX-start.r.left,e.clientY-start.r.top,gridMode==='grid'&&snapGrid);
+    const {p,device}=offsetDragTarget(item.node,start,e.clientX-start.r.left,e.clientY-start.r.top,false);
     if(record(dragOperation(item.node,device,p)))choose(item.node,false);
     return true;
   }
-  const dims=item.node?measure(item.node):{width:['youtube','embed'].includes(item.kind)?440:item.kind==='image'?240:250,height:62};
+  const dims=measure(item.node);
   const p=gridPoint(z,e.clientX,e.clientY,dims,d);
-  const id=item.node?idOf(item.node):unique();
-  if(record(item.node?gridOperation(item.node,z,d,p):{kind:'grid-add',id,target:idOf(z),device:d,p,type:item.kind})){
-    const n=byId(id);if(n){scrollToSelection(n);choose(n);}
-  }
+  if(record(gridOperation(item.node,z,d,p))){scrollToSelection(item.node);choose(item.node);}
   return true;
 }
 function sizeObserver(){

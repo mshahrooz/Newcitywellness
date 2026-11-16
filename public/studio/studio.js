@@ -5,7 +5,7 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=direct-drag1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=palette-drag1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
 const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
 let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
 const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
@@ -79,6 +79,7 @@ function replay(){
 }
 function stepHistory(step){
   if(drag)finishDrag(false);
+  if(paletteDrag)finishPaletteDrag();
   endColumnDrag(false);
   const next=cursor+step;
   if(next<0||next>list.length)return;
@@ -280,12 +281,17 @@ function apply(op){
   if(op.kind==='row-add' && !n){
     if(op.target && !target?.hasAttribute('data-bs-row'))return false;
     const count=StudioColumns.count(op.cols??1);if(!count)return false;
+    if(op.type&&(!Object.hasOwn(types,op.type)||op.type==='row'||!validId(op.id+'-block')||byId(op.id+'-block')))return false;
     const row=makeRow(op.id,count);
+    if(op.type)row.querySelector('.bs-col').append(makeBlock(op.type,op.id+'-block'));
     if(op.blank)row.classList.add('bs-blank-section');
     if(target)target[op.side==='before'?'before':'after'](row);
     else if(op.side==='before')main().prepend(row);
     else main().insertBefore(row,main().querySelector(':scope > .editor-blocks'));
     return true;
+  }
+  if(op.kind==='palette-add'&&!n&&target&&Object.hasOwn(types,op.type)&&op.type!=='row'){
+    return StudioFlow.placeNew(makeBlock(op.type,op.id),target,op.side);
   }
   if(op.kind==='add'&&!n&&target&&Object.hasOwn(types,op.type)&&op.type!=='row'){
     return insertNear(makeBlock(op.type,op.id),target,op.side,op.id+'-pair');
@@ -539,7 +545,7 @@ function paint(){
   const n=now();
   syncCanvasDragTarget(n);
   paintColumnHandles();
-  if(!D||mode!=='edit'||!active||(drag?.moved&&drag.direct)){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
+  if(!D||mode!=='edit'||!active||paletteDrag?.moved||(drag?.moved&&drag.direct)){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
   const r=anchorRect(n);
   if(!r){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
   const top=Math.max(r.f.top,r.top),bt=Math.min(r.f.bottom,r.bottom);
@@ -607,6 +613,8 @@ function useKeys(){
     if(switching)return;
     if(e.key==='Shift'&&drag?.moved)updateDrag(drag.x,drag.y,true);
     if(e.key==='Escape'){
+      if(paletteDrag){finishPaletteDrag();return;}
+      if(placement){placement=null;$('hint').textContent=defaultHint();return;}
       if(drag){finishDrag();return;}
       if(resizeDrag){stopResize(false);return;}
       if(columnDrag){endColumnDrag(false);return;}
@@ -676,7 +684,7 @@ function pickTarget(){
   const n=now();
   if(!n)return;
   const place=open('Move '+titleOf(n).toLowerCase(),'ELEMENT PLACEMENT',n);
-  para('Choose an available destination. To keep other items in place, use Grid mode or hold Shift while dragging.');
+  para('Choose an available destination. To keep other items in place, hold Shift while dragging.');
   const allowed=[...D.querySelectorAll('[data-bs-column],[data-bs-move=yes]')].filter(t=>t!==n&&!n.contains(t)&&canInline(n,t,t.hasAttribute('data-bs-column')?'inside':'before'));
   if(!allowed.length){para('Add a row or another editable element to create a destination.');place();return;}
   const sel=create('select',{'aria-label':'Move destination'});
@@ -724,7 +732,7 @@ function openSettings(n) {
   if(n.hasAttribute('data-bs-column')){
     const place=open('Column settings','ROW / COLUMN',n);
     para('Add any block to this column. Drag a green divider to resize neighbouring columns. Columns stack on phones.');
-    const a=group();button(a,'Add element',()=>startAdd(n));button(a,'Duplicate column',()=>cloneSelected(n));button(a,'Grid placement',()=>gridPanel(n));button(a,'Edit parent section',()=>choose(rowOf(n)));
+    const a=group();button(a,'Add element',()=>startAdd(n));button(a,'Duplicate column',()=>cloneSelected(n));button(a,'Position and size',()=>gridPanel(n));button(a,'Edit parent section',()=>choose(rowOf(n)));
     place();return;
   }
   if(n.hasAttribute('data-bs-row')) {
@@ -771,7 +779,7 @@ function openSettings(n) {
       button(a,'Add element',()=>startAdd(n));button(a,'Duplicate',()=>cloneSelected(n));
     } else {
       para('Move or duplicate this component as a single item.');
-      button(a,'Grid placement',()=>gridPanel(n));button(a,'Duplicate',()=>cloneSelected(n));
+      button(a,'Position and size',()=>gridPanel(n));button(a,'Duplicate',()=>cloneSelected(n));
       if(rowOf(n))button(a,'Section settings',()=>choose(rowOf(n)));
     }
     put();return;
@@ -844,7 +852,7 @@ function openSettings(n) {
     input(padGroup,edge[0].toUpperCase()+edge.slice(1),p?Number.parseFloat(p):'',{type:'number',min:0,max:220,placeholder:isExisting(n)?'Auto':(edge==='top'||edge==='bottom'?'12':'16')},el=>record({kind:'pad',id:idOf(n),edge,value:el.value},token));
   }
   const actions=group();
-  if(!therapyPhoto(n)){button(actions,'Grid placement',()=>gridPanel(n));button(actions,'Duplicate',()=>cloneSelected(n));}
+  if(!therapyPhoto(n)){button(actions,'Position and size',()=>gridPanel(n));button(actions,'Duplicate',()=>cloneSelected(n));}
   if(n.dataset.bsMove==='yes')button(actions,'Move to…',()=>pickTarget(n));
   dragResetControl(actions,n);
   if(therapyCard(n))button(actions,'Select whole card',()=>choose(therapyCard(n)));
@@ -892,55 +900,128 @@ function rowChoices(anchor,side='after',columnsOnly=false){
   place();
 }
 function startAdd(n=now()) {
-  if(n?.hasAttribute('data-bs-row')&&n.dataset.bsRow==='custom'&&!n.classList.contains('bs-blank-section'))n=n.querySelector(':scope > .bs-row-inner > .bs-col');
-  const row=n&&rowOf(n), eligible=n&&(n.dataset.bsMove==='yes'||n.hasAttribute('data-bs-column'));
+  clearGridPick();
   const place=open('Add element','PAGE ELEMENTS',n);
-  para(eligible?'Add inside a column or beside the selected element.':'Select a new element. You can then choose where it goes on this page.');
+  para('Drag a block onto the page. The highlighted gap shows where it will go. You can also select a block and click to place it.');
   const sections={};
   for(const [kind,[t,,description,category]] of Object.entries(types)){
     if(!sections[category]){
       body.append(create('h3',{class:'library-group'},category));
       sections[category]=group('quick-grid');
     }
-    const grid=sections[category];
-    const b=button(grid,t,()=>{
-      if(kind==='row'){rowChoices(row,'after',true);return;}
-      if(eligible){locationChoices(n,kind);return;}
-      if(gridMode==='grid'){startGridPick({kind});return;}
+    const b=button(sections[category],t,e=>{
+      if(e.detail!==0&&paletteSuppressClick)return;
+      if(e.detail===0){
+        const selected=now(), row=rowOf(selected)||rowList().at(-1);
+        const choice=kind==='row'||!row?{node:row,side:'after',row:true}:
+          selected?.hasAttribute('data-bs-column')?{node:selected,side:'inside'}:{node:row,side:'section-end'};
+        if(placePaletteBlock(kind,choice))return;
+      }
       close();placement=kind;
-      flash('Click a text block or column to choose placement, or add a section.');
-      $('hint').textContent='Click a heading, paragraph, movable button or column for placement.';
-    });
-    b.append(create('small',{},description));
+      $('hint').textContent='Click where you want to place '+t.toLowerCase()+'. Esc cancels.';
+    },{class:'palette-block'});
+    b.append(create('small',{},description),create('span',{class:'palette-grip','aria-hidden':'true',title:'Drag handle'},'⠿'));
+    b.addEventListener('pointerdown',e=>beginPaletteDrag(e,kind));
   }
   place();
 }
-function locationChoices(n,kind){
-  const place=open('Place '+types[kind][0].toLowerCase(),'INSERT WITHOUT A NEW SECTION',n);
-  const choices=n.hasAttribute('data-bs-column')?[['inside','Inside this column']]:[['before','Directly above'],['after','Directly below'],['left','To the left'],['right','To the right']];
-  para('Side-by-side placements stack on phones.');
-  const grid=group('quick-grid');
-  const probe=makeBlock(kind,'probe');
-  for(const [side,label] of choices)button(grid,label,()=>{
-    const id=unique();
-    if(!record({kind:'add',id,type:kind,target:idOf(n),side})){flash('This placement is not available.');return;}
-    const fresh=byId(id);fresh.scrollIntoView({block:'nearest'});choose(fresh);
-  },canInline(probe,n,side)?{}:{disabled:''});
-  button(grid,'Pick any spot on the grid',()=>startGridPick({kind}));
-  place();
+let paletteDrag=null,paletteSuppressClick=false,paletteTick=0;
+function beginPaletteDrag(e,kind){
+  paletteSuppressClick=false;
+  if(e.button!==0||e.isPrimary===false||mode!=='edit'||switching||drag||resizeDrag||columnDrag||paletteDrag)return;
+  if(e.pointerType==='touch'&&!e.target.closest('.palette-grip'))return;
+  // Capture before the pointer crosses into the iframe. The tile stays visible
+  // and receives regular clicks until this turns into a drag.
+  const capture=e.currentTarget;
+  capture.setPointerCapture(e.pointerId);
+  paletteDrag={kind,pointer:e.pointerId,capture,startX:e.clientX,startY:e.clientY,moved:false};
 }
+function updatePaletteDrag(x,y){
+  const d=paletteDrag;
+  if(!d)return;
+  d.x=x;d.y=y;
+  if(!d.moved){
+    if(Math.hypot(x-d.startX,y-d.startY)<6)return;
+    d.moved=true;paletteSuppressClick=true;
+    d.capture=document.documentElement;
+    d.capture.setPointerCapture(d.pointer);
+    close();clearGridPick();paint();
+    stage.classList.add('bs-dragging');D.documentElement.classList.add('bs-dragging');
+    paletteTick=requestAnimationFrame(scrollDuringPaletteDrag);
+  }
+  const chip=$('palette-drag-chip'), f=frame.getBoundingClientRect();
+  chip.hidden=false;chip.textContent=types[d.kind][0];
+  chip.style.left=Math.max(6,Math.min(innerWidth-150,x+14))+'px';
+  chip.style.top=Math.max(6,y-34)+'px';
+  const px=x-f.left,py=y-f.top;
+  if(px<0||px>=f.width||py<0||py>=f.height){
+    d.choice=null;clearFlowPreview();hideGridVisual();return;
+  }
+  showDragGrid(f);
+  const slot=flowPreview?.slot,r=slot?.getBoundingClientRect();
+  if(r&&r.width>0&&r.height>0&&px>=r.left-8&&px<=r.right+8&&py>=r.top-9&&py<=r.bottom+9){
+    positionFlowGuide(f);return;
+  }
+  clearFlowPreview();
+  d.choice=StudioFlow.libraryTarget(d.kind,px,py);
+  if(d.choice)showFlowPreview(d.choice,f,d.kind==='row'?72:48,true);
+}
+function scrollDuringPaletteDrag(){
+  if(!paletteDrag?.moved)return;
+  const d=paletteDrag;
+  if(scrollDragCanvas(d.x,d.y))updatePaletteDrag(d.x,d.y);
+  paletteTick=requestAnimationFrame(scrollDuringPaletteDrag);
+}
+function placePaletteBlock(kind,choice){
+  if(!choice)return false;
+  const id=unique(), target=idOf(choice.node)||null;
+  const addRow=choice.row;
+  if(!record(addRow?{kind:'row-add',id,target,side:choice.side==='before'?'before':'after',cols:kind==='row'?2:1,...(kind==='row'?{}:{type:kind})}
+    :{kind:'palette-add',id,target,type:kind,side:choice.side}))return false;
+  const fresh=byId(addRow&&kind!=='row'?id+'-block':id);
+  $('hint').textContent=defaultHint();
+  fresh.scrollIntoView({block:'nearest'});choose(fresh);
+  return true;
+}
+function finishPaletteDrag(commit=false){
+  const d=paletteDrag;
+  if(!d)return;
+  paletteDrag=null;cancelAnimationFrame(paletteTick);
+  if(!d.moved){
+    if(!commit&&d.capture.hasPointerCapture(d.pointer))d.capture.releasePointerCapture(d.pointer);
+    return;
+  }
+  $('palette-drag-chip').hidden=true;
+  clearFlowPreview();hideGridVisual();
+  stage.classList.remove('bs-dragging');D?.documentElement.classList.remove('bs-dragging');
+  if(d.capture.hasPointerCapture(d.pointer))d.capture.releasePointerCapture(d.pointer);
+  if(commit&&d.choice)placePaletteBlock(d.kind,d.choice);
+  paint();
+}
+document.addEventListener('pointermove',e=>{if(paletteDrag?.pointer===e.pointerId)updatePaletteDrag(e.clientX,e.clientY);});
+document.addEventListener('pointerup',e=>{
+  if(paletteDrag?.pointer!==e.pointerId)return;
+  if(paletteDrag.moved)updatePaletteDrag(e.clientX,e.clientY);
+  finishPaletteDrag(true);
+},true);
+for(const name of ['pointercancel','lostpointercapture'])document.addEventListener(name,e=>{
+  if(paletteDrag?.pointer===e.pointerId&&(name!=='lostpointercapture'||e.target===paletteDrag.capture))finishPaletteDrag();
+});
+window.addEventListener('blur',()=>{if(paletteDrag)finishPaletteDrag();});
 let flowPreview=null;
 function clearFlowPreview(){
   flowPreview?.slot.remove();
   flowPreview=null;
   $('drop-guide').hidden=true;
 }
-function showFlowPreview(choice,f){
-  const el=StudioFlow.unit(choice.node);
+function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=false){
+  const el=choice.node&&StudioFlow.unit(choice.node);
   const slot=addNative('div',{'data-bs-drop-slot':'','aria-hidden':'true'});
   // This placeholder participates in layout, so the page shows the gap before release.
-  slot.style.height=Math.max(24,Math.min(drag.layout.r.height,240))+'px';
-  if(choice.side==='inside')el.append(slot);
+  slot.style.height=Math.max(24,Math.min(height,240))+'px';
+  if(!el)main().append(slot);
+  else if(fromPalette&&!choice.row){if(!StudioFlow.placeNew(slot,choice.node,choice.side))return;}
+  else if(choice.side==='inside')el.append(slot);
   else el[choice.side](slot);
   flowPreview={...choice,slot};
   positionFlowGuide(f);
@@ -950,7 +1031,8 @@ function positionFlowGuide(f){
   const left=Math.max(0,r.left), right=Math.min(f.width,r.right);
   const top=Math.max(0,r.top), bottom=Math.min(f.height,r.bottom);
   if(right<=left||bottom<=top){marker.hidden=true;return;}
-  $('guide-label').textContent=flowPreview.side==='inside'?'Place in column':flowPreview.side==='before'?'Insert above':'Insert below';
+  $('guide-label').textContent=flowPreview.side==='inside'?'Place in column':
+    flowPreview.side==='before'||flowPreview.side==='section-start'?'Insert above':'Insert below';
   Object.assign(marker.style,{left:(f.left+left)+'px',top:(f.top+top)+'px',width:(right-left)+'px',height:(bottom-top)+'px'});
   marker.hidden=false;
 }
@@ -974,7 +1056,7 @@ function updateDrag(x,y,free=drag?.free){
     guide=null;clearFlowPreview();hideGridVisual();return;
   }
   showDragGrid(f);
-  if(gridMode==='flow'&&!free){
+  if(!free){
     const px=x-f.left, py=y-f.top;
     if(flowPreview){
       const r=flowPreview.slot.getBoundingClientRect();
@@ -989,19 +1071,20 @@ function updateDrag(x,y,free=drag?.free){
       freeGhostHide();showFlowPreview(choice,f);return;
     }
   } else clearFlowPreview();
-  guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,gridMode==='grid'&&snapGrid);
+  guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,false);
   const {left,top,width,height}=guide;
   drawGhost(drag.node,f.left+left,f.top+top,width,height);
 }
+function scrollDragCanvas(x,y){
+  const f=frame.getBoundingClientRect(), zone=55;
+  if(x<f.left||x>f.right||y<f.top||y>f.bottom)return false;
+  const n=y>f.bottom-zone?Math.ceil((y-(f.bottom-zone))/3):y<f.top+zone?-Math.ceil((f.top+zone-y)/3):0;
+  if(!n)return false;
+  D.defaultView.scrollBy(0,n);return true;
+}
 function duringDrag(){
   if(!drag)return;
-  if(drag.moved){
-    const f=frame.getBoundingClientRect(), zone=55;
-    if(drag.x>=f.left&&drag.x<=f.right&&drag.y>=f.top&&drag.y<=f.bottom){
-      const n=drag.y>f.bottom-zone?Math.ceil((drag.y-(f.bottom-zone))/3):drag.y<f.top+zone?-Math.ceil((f.top+zone-drag.y)/3):0;
-      if(n){D.defaultView.scrollBy(0,n);updateDrag(drag.x,drag.y);}
-    }
-  }
+  if(drag.moved&&scrollDragCanvas(drag.x,drag.y))updateDrag(drag.x,drag.y);
   viewportTick=requestAnimationFrame(duringDrag);
 }
 function finishDrag(commit=false){
@@ -1023,7 +1106,7 @@ function finishDrag(commit=false){
   }else paint();
 }
 function beginItemDrag(e,n,capture,direct=false,cancelClick=null){
-  if(e.button!==0||e.isPrimary===false||switching||mode!=='edit'||drag||resizeDrag||columnDrag||!canDragIndependently(n))return;
+  if(e.button!==0||e.isPrimary===false||switching||mode!=='edit'||drag||paletteDrag||resizeDrag||columnDrag||!canDragIndependently(n))return;
   if(!direct){e.preventDefault();clearGridPick();capture.setPointerCapture(e.pointerId);}
   const f=frame.getBoundingClientRect(), x=e.clientX+(direct?f.left:0), y=e.clientY+(direct?f.top:0);
   const layout=offsetDragStart(n);
@@ -1056,7 +1139,7 @@ function bindCanvasDragging(doc){
     if(e.isPrimary===false)return;
     dragged=false;
     const n=now(), hit=e.target;
-    if(placement||gridPick?.kind||!n?.contains(hit)||hit.closest('input,select,textarea,button,[contenteditable]'))return;
+    if(placement||gridPick||!n?.contains(hit)||hit.closest('input,select,textarea,button,[contenteditable]'))return;
     // Don't capture a simple click. Once the pointer moves, capture on a stable
     // node so it stays active as the element or insertion gap moves.
     beginItemDrag(e,n,doc.documentElement,true,()=>{dragged=true;});
@@ -1083,8 +1166,6 @@ $('selection-settings').onclick=()=>now()&&openSettings(now());
 $('selection-add').onclick=()=>startAdd();
 $('selection-duplicate').onclick=()=>now()&&cloneSelected(now());
 $('add-section').onclick=()=>rowChoices(now());
-$('grid-mode').onclick=()=>{if(drag)finishDrag(false);clearGridPick();setGridMode(gridMode==='grid'?'flow':'grid');paint();};
-$('grid-snap').onclick=()=>{snapGrid=!snapGrid;$('grid-snap').setAttribute('aria-pressed',String(snapGrid));flash(snapGrid?'Grid snapping on.':'Snap off. Drag with pixel precision.');};
 /* These handles live above the canvas, so they never enter a saved page or capture video clicks. */
 const handles=$('column-handles');
 let columnDrag=null, handleGrid=null;
@@ -1101,7 +1182,7 @@ function paintColumnHandles(){
   if(!handles)return;
   const grid=columnDrag?.grid||directColumnGrid(now());
   const row=grid?.parentElement;
-  const visible=D&&mode==='edit'&&!switching&&!drag?.moved&&!resizeDrag&&!gridPick&&grid?.children.length>1
+  const visible=D&&mode==='edit'&&!switching&&!drag?.moved&&!paletteDrag?.moved&&!resizeDrag&&!gridPick&&grid?.children.length>1
     &&D.defaultView.matchMedia('(min-width: 768px)').matches;
   if(!visible){handles.hidden=true;return;}
   const fr=frame.getBoundingClientRect(), gr=grid.getBoundingClientRect(), rr=row.getBoundingClientRect();
@@ -1196,16 +1277,18 @@ resizeControl.addEventListener('click',e=>{if(e.detail===0&&now())gridPanel(now(
 $('popup-close').onclick=close;
 $('preview').onclick=()=>{
   if(drag)finishDrag(false);
+  if(paletteDrag)finishPaletteDrag();
   endColumnDrag(false);clearGridPick();mode=mode==='edit'?'preview':'edit';
   D.documentElement.classList.toggle('bs-editor-mode',mode==='edit');
   if(mode==='edit'&&page[0]!=='home')replay();
   $('preview').textContent=mode==='preview'?'Back to editing':'Preview';$('preview').setAttribute('aria-pressed',String(mode==='preview'));
   $('hint').textContent=mode==='preview'?'Preview mode. The contact form does not send messages.':defaultHint();
-  for(const id of ['add','add-section','section-order','grid-mode','grid-snap'])$(id).disabled=mode==='preview'; $('undo').disabled=mode==='preview'||!cursor;$('redo').disabled=mode==='preview'||cursor===list.length;
+  for(const id of ['add','add-section','section-order'])$(id).disabled=mode==='preview'; $('undo').disabled=mode==='preview'||!cursor;$('redo').disabled=mode==='preview'||cursor===list.length;
   close();paint();
 };
 function switchView(b){
   if(drag)finishDrag(false);
+  if(paletteDrag)finishPaletteDrag();
   endColumnDrag(false);view=b.dataset.view;stage.dataset.view=view;syncViewport();
   document.querySelectorAll('[data-view]').forEach(el=>{if(el.tagName==='BUTTON')el.setAttribute('aria-pressed',String(el===b));});
   requestAnimationFrame(()=>{refreshFreeSizes();paint();if(now()&&!popup.hidden){
@@ -1237,10 +1320,10 @@ $('compare').onclick=()=>{toggleMenu(false);window.open(canvasPath(),'_blank','n
 $('help').onclick=()=>{
   toggleMenu(false);const place=open('How to edit this page','QUICK GUIDE');
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
-  para('Use Add nearby → Directly above or Directly below to insert without making a new row. Explicit inline moves and insertions can reposition other items.');
+  para('Open Add element, then drag a block from the library. Release when you see the insertion gap.');
   para('Open Sections in the top bar, or use the selected section’s arrows to change its order.');
-  para('Select an element, then press and drag it directly on the canvas or use its grip. The grid shows while dragging. In Flow mode, drop at an Insert above or Insert below marker to make room for it.');
-  para('For independent movement without reordering, use Grid mode or hold Shift while dragging. Layout moves apply on every device.');
+  para('Select an element, then press and drag it directly on the canvas or use its grip. The grid shows while dragging. Drop at an Insert above or Insert below marker to make room for it.');
+  para('For independent movement without reordering, hold Shift while dragging. Layout moves apply on every device.');
   para('Use Delete in the item settings to remove it from your draft. Undo restores deleted content.');
   para('Choose Columns in Add element, enter the count, then drag the green dividers to resize on desktop or tablet. Columns stack on mobile.');
   para('Save keeps edits in this browser. Download an editable draft to move it to another browser. Approved publisher accounts can publish the selected page from this editor.');
@@ -1264,7 +1347,7 @@ function wireBehavior(){
   return ()=>{stopShared?.();stopPage?.();};
 }
 function busyCanvas(value){
-  for(const id of ['add','add-section','section-order','grid-mode','grid-snap','save','more','preview','publish','undo','redo'])$(id).disabled=value;
+  for(const id of ['add','add-section','section-order','save','more','preview','publish','undo','redo'])$(id).disabled=value;
 }
 function boot(){
   if(baselineReady)return;
@@ -1294,8 +1377,10 @@ function boot(){
     const n=therapyCard(e.target)?targetFrom(e.target,e.altKey):e.altKey
       ?e.target.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row]')||targetFrom(e.target):targetFrom(e.target);
     if(placement){
-      if(n&&(n.dataset.bsMove==='yes'||n.hasAttribute('data-bs-column'))){const kind=placement;placement=null;$('hint').textContent='Click text or an image to edit it.';choose(n,false);locationChoices(n,kind);}
-      else flash('Select a heading, paragraph, movable button or custom column.');
+      e.preventDefault();
+      const kind=placement, choice=StudioFlow.libraryTarget(kind,e.clientX,e.clientY);
+      if(choice){placement=null;placePaletteBlock(kind,choice);}
+      else flash('Choose a spot in the page content.');
       return;
     }
     if(n){e.preventDefault();choose(n);}
@@ -1330,9 +1415,9 @@ function boot(){
   })().finally(()=>{
     if(!current())return;
     busyCanvas(false);
-    if(mode==='preview')for(const id of ['add','add-section','section-order','grid-mode','grid-snap'])$(id).disabled=true;
+    if(mode==='preview')for(const id of ['add','add-section','section-order'])$(id).disabled=true;
     switching=false;if(picker)picker.disabled=false;
-    setGridMode(gridMode);showState();
+    $('hint').textContent=mode==='edit'?defaultHint():$('hint').textContent;showState();
   });
 }
 window.addEventListener('resize',()=>{if(!baselineReady)return;syncViewport();paint();if(!popup.hidden)adjustPopup(now());});
@@ -1340,6 +1425,7 @@ async function openPage(next) {
   if(!next||next===page||switching||typeof StudioPublish!=='undefined'&&StudioPublish.isBusy()){if(picker)picker.value=page[0];return;}
   switching=true;if(picker)picker.disabled=true;
   if(drag)finishDrag(false);
+  if(paletteDrag)finishPaletteDrag();
   if(resizeDrag)stopResize(false);
   endColumnDrag(false);clearGridPick();close();toggleMenu(false);
   busyCanvas(true);

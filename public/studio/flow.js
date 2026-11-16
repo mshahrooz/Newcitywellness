@@ -82,5 +82,59 @@ const StudioFlow = (() => {
     }
     return best;
   }
-  return {unit,source,target,move,edges,find,noop};
+  function libraryParent(t,side) {
+    if(t?.parentElement===main()&&t.hasAttribute('data-bs-row')&&['section-start','section-end'].includes(side))
+      return t;
+    if(t?.hasAttribute('data-bs-column')&&rowOf(t)&&!t.closest('.bs-free-layer')&&side==='inside')return t;
+    if(!t||!rowOf(t)||t.closest('.bs-free-layer')||!['before','after'].includes(side)||t.dataset.bsMove!=='yes')return null;
+    const el=unit(t);
+    return el.parentElement?.closest(blocked)?null:el.parentElement;
+  }
+  function placeNew(node,t,side){
+    if(!libraryParent(t,side))return false;
+    if(side==='section-start'||side==='section-end'){
+      const surface=surfaceOf(t);
+      if(t.dataset.bsRow==='custom'){
+        const columns=t.querySelector(':scope > .bs-row-inner').children;
+        const column=side==='section-start'?columns[0]:columns[columns.length-1];
+        if(!column)return false;
+        if(side==='section-start')column.prepend(node);else column.append(node);
+      }else if(side==='section-start')t.insertBefore(node,surface||t.firstChild);
+      else if(surface?.parentElement===t)surface.after(node);
+      else t.append(node);
+    }else if(side==='inside')t.append(node);
+    else unit(t)[side](node);
+    return true;
+  }
+  function distance(r,x,y){
+    return Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom));
+  }
+  function libraryTarget(kind,x,y){
+    const hit=D.elementFromPoint?.(x,y);
+    if(hit&&!main().contains(hit))return null;
+    const rows=rowList().filter(row=>{
+      const r=row.getBoundingClientRect();return r.width>1&&r.height>1;
+    });
+    const row=hit?.closest('[data-bs-row]')||rows.reduce((closest,r)=>{
+      return !closest||distance(r.getBoundingClientRect(),x,y)<distance(closest.getBoundingClientRect(),x,y)?r:closest;
+    },null);
+    if(!row)return {node:null,side:'section-end',row:true};
+    const bounds=row.getBoundingClientRect();
+    if(kind==='row')return {node:row,side:y<(bounds.top+bounds.bottom)/2?'before':'after',row:true};
+    let best=null;
+    const col=hit?.closest('[data-bs-column]');
+    const scope=col||row;
+    for(const t of scope.querySelectorAll('[data-bs-move="yes"]')){
+      if(t.closest('[hidden],details:not([open])')||!libraryParent(t,'before')||!lane(unit(t)))continue;
+      const r=unit(t).getBoundingClientRect();
+      if(r.width<4||r.height<4)continue;
+      const d=distance(r,x,y);
+      if(!best||d<best.distance||d===best.distance&&unit(t).contains(hit)&&!unit(best.node).contains(hit))
+        best={node:t,side:y<(r.top+r.bottom)/2?'before':'after',distance:d};
+    }
+    if(best&&(col||best.distance<=80))return best;
+    if(col&&libraryParent(col,'inside'))return {node:col,side:'inside'};
+    return {node:row,side:y<(bounds.top+bounds.bottom)/2?'section-start':'section-end'};
+  }
+  return {unit,source,target,move,edges,find,noop,libraryTarget,placeNew};
 })();
