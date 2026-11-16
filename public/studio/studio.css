@@ -87,7 +87,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .studio-bar .grid-tools button{min-height:32px;padding-inline:8px;border-radius:6px;font-size:12px}
 .studio-bar .grid-tools button[aria-pressed=true]{color:#e2f8bd;background:#355f4c}
 #free-grid,#free-ghost{position:fixed;pointer-events:none;z-index:4}
-#free-grid{background-image:linear-gradient(to right,#62c1bd80 1px,transparent 1px),linear-gradient(to bottom,#62c1bd69 1px,transparent 1px);background-color:#31bfd215;border:1px solid #58b5be8a}
+#free-grid{background-image:linear-gradient(to right,#44847969 1px,transparent 1px),linear-gradient(to bottom,#62c1bd69 1px,transparent 1px);background-color:#31bfd215;border:1px solid #58b5be8a}
 #free-ghost{border:2px solid #80e2e2;background:#137e9a21;border-radius:3px;box-shadow:0 0 0 1px #20445b}
 #free-ghost-label{position:absolute;left:-1px;top:-24px;border-radius:4px;background:#155966;color:white;padding:3px 7px;font-size:11px;white-space:nowrap}
 #resize-selection{position:fixed;z-index:5;width:15px;height:15px;border:2px solid #fff;border-radius:4px;padding:0;background:#327f65;box-shadow:0 0 0 1px #275c4e;cursor:ew-resize;touch-action:none}
@@ -135,3 +135,5 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .section-index{color:#426c56;font-size:11px;font-weight:700;text-align:center}
 .section-order-list button{min-width:0;min-height:28px;border:1px solid #c7dacd;border-radius:5px;background:white;color:#224936;font-size:14px}
 .section-order-list .section-name{background:transparent;border-color:transparent;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:650;padding:3px 5px}
+
+#stage.bs-dragging,#selection #drag:active{cursor:grabbing}

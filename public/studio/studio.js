@@ -5,7 +5,7 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=flow-layout1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=direct-drag1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
 const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
 let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
 const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
@@ -527,10 +527,20 @@ function adjustPopup(n, stable=false){
   popup.style.left=Math.max(8,Math.min(left,ww-w-8))+'px';
   popup.style.top=Math.max(6,Math.min(top,wh-h-6))+'px';
 }
+let canvasDragTarget=null;
+function syncCanvasDragTarget(n){
+  const next=mode==='edit'&&canDragIndependently(n)?n:null;
+  if(next===canvasDragTarget)return;
+  canvasDragTarget?.removeAttribute('data-bs-drag-ready');
+  next?.setAttribute('data-bs-drag-ready','');
+  canvasDragTarget=next;
+}
 function paint(){
+  const n=now();
+  syncCanvasDragTarget(n);
   paintColumnHandles();
-  if(!D||mode!=='edit'||!active){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
-  const n=now(), r=anchorRect(n);
+  if(!D||mode!=='edit'||!active||(drag?.moved&&drag.direct)){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
+  const r=anchorRect(n);
   if(!r){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
   const top=Math.max(r.f.top,r.top),bt=Math.min(r.f.bottom,r.bottom);
   const l=Math.max(r.f.left,r.left),rt=Math.min(r.f.right,r.right);
@@ -610,7 +620,9 @@ function useKeys(){
     if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();stepHistory(e.shiftKey?1:-1);}
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}
   }
-  if(!useKeys.outer){document.addEventListener('keydown',handle);document.addEventListener('keyup',e=>{if(e.key==='Shift'&&drag?.moved)updateDrag(drag.x,drag.y,false);});useKeys.outer=true;}D.addEventListener('keydown',handle);
+  const release=e=>{if(e.key==='Shift'&&drag?.moved)updateDrag(drag.x,drag.y,false);};
+  if(!useKeys.outer){document.addEventListener('keydown',handle);document.addEventListener('keyup',release);useKeys.outer=true;}
+  D.addEventListener('keydown',handle);D.addEventListener('keyup',release);
 }
 function targetFrom(el,wholeCard=false){
   const card=therapyCard(el);
@@ -946,13 +958,22 @@ function updateDrag(x,y,free=drag?.free){
   if(!drag)return;
   drag.x=x;drag.y=y;drag.free=free;
   if(!drag.moved&&Math.hypot(x-drag.startX,y-drag.startY)>5){
-    drag.moved=true;close();paint();
+    if(drag.direct){
+      drag.capture.setPointerCapture(drag.pointer);
+      drag.cancelClick();
+    }
+    drag.moved=true;
+    clearGridPick();close();
+    stage.classList.add('bs-dragging');
+    D.documentElement.classList.add('bs-dragging');
+    paint();
   }
   if(!drag.moved)return;
   const f=frame.getBoundingClientRect();
   if(!drag.node.isConnected||drag.layout.device!==devicePlacement()||x<f.left||x>=f.right||y<f.top||y>=f.bottom){
     guide=null;clearFlowPreview();hideGridVisual();return;
   }
+  showDragGrid(f);
   if(gridMode==='flow'&&!free){
     const px=x-f.left, py=y-f.top;
     if(flowPreview){
@@ -965,7 +986,7 @@ function updateDrag(x,y,free=drag?.free){
     const choice=StudioFlow.find(drag.node,px,py);
     if(choice){
       guide=choice;
-      hideGridVisual();showFlowPreview(choice,f);return;
+      freeGhostHide();showFlowPreview(choice,f);return;
     }
   } else clearFlowPreview();
   guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,gridMode==='grid'&&snapGrid);
@@ -986,7 +1007,9 @@ function duringDrag(){
 function finishDrag(commit=false){
   if(!drag)return;
   const gesture=drag, choice=guide;drag=null;guide=null;cancelAnimationFrame(viewportTick);clearFlowPreview();hideGridVisual();
-  if($('drag').hasPointerCapture(gesture.pointer))$('drag').releasePointerCapture(gesture.pointer);
+  stage.classList.remove('bs-dragging');
+  D?.documentElement.classList.remove('bs-dragging');
+  if(gesture.capture.hasPointerCapture?.(gesture.pointer))gesture.capture.releasePointerCapture(gesture.pointer);
   if(!commit){paint();return;}
   if(choice&&gesture.moved){
     if(choice.node&&StudioFlow.noop(gesture.node,choice.node,choice.side)){paint();return;}
@@ -995,22 +1018,61 @@ function finishDrag(commit=false){
       if(choice.node)gesture.node.scrollIntoView({block:'nearest'});
       choose(gesture.node,false);
     }else paint();
-  }else if(!gesture.moved){
+  }else if(!gesture.moved&&!gesture.direct){
     if(gesture.node.matches('.therapy-card')||therapyPhoto(gesture.node))openSettings(gesture.node);else gridPanel(gesture.node);
   }else paint();
 }
-$('drag').addEventListener('pointerdown',e=>{
-  const n=now();
-  if(e.button!==0||switching||!canDragIndependently(n))return;
-  e.preventDefault();clearGridPick();$('drag').setPointerCapture(e.pointerId);
+function beginItemDrag(e,n,capture,direct=false,cancelClick=null){
+  if(e.button!==0||e.isPrimary===false||switching||mode!=='edit'||drag||resizeDrag||columnDrag||!canDragIndependently(n))return;
+  if(!direct){e.preventDefault();clearGridPick();capture.setPointerCapture(e.pointerId);}
+  const f=frame.getBoundingClientRect(), x=e.clientX+(direct?f.left:0), y=e.clientY+(direct?f.top:0);
   const layout=offsetDragStart(n);
-  drag={node:n,pointer:e.pointerId,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,moved:false,free:e.shiftKey,layout};
+  drag={node:n,pointer:e.pointerId,capture,direct,cancelClick,startX:x,startY:y,x,y,moved:false,free:e.shiftKey,layout};
   viewportTick=requestAnimationFrame(duringDrag);
-});
-$('drag').addEventListener('pointermove',e=>{if(drag?.pointer===e.pointerId)updateDrag(e.clientX,e.clientY,e.shiftKey);});
-$('drag').addEventListener('pointerup',e=>{if(drag?.pointer!==e.pointerId)return;if(drag.moved)updateDrag(e.clientX,e.clientY,e.shiftKey);finishDrag(true);});
-$('drag').addEventListener('pointercancel',()=>finishDrag());
-$('drag').addEventListener('lostpointercapture',()=>finishDrag());
+}
+function itemPointerMove(e,direct){
+  if(drag?.pointer!==e.pointerId||drag.direct!==direct)return;
+  const f=frame.getBoundingClientRect();
+  updateDrag(e.clientX+(direct?f.left:0),e.clientY+(direct?f.top:0),e.shiftKey);
+  if(drag?.moved)e.preventDefault();
+}
+function itemPointerUp(e,direct){
+  if(drag?.pointer!==e.pointerId||drag.direct!==direct)return;
+  if(drag.moved)itemPointerMove(e,direct);
+  finishDrag(true);
+}
+function itemPointerCancel(e,direct){
+  if(drag?.pointer===e.pointerId&&drag.direct===direct)finishDrag(false);
+}
+const grip=$('drag');
+grip.addEventListener('pointerdown',e=>beginItemDrag(e,now(),grip));
+grip.addEventListener('pointermove',e=>itemPointerMove(e,false));
+grip.addEventListener('pointerup',e=>itemPointerUp(e,false));
+grip.addEventListener('pointercancel',e=>itemPointerCancel(e,false));
+grip.addEventListener('lostpointercapture',e=>itemPointerCancel(e,false));
+function bindCanvasDragging(doc){
+  let dragged=false;
+  doc.addEventListener('pointerdown',e=>{
+    if(e.isPrimary===false)return;
+    dragged=false;
+    const n=now(), hit=e.target;
+    if(placement||gridPick?.kind||!n?.contains(hit)||hit.closest('input,select,textarea,button,[contenteditable]'))return;
+    // Don't capture a simple click. Once the pointer moves, capture on a stable
+    // node so it stays active as the element or insertion gap moves.
+    beginItemDrag(e,n,doc.documentElement,true,()=>{dragged=true;});
+  },true);
+  doc.addEventListener('pointermove',e=>itemPointerMove(e,true),true);
+  doc.addEventListener('pointerup',e=>itemPointerUp(e,true),true);
+  doc.addEventListener('pointercancel',e=>itemPointerCancel(e,true),true);
+  doc.addEventListener('lostpointercapture',e=>{if(e.target===drag?.capture)itemPointerCancel(e,true);},true);
+  doc.addEventListener('pointerleave',e=>{if(!drag?.moved)itemPointerCancel(e,true);});
+  doc.addEventListener('dragstart',e=>{if(mode==='edit'&&canvasDragTarget?.contains(e.target))e.preventDefault();},true);
+  doc.addEventListener('selectstart',e=>{if(drag?.direct&&canvasDragTarget?.contains(e.target))e.preventDefault();},true);
+  doc.addEventListener('click',e=>{
+    if(!dragged||e.detail===0||mode!=='edit')return;
+    dragged=false;e.preventDefault();e.stopImmediatePropagation();
+  },true);
+}
 $('drag').addEventListener('click',e=>{if(e.detail===0&&canDragIndependently(now())){
   const n=now();if(n.matches('.therapy-card')||therapyPhoto(n))openSettings(n);else gridPanel(n);
 }});
@@ -1021,7 +1083,7 @@ $('selection-settings').onclick=()=>now()&&openSettings(now());
 $('selection-add').onclick=()=>startAdd();
 $('selection-duplicate').onclick=()=>now()&&cloneSelected(now());
 $('add-section').onclick=()=>rowChoices(now());
-$('grid-mode').onclick=()=>{clearGridPick();setGridMode(gridMode==='grid'?'flow':'grid');paint();};
+$('grid-mode').onclick=()=>{if(drag)finishDrag(false);clearGridPick();setGridMode(gridMode==='grid'?'flow':'grid');paint();};
 $('grid-snap').onclick=()=>{snapGrid=!snapGrid;$('grid-snap').setAttribute('aria-pressed',String(snapGrid));flash(snapGrid?'Grid snapping on.':'Snap off. Drag with pixel precision.');};
 /* These handles live above the canvas, so they never enter a saved page or capture video clicks. */
 const handles=$('column-handles');
@@ -1177,7 +1239,7 @@ $('help').onclick=()=>{
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
   para('Use Add nearby → Directly above or Directly below to insert without making a new row. Explicit inline moves and insertions can reposition other items.');
   para('Open Sections in the top bar, or use the selected section’s arrows to change its order.');
-  para('In Flow mode, drag a movable block near another block’s top or bottom edge. Drop when you see Insert above or Insert below. The layout makes room for it.');
+  para('Select an element, then press and drag it directly on the canvas or use its grip. The grid shows while dragging. In Flow mode, drop at an Insert above or Insert below marker to make room for it.');
   para('For independent movement without reordering, use Grid mode or hold Shift while dragging. Layout moves apply on every device.');
   para('Use Delete in the item settings to remove it from your draft. Undo restores deleted content.');
   para('Choose Columns in Add element, enter the count, then drag the green dividers to resize on desktop or tablet. Columns stack on mobile.');
@@ -1217,6 +1279,7 @@ function boot(){
   baselineReady=true;markCanvas();syncViewport();D.documentElement.classList.toggle('bs-editor-mode',mode==='edit');original=D.body.innerHTML;stopSize=sizeObserver();
   stopBehavior=wireBehavior();
   useKeys();
+  bindCanvasDragging(D);
   D.addEventListener('click',e=>{
     if(switching){e.preventDefault();return;}
     if(mode!=='edit')return;

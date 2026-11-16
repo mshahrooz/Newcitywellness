@@ -524,11 +524,18 @@ function setGridMode(next){
   if(mode==='edit')$('hint').textContent=defaultHint();
 }
 function defaultHint(){
-  return gridMode==='grid'?'Click an element to edit. Drag its grip to move it without shifting other items.':'Drag near a block’s top or bottom edge to insert. Hold Shift or switch to Grid for free positioning.';
+  return gridMode==='grid'?'Select an element, then drag it directly or use its grip. Other items stay in place.':'Select and drag an element directly. Drop near an edge to insert, or hold Shift for free positioning.';
 }
 function markerFrame(rect){
   const x=Math.max(rect.f.left,rect.left), y=Math.max(rect.f.top,rect.top);
   return {x,y,w:Math.max(0,Math.min(rect.f.right,rect.right)-x),h:Math.max(0,Math.min(rect.f.bottom,rect.bottom)-y)};
+}
+function showDragGrid(f){
+  const grid=$('free-grid'), {innerWidth,scrollX,scrollY}=D.defaultView;
+  const unit=(innerWidth||f.width)/GRID_COLS;
+  Object.assign(grid.style,{left:f.left+'px',top:f.top+'px',width:f.width+'px',height:f.height+'px',
+    backgroundSize:unit+'px '+GRID_STEP+'px',backgroundPosition:(-(scrollX||0))+'px '+(-(scrollY||0))+'px'});
+  grid.hidden=false;
 }
 function showGridVisual(z, p, n, pointOut){
   const rect=anchorRect(surfaceOf(z));if(!rect)return;
@@ -580,6 +587,7 @@ function updatePick(e){
     const n=gridPick.node,start=offsetDragStart(n);
     const target=offsetDragTarget(n,start,e.clientX-start.r.left,e.clientY-start.r.top,gridMode==='grid'&&snapGrid);
     const frameRect=frame.getBoundingClientRect();
+    showDragGrid(frameRect);
     drawGhost(n,frameRect.left+target.left,frameRect.top+target.top,target.width,target.height);
     return;
   }
