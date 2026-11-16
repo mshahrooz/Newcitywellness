@@ -51,3 +51,5 @@ The **Add element** palette groups text, media and links, and layout blocks. Use
 - **Columns** accepts a custom count from 1 to 100. Click the row or a column, then drag the green divider between two columns. A focused divider also supports keyboard arrow keys. Rows stack on phones. Very wide rows can scroll horizontally on larger screens.
 
 See [the publisher setup and rollback guide](supabase/README.md). GitHub is the source and host. Vercel is not part of this publishing flow.
+
+Studio automatically opens the verified GitHub Pages version when a published page is opened and when a new deployment goes live. Browser-only changes are kept under **Draft tools → Recovered drafts** if the editor switches to a live version. Drafts based on the current page can be resumed there. A page without a Studio publication still restores its last saved browser draft.

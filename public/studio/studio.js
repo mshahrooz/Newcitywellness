@@ -33,7 +33,11 @@ const imageKind=k=>k==='image'||k==='captioned';
 const listKind=k=>k==='bullets'||k==='numbered';
 const isEmbed=k=>k==='youtube'||k==='embed';
 const richKinds=['subheading','quote','callout','accordion','divider','spacer','captioned','bullets','numbered','video','youtube','embed'];
-let pendingPublisherBase=null;
+// Baseline operations are the active deployed version. Browser drafts and
+// submitted-but-not-deployed edits are never treated as live.
+let liveOps=[], liveRevision=null, liveSource=null, liveSync=null;
+const submittedDrafts=new Map();
+const rememberSubmitted=(key,id,raw)=>submittedDrafts.set(key,{id,raw});
 let D, original, list=[], savedOps=[], cursor=0, active=null, mode='edit', view='desktop', drag, guide, placement, stopBehavior, toastTimer, gesture, viewportTick, baselineReady=false;
 const labels={hero:'Home hero',therapies:'Explore Our Therapies','first-visit':'Your First Visit',practitioner:'Meet the Practitioner',conditions:'Areas We Support',experiences:'Patient Experiences',contact:'Contact and hours'};
 const idOf=n=>n?.getAttribute('data-bs-id');
@@ -55,7 +59,9 @@ function flash(t){$('toast').textContent=t;$('toast').hidden=false;clearTimeout(
 function showState(){
   $('undo').disabled=mode==='preview'||!cursor;
   $('redo').disabled=mode==='preview'||cursor===list.length;
-  $('saved').textContent=!cursor?'Original layout':cursor===savedOps.length&&savedOps.every((op,i)=>op===list[i])?'Draft saved in this browser':'Unsaved draft';
+  $('saved').textContent=operationsMatch(liveOps)?
+    (liveRevision?(liveSource?'Live version':'Original layout'):'Live version not yet verified'):
+    operationsMatch(savedOps)?'Draft saved in this browser':'Unsaved draft';
 }
 function record(op, token){
   if (!apply(op)) return false;
@@ -451,24 +457,130 @@ function readDraft(raw){
 function draftString(){
   return JSON.stringify({version:1,page:pageIdentity(),operations:list.slice(0,cursor),publishedBase:typeof StudioPublish!=='undefined'?StudioPublish.baseOfDraft():null});
 }
+function operationsMatch(operations){
+  return cursor===operations.length&&operations.every((op,i)=>op===list[i]);
+}
+const sameOperations=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+function setDraft(raw,ops=readDraft(raw)){
+  list=ops.slice();cursor=list.length;savedOps=ops.slice();active=null;
+  StudioPublish.bindSource(JSON.parse(raw).publishedBase||null);
+  replay();
+}
 let saveQueue=Promise.resolve();
+async function readBrowserDraft(key){
+  let raw=null;
+  try{raw=localStorage.getItem(key);}catch{}
+  if(raw&&raw!=='@indexeddb')return raw;
+  if(window.indexedDB)return (await draftStore('readonly',s=>s.get(key)))||null;
+  return null;
+}
+async function storeBrowserDraft(key,data){
+  if(data.length<3500000){
+    try{localStorage.setItem(key,data);return true;}catch{}
+  }
+  try{
+    await draftStore('readwrite',s=>s.put(data,key));
+    try{localStorage.setItem(key,'@indexeddb');}catch{try{localStorage.removeItem(key);}catch{}}
+    return true;
+  }catch{return false;}
+}
+async function clearBrowserDraft(key){
+  try{localStorage.removeItem(key);}catch{}
+  if(window.indexedDB)await draftStore('readwrite',s=>s.delete(key)).catch(()=>{});
+}
+const recoveryKey=()=>storageKey()+'.recovery';
+async function recoveredDrafts(key){
+  const entries=JSON.parse((await readBrowserDraft(key))||'[]');
+  if(!Array.isArray(entries)||!entries.every(item=>typeof item?.raw==='string'&&Number.isFinite(item.savedAt)))throw Error('Could not read recovered drafts.');
+  return entries;
+}
+async function recoverLater(raw){
+  if(!raw)return true;
+  const key=recoveryKey();
+  const entries=await recoveredDrafts(key).catch(()=>null);
+  if(!entries)return false;
+  if(entries.some(item=>item.raw===raw))return true;
+  entries.push({savedAt:Date.now(),raw});
+  return storeBrowserDraft(key,JSON.stringify(entries));
+}
 function save({quiet=false}={}){
-  const STORAGE=storageKey(), data=draftString(), undoStamp=list.slice(0,cursor);
+  const key=storageKey(), data=draftString(), stamp=list.slice(0,cursor), epoch=canvasEpoch;
   saveQueue=saveQueue.catch(()=>{}).then(async()=>{
-    if(data.length<3500000){
-      try{
-        localStorage.setItem(STORAGE,data);
-        if(window.indexedDB)await draftStore('readwrite',s=>s.delete(STORAGE)).catch(()=>{});
-        savedOps=undoStamp;showState();if(!quiet)flash('Draft saved in this browser. Nothing was published.');return true;
-      }catch{}
-    }
-    try{
-      await draftStore('readwrite',s=>s.put(data,STORAGE));
-      try{localStorage.setItem(STORAGE,'@indexeddb');}catch{}
-      savedOps=undoStamp;showState();if(!quiet)flash('Draft and media saved in this browser.');return true;
-    }catch{flash('Browser storage is unavailable or full. Download the editable draft to keep it.');return false;}
+    const saved=await storeBrowserDraft(key,data);
+    if(epoch!==canvasEpoch)return saved;
+    if(saved){
+      savedOps=stamp;showState();
+      if(!quiet)flash('Draft saved in this browser. Nothing was published.');
+    }else flash('Browser storage is full or unavailable. Download an editable draft to keep it.');
+    return saved;
   });
   return saveQueue;
+}
+async function loadCanvasLive(localRaw){
+  const target=page, state=await StudioPublish.liveManifest(target);
+  if(!state)return false;
+  const remote=await StudioPublish.loadLiveDraft(target,state);
+  const raw=JSON.stringify(remote?{...remote,publishedBase:state.source}:{version:1,page:pageIdentity(),operations:[],publishedBase:null});
+  const operations=readDraft(raw);
+  let useLocal=false, kept=false;
+  if(localRaw){
+    let ops;
+    try{ops=readDraft(localRaw);}catch{ /* Invalid data must not mask the live page. */ }
+    if(ops&&!sameOperations(ops,operations)){
+      if(!state.source&&!JSON.parse(localRaw).publishedBase)useLocal=true;
+      else{
+        kept=await recoverLater(localRaw);
+        if(!kept)throw Error('Could not keep the previous browser draft.');
+      }
+    }
+  }
+  liveOps=operations;liveRevision=state.revision;liveSource=state.source;
+  setDraft(useLocal?localRaw:raw,useLocal?undefined:operations);
+  if(localRaw&&!useLocal)await clearBrowserDraft(storageKey());
+  $('publish-status').textContent=useLocal?'Working on a local draft':'Synced with GitHub Pages';
+  if(kept)flash('Live version loaded. Your previous draft is in Draft tools → Recovered drafts.');
+  return true;
+}
+function safeToSync(){
+  const input=$('popup-body').contains(document.activeElement)&&document.activeElement?.matches('input,textarea,select,[contenteditable]');
+  return baselineReady&&!switching&&!drag&&!paletteDrag&&!resizeDrag&&!columnDrag&&!gridPick&&!placement&&!input&&!StudioPublish.isBusy();
+}
+async function syncLiveCanvas(){
+  if(liveSync||!safeToSync())return false;
+  const epoch=canvasEpoch, target=page;
+  const current=()=>epoch===canvasEpoch&&safeToSync();
+  const sync=(async()=>{
+    try{
+      const state=await StudioPublish.liveManifest(target);
+      if(!state||!current()||state.revision===liveRevision)return false;
+      if(liveRevision&&state.source===liveSource){
+        liveRevision=state.revision;return false;
+      }
+      const remote=await StudioPublish.loadLiveDraft(target,state);
+      if(!current())return false;
+      const raw=JSON.stringify(remote?{...remote,publishedBase:state.source}:{version:1,page:pageIdentity(),operations:[],publishedBase:null});
+      const operations=readDraft(raw), old=draftString();
+      const submitted=submittedDrafts.get(target[0]);
+      const alreadyPublished=submitted?.id===state.publication&&submitted.raw===old;
+      const dirty=!alreadyPublished&&!operationsMatch(liveOps)&&!sameOperations(JSON.parse(old).operations,operations);
+      if(dirty&&!(await recoverLater(old)))return false;
+      if(!current()||old!==draftString())return false;
+      // Do not let a save queued before this check recreate a stale cache.
+      await saveQueue;
+      if(!current()||old!==draftString())return false;
+      liveOps=operations;liveRevision=state.revision;liveSource=state.source;
+      if(!popup.hidden&&$('popup-type').textContent!=='GITHUB PAGES')close();
+      setDraft(raw,operations);
+      if(submitted?.id===state.publication)submittedDrafts.delete(target[0]);
+      const key=storageKey();
+      saveQueue=saveQueue.catch(()=>{}).then(()=>clearBrowserDraft(key));
+      $('publish-status').textContent='Synced with GitHub Pages';
+      flash(dirty?'Live version loaded. Your previous draft is in Draft tools → Recovered drafts.':'The live page is now open in Studio.');
+      return true;
+    }catch{ /* Keep working if Pages is offline or still deploying. */ return false;}
+  })();
+  liveSync=sync;
+  try{return await sync;}finally{if(liveSync===sync)liveSync=null;}
 }
 function exportFile(data,name,type){
   const href=URL.createObjectURL(new Blob([data],{type}));const a=create('a',{href,download:name});a.click();setTimeout(()=>URL.revokeObjectURL(href),5000);
@@ -1440,16 +1552,41 @@ $('help').onclick=()=>{
   para('Save keeps edits in this browser. Download an editable draft to move it to another browser. Approved publisher accounts can publish the selected page from this editor.');
   place();
 };
+$('recover-drafts').onclick=async()=>{
+  toggleMenu(false);const key=recoveryKey(), epoch=canvasEpoch;
+  const entries=await recoveredDrafts(key).catch(()=>null);
+  if(epoch!==canvasEpoch)return;
+  const place=open('Recovered drafts','DRAFT TOOLS');
+  if(!entries)para('Recovered drafts could not be read in this browser.');
+  else if(!entries.length)para('There are no recovered drafts for this page.');
+  else{
+    para('These drafts were kept before opening the live version. You can resume a draft based on the current page version, or download it for reference.');
+    for(const item of entries.slice().reverse()){
+      const actions=group(), date=new Date(item.savedAt).toLocaleString();
+      let matchingBase=false;
+      try{matchingBase=(JSON.parse(item.raw).publishedBase||null)===liveSource;}catch{}
+      if(matchingBase&&liveRevision&&operationsMatch(liveOps)){
+        button(actions,'Resume · '+date,()=>{
+          if(epoch!==canvasEpoch||!operationsMatch(liveOps))return;
+          try{setDraft(item.raw);close();void save({quiet:true});flash('Recovered draft opened. Nothing was published.');}
+          catch(e){flash(e.message);}
+        });
+      }
+      button(actions,'Download · '+date,()=>exportFile(item.raw,pageIdentity()+'-recovered-'+item.savedAt+'.json','application/json'));
+    }
+  }
+  place();
+};
 $('reset').onclick=()=>{
   toggleMenu(false);const place=open('Reset this draft?','DRAFT TOOLS');
-  para('This restores the original page layout and clears this browser’s saved draft. It does not affect the public website.');
-  button(group(),'Reset to original',()=>{
-    const STORAGE=storageKey();
-    saveQueue=saveQueue.catch(()=>{}).then(()=>{
-      try{localStorage.removeItem(STORAGE);}catch{}
-      return draftStore('readwrite',s=>s.delete(STORAGE));
-    }).catch(()=>{});
-    list=[];cursor=0;savedOps=[];active=null;StudioPublish.bindSource(null);close();replay();flash('Original page restored.');
+  para('This discards the local working draft and returns the editor to the current live version. The website will not change.');
+  button(group(),'Reset to live',()=>{
+    const key=storageKey();
+    saveQueue=saveQueue.catch(()=>{}).then(()=>clearBrowserDraft(key));
+    StudioPublish.bindSource(liveSource);
+    list=liveOps.slice();cursor=list.length;savedOps=list.slice();active=null;close();replay();
+    void syncLiveCanvas();
+    flash(liveRevision?'Live version restored.':'Local draft cleared. Waiting for GitHub Pages.');
   },{class:'danger'});place();
 };
 function wireBehavior(){
@@ -1504,25 +1641,18 @@ function boot(){
   D.addEventListener('submit',e=>{e.preventDefault();},true);
   D.addEventListener('scroll',()=>{paint();if(!popup.hidden&&now())adjustPopup(now());},{passive:true,capture:true});
   D.defaultView.addEventListener('resize',()=>{refreshFreeSizes();paint();});
-  function loadSaved(raw) {
-    if(!current()||!raw||cursor)return false;
-    list=readDraft(raw);
-    pendingPublisherBase=JSON.parse(raw).publishedBase||null;
-    if(typeof StudioPublish!=='undefined')StudioPublish.bindSource(pendingPublisherBase);
-    cursor=list.length;savedOps=list.slice();replay();return true;
-  }
-  const warn=()=>{if(current())flash('The saved draft could not be read. The original page is open.');};
   (async()=>{
     let raw=null;
-    try{raw=localStorage.getItem(STORAGE);}catch{}
+    try{raw=await readBrowserDraft(STORAGE);}catch{}
     try{
-      if(raw&&raw!=='@indexeddb'){loadSaved(raw);return;}
-      if(window.indexedDB&&loadSaved(await draftStore('readonly',s=>s.get(STORAGE))))return;
-      if(current()&&!cursor&&typeof StudioPublish!=='undefined'){
-        const saved=await StudioPublish.initialDraft();
-        if(current()&&!cursor&&saved)loadSaved(JSON.stringify(saved));
-      }
-    }catch{warn();}
+      if(await loadCanvasLive(raw))return;
+    }catch{
+      $('publish-status').textContent='Waiting to verify the live page';
+    }
+    if(current()&&raw){
+      try{setDraft(raw);}
+      catch{flash('Could not open the browser draft.');}
+    }
   })().finally(()=>{
     if(!current())return;
     busyCanvas(false);
@@ -1547,7 +1677,7 @@ async function openPage(next) {
   }
   canvasEpoch++;stopBehavior?.();stopSize?.();
   stopBehavior=null;stopSize=null;baselineReady=false;active=null;D=null;
-  list=[];savedOps=[];cursor=0;pendingPublisherBase=null;
+  list=[];savedOps=[];cursor=0;liveOps=[];liveRevision=null;liveSource=null;liveSync=null;
   if(typeof StudioPublish!=='undefined')StudioPublish.bindSource(null);
   page=next;
   const url=new URL(location.href);
@@ -1577,3 +1707,8 @@ if(picker) {
 }
 frame.addEventListener('load',boot);
 loadCanvas();
+
+// Check again when returning to the editor and while a tab stays open.
+window.addEventListener('focus',()=>void syncLiveCanvas());
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)void syncLiveCanvas();});
+setInterval(()=>{if(!document.hidden)void syncLiveCanvas();},12000);

@@ -11,7 +11,7 @@ const StudioPublish = (() => {
   const paths=(key=selected()[0])=>key==='home'
     ? {SOURCE:'src/content/homepage-studio-published.json',DRAFT:'public/homepage-studio/draft.json',MANIFEST:'homepage-studio/live-revision.json'}
     : {SOURCE:'src/content/studio-pages/'+key+'.json',DRAFT:'public/homepage-studio/pages/'+key+'/draft.json',MANIFEST:'homepage-studio/pages/'+key+'/live-revision.json'};
-  const liveUrl=()=>LIVE+(selected()[2]?selected()[2]+'/':'');
+  const liveUrl=(target=selected())=>LIVE+(target[2]?target[2]+'/':'');
   const MAIN_REF=REPO_API+'/git/ref/heads/main';
   const SITE_ORIGIN=new URL(LIVE).origin;
   const MAX_UPLOAD=24*1024*1024;
@@ -210,29 +210,6 @@ const StudioPublish = (() => {
     cap(size,65*1024*1024);
     return {content,draftText,files,id:JSON.parse(content).id};
   }
-  async function connect(){
-    const {SOURCE,DRAFT}=paths();
-    const indicator=$('publish-status');
-    indicator.textContent='Checking GitHub…';
-    try{
-      const s=await status();
-      if(s.source&&!s.publicDraft&&!signedIn()){
-        const rawPub=await fileAt(SOURCE,s.parent);
-        const pub=JSON.parse(decode.decode(unpack(rawPub.content)));
-        const file=await fileAt(DRAFT,s.parent);
-        const bytes=unpack(file.content);
-        if(await sha256(bytes)!==pub.draftSha256)throw Error('The published page draft did not pass its integrity check.');
-        s.publicDraft=await decodeDraft(bytes);
-      }
-      indicator.textContent='GitHub Pages connected';
-      indicator.removeAttribute('title');
-      return s;
-    }catch(e){
-      indicator.textContent='Publishing check unavailable';
-      indicator.title=e.message;
-      throw e;
-    }
-  }
   async function decodeDraft(bytes) {
     let state=JSON.parse(decode.decode(bytes));
     if(state.encoding==='gzip-base64'){
@@ -241,42 +218,57 @@ const StudioPublish = (() => {
     }
     return state;
   }
-  async function initialDraft(){
-    const {MANIFEST,DRAFT}=paths();
-    const fetchLive=async path=>fetch(LIVE+path+'?check='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(7000)});
+  const fetchLive=(url,limit=7000)=>fetch(url,{cache:'no-store',signal:AbortSignal.timeout(limit)});
+  async function liveManifest(target=selected()){
     if(location.origin!==SITE_ORIGIN)return null;
-    const manifest=await fetchLive(MANIFEST);
-    if(!manifest.ok)return null;
-    const state=await manifest.json();
-    if(!state.publication||!VALID_SHA.test(state.source)||!/^[a-f0-9]{64}$/.test(state.draftSha256))return null;
-    const draft=await fetchLive(DRAFT.slice('public/'.length));
-    if(!draft.ok)throw Error('The latest deployed draft is not ready.');
+    const {MANIFEST}=paths(target[0]);
+    const res=await fetchLive(LIVE+MANIFEST+'?check='+Date.now());
+    if(!res.ok)throw Error('The live page could not be checked.');
+    const state=await res.json();
+    if(!/^[a-f0-9]{24}$/.test(state?.revision)||state.publication!==null&&(!/^[a-f0-9-]{36}$/.test(state.publication)||!VALID_SHA.test(state.source)||!/^[a-f0-9]{64}$/.test(state.draftSha256))){
+      throw Error('The live page version is incomplete.');
+    }
+    return {...state,source:state.publication===null?null:state.source};
+  }
+  async function verifyLivePage(target,state){
+    const url=new URL(liveUrl(target));
+    url.searchParams.set('ncw_rev',state.revision);
+    const page=await fetchLive(url);
+    if(!page.ok||!(await page.text()).includes('name="ncw-home-revision" content="'+state.revision+'"')){
+      throw Error('GitHub Pages is still serving a different version.');
+    }
+    return url.href;
+  }
+  async function loadLiveDraft(target,state){
+    if(!state.source){await verifyLivePage(target,state);return null;}
+    const {DRAFT}=paths(target[0]);
+    const [,draft]=await Promise.all([verifyLivePage(target,state),fetchLive(LIVE+DRAFT.slice('public/'.length)+'?ncw_rev='+state.revision)]);
+    if(!draft.ok)throw Error('The deployed draft is not ready.');
     const bytes=new Uint8Array(await draft.arrayBuffer());
-    if(await sha256(bytes)!==state.draftSha256)throw Error('The deployed draft is out of date.');
-    return {...await remoteDraft({publicDraft:await decodeDraft(bytes),parent:null}),publishedBase:state.source};
+    if(await sha256(bytes)!==state.draftSha256)throw Error('The deployed draft is not ready.');
+    return remoteDraft(await decodeDraft(bytes));
   }
   async function remoteDraft(revision){
-    if(!revision?.publicDraft)throw Error('There is no saved Studio publication to load yet.');
-    const ops=await Promise.all(revision.publicDraft.operations.map(async op=>{
+    if(!Array.isArray(revision?.operations))throw Error('There is no saved Studio publication to load yet.');
+    const ops=await Promise.all(revision.operations.map(async op=>{
       if(!op.value||typeof op.value!=='object'||!op.value.studioAsset)return op;
       const path=canonicalAsset(op.value.studioAsset),ext=path.split('.').pop();
       const type=Object.keys(mediaMap).find(k=>mediaMap[k]===ext);
       if(!type)throw Error('The published draft contains an unknown media format.');
-      let answer=await fetch(LIVE+path,{cache:'force-cache'}).catch(()=>null);
-      if(!answer?.ok&&revision.parent)answer=await fetch('https://raw.githubusercontent.com/'+OWNER+'/'+REPO+'/'+revision.parent+'/'+pathUrl('public/'+path),{cache:'force-cache'});
+      const answer=await fetch(LIVE+path,{cache:'force-cache',signal:AbortSignal.timeout(12000)});
       if(!answer?.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
       return {...op,value:'data:'+type+';base64,'+pack(new Uint8Array(await answer.arrayBuffer()))};
     }));
-    return {...revision.publicDraft,operations:ops};
+    return {...revision,operations:ops};
   }
   async function checkedPackage(update){
     const {SOURCE,DRAFT}=paths();
-    if(!cursor)throw Error('Make or load a page edit first.');
+    if(!cursor&&!loadedSource)throw Error('Make a page edit first.');
     update('Checking the latest page revision…');
     const current=await status(true);
     $('publish-status').textContent='GitHub Pages connected';
     $('publish-status').removeAttribute('title');
-    if(current.source!==loadedSource)throw Error('This page on GitHub changed. Download a copy of this draft if needed, then load the last published page before editing or publishing.');
+    if(current.source!==loadedSource)throw Error('There is a newer version on GitHub. Studio will update automatically once that version is live on GitHub Pages.');
     if(!canvasGuard()||!guardPaths().every(name=>canvasGuard()[name]===current.guard[name])){
       throw Error('This editor is based on an older version of the original site. Its publishing connection needs to be refreshed.');
     }
@@ -321,8 +313,8 @@ const StudioPublish = (() => {
     return new Blob([...entries,...index,end],{type:'application/zip'});
   }
   async function preparedRevision(update=()=>{}){
-    const {files,current}=await checkedPackage(update);
-    return {zip:uploadZip(files),head:current.parent};
+    const {files,ready}=await checkedPackage(update);
+    return {zip:uploadZip(files),id:ready.id};
   }
   async function githubPackage(update=()=>{}){
     return (await preparedRevision(update)).zip;
@@ -371,35 +363,28 @@ const StudioPublish = (() => {
   }
   function bindSource(source){loadedSource=source;}
   function baseOfDraft(){return loadedSource;}
-  async function waitForLivePublication(id,feedback,links,pos){
+  async function waitForLivePublication(target,id,feedback,links,pos){
     if(!/^[a-f0-9-]{36}$/.test(id))return;
-    const release=new URL(paths().MANIFEST,LIVE);
-    const target=liveUrl();
     const deadline=Date.now()+180000;
-    let interval=1500;
-    while(feedback.isConnected && !popup.hidden && Date.now()<deadline){
+    let interval=1200;
+    while(Date.now()<deadline){
       try{
-        release.searchParams.set('check',String(Date.now()));
-        const res=await fetch(release.href,{cache:'no-store',signal:AbortSignal.timeout(6000)});
-        const live=res.ok?await res.json():null;
-        if(live?.publication===id && /^[a-f0-9]{24}$/.test(live.revision)){
-          const url=new URL(target);
-          url.searchParams.set('ncw_rev',live.revision);
-          const page=await fetch(url.href,{cache:'no-store',signal:AbortSignal.timeout(6000)});
-          if(page.ok && (await page.text()).includes('name="ncw-home-revision" content="'+live.revision+'"')){
-            if(!feedback.isConnected)return;
+        const live=await liveManifest(target);
+        if(live?.publication===id){
+          const href=await verifyLivePage(target,live);
+          if(feedback.isConnected){
             feedback.textContent='Your changes are live on GitHub Pages.';
-            links.prepend(create('a',{href:url.href,target:'_blank',rel:'noopener noreferrer'},'Open updated page ↗'));
-            pos();
-            return;
+            links.prepend(create('a',{href,target:'_blank',rel:'noopener noreferrer'},'Open updated page ↗'));
+            if(!popup.hidden)pos();
           }
+          if(selected()[0]===target[0])void syncLiveCanvas();
+          return;
         }
       }catch{ /* Pages may still be deploying. */ }
-      if(!feedback.isConnected)return;
       await new Promise(resolve=>setTimeout(resolve,interval));
-      interval=Math.min(interval*2,12000);
+      interval=Math.min(interval*2,8000);
     }
-    if(feedback.isConnected)feedback.textContent='Committed to GitHub. Deployment is taking longer than expected. Use Watch Pages build to check its progress.';
+    if(feedback.isConnected)feedback.textContent='Still waiting for GitHub Pages. Studio will pick up the deployed version automatically.';
   }
   function panel(){
     if(busy)return;
@@ -410,23 +395,8 @@ const StudioPublish = (() => {
     const identity=create('p',{class:'muted',role:'status'});
     const authArea=group('publisher-auth');
     authArea.before(identity);
-    const activeDraft=!!cursor&&mode==='edit';
-    {
-      button(group(),'Load published page into editor',async e=>{
-        const b=e.currentTarget;
-        if(cursor){const useBackup=window.confirm('Load the latest GitHub version over the currently open draft? Download your draft first if you need a copy.');if(!useBackup)return;}
-        const epoch=canvasEpoch;
-        b.disabled=true;
-        try{
-          const revision=await connect();
-          const source=revision.source;
-          const got=await remoteDraft(revision);
-          if(epoch!==canvasEpoch||!b.isConnected)return;
-          list=readDraft(JSON.stringify(got));cursor=list.length;bindSource(source);active=null;close();replay();flash('Latest published page loaded.');
-        }catch(error){if(epoch===canvasEpoch){flash(error.message);b.disabled=false;}}
-      });
-    }
-    if(!activeDraft)para(!cursor?'Make a page edit or load a saved draft to publish it.':'Use Back to editing before publishing.');
+    const activeDraft=mode==='edit'&&(!!cursor||!!loadedSource);
+    if(!activeDraft)para(mode==='edit'?'Make a page edit before publishing.':'Use Back to editing before publishing.');
     const feedback=create('p',{role:'status',class:'publish-feedback'});
     body.append(feedback);
     const controls=group();
@@ -448,7 +418,7 @@ const StudioPublish = (() => {
         progress('Checking access without publishing…');
         await publisher('check');
         progress('Write access confirmed. Checking the current page revision…');
-        await connect();
+        await status();
         progress('GitHub confirmed write access and the current page revision. No files, commits or deployments were changed.');
       }catch(e){progress(e.message);}
       finally{running(false);if(!signedIn())showAuth();pos();}
@@ -458,7 +428,9 @@ const StudioPublish = (() => {
       running(true);
       try{
         publishedLinks.replaceChildren();
-        const {zip}=await preparedRevision(progress);
+        const target=selected(), snapshot=draftString();
+        const {zip,id}=await preparedRevision(progress);
+        if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
         cap(zip.size,MAX_UPLOAD);
         progress('Publishing the selected page and its media…');
         const result=await publisher('publish',zip);
@@ -468,10 +440,10 @@ const StudioPublish = (() => {
         publishedLinks.replaceChildren(
           create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/commit/'+result.sha,target:'_blank',rel:'noopener noreferrer'},'View GitHub commit ↗'),
           create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/actions/workflows/deploy.yml',target:'_blank',rel:'noopener noreferrer'},'Watch Pages build ↗'));
-        void waitForLivePublication(result.id,pendingLive,publishedLinks,pos);
-        if(VALID_SHA.test(result.source)){
-          bindSource(result.source);
+        if(result.id===id&&VALID_SHA.test(result.source)){
+          rememberSubmitted(target[0],id,snapshot);
           void save({quiet:true});
+          void waitForLivePublication(target,id,pendingLive,publishedLinks,pos);
         }
       }catch(e){progress(e.message);}
       finally{running(false);if(!signedIn())showAuth();pos();}
@@ -522,11 +494,10 @@ const StudioPublish = (() => {
   }
   const start=()=>{
     if(!$('publish'))return;
-    bindSource(pendingPublisherBase);
     $('publish').onclick=panel;
     $('publish-status').textContent='Ready to edit';
   };
-  return {start,details,status,prepare,connect,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,initialDraft,isBusy:()=>busy};
+  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,isBusy:()=>busy};
 })();
 
 StudioPublish.start();
