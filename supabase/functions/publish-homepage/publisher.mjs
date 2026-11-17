@@ -8,18 +8,24 @@ import { PAGES, EMBEDS, pageFiles, pageDependencies } from './pages.mjs';
 const repo='mshahrooz/Newcitywellness', base='/repos/'+repo;
 const support=['scripts/apply-homepage-studio.py','public/homepage-studio/layout-v1.css','public/homepage-studio/homepage-v1.js'];
 const media=/^public\/(?:images\/homepage-studio\/[a-f0-9]{32}\.(?:png|jpg|webp|avif|gif)|media\/homepage-studio\/[a-f0-9]{32}\.(?:bin|pdf|mp4|webm))$/;
+const downloadExtensions=new Set('pdf doc docx xls xlsx ppt pptx txt csv tsv rtf odt ods odp epub zip rar 7z tar tgz gz bz2 xz md markdown json yaml yml log jpg jpeg png gif webp avif heic heif bmp tif tiff mp3 m4a wav ogg flac mp4 webm mov avi mkv psd ai dwg dxf stl obj blend eot ttf otf woff woff2'.split(' '));
+const namedDocument=/^public\/media\/homepage-studio\/([a-f0-9]{32})\/([A-Za-z0-9_][A-Za-z0-9_ .()-]{0,79})$/;
+function documentName(path){
+  const m=namedDocument.exec(path), ext=m?.[2].split('.').at(-1)?.toLowerCase();
+  return ext&&downloadExtensions.has(ext)?{hash:m[1],ext}:null;
+}
 const guardPaths=['src/content/editor-content.json','src/content/grapes-designs.json',...['page.tsx','site-header.tsx','site-footer.tsx','layout.tsx','builder-page.tsx','editor-blocks.tsx','testimonial-slider.tsx','wellness.css','globals.css','local-fonts.css','builder-page.css','clinic-footer.css','floating-booking-link.tsx','floating-booking-link.css'].map(n=>'src/app/'+n)];
 const sha=/^[a-f0-9]{40}$/; const id=/^[a-f0-9-]{36}$/;
 const emptyBlob='e69de29bb2d1d6434b8b29ae775ad8c2e48c5391';
 const maxZip=32*1024*1024, maxText=850000, maxDocument=25*1024*1024;
-const isDocument=path=>/\.bin$/.test(path);
+const isDocument=path=>/\.bin$/.test(path)||!!documentName(path);
 const sha256=b=>createHash('sha256').update(b).digest('hex');
 const gitSha=b=>createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex');
 const segments=path=>path.split('/').map(encodeURIComponent).join('/');
 class PublishError extends Error {constructor(status,message,fallback=false){super(message);this.status=status;this.fallback=fallback;}}
 const fail=(s,m,f=false)=>{throw new PublishError(s,m,f);};
 const badZip=()=>fail(422,'The upload is not a valid Page Studio package. Prepare it again in the editor.');
-const mediaPath=p=>p.startsWith('public/')&&media.test(p);
+const mediaPath=p=>p.startsWith('public/')&&(media.test(p)||!!documentName(p));
 
 export function unpackPackage(buf,key="home"){
   const {source,draft}=pageFiles(key);
@@ -37,7 +43,7 @@ export function unpackPackage(buf,key="home"){
     const name=buf.toString('utf8',off+30,nameEnd), data=buf.subarray(nameEnd,nameEnd+length);
     if(files.has(name)||(![source,draft].includes(name)&&!mediaPath(name)))badZip();
     if(name===source||name===draft){if(length>maxText)badZip();}
-    else if(length>(isDocument(name)?maxDocument:20*1024*1024)||name.split('/').at(-1).split('.')[0]!==sha256(data).slice(0,32)||!validMedia(name,data))badZip();
+    else if(length>(isDocument(name)?maxDocument:20*1024*1024)||(documentName(name)?.hash||name.split('/').at(-1).split('.')[0])!==sha256(data).slice(0,32)||!validMedia(name,data))badZip();
     files.set(name,data);
     off=nameEnd+length;
   }
@@ -45,6 +51,8 @@ export function unpackPackage(buf,key="home"){
   return files;
 }
 function validMedia(path,b){
+  const doc=documentName(path);
+  if(doc)return doc.ext!=='pdf'||b.toString('ascii',0,5)==='%PDF-';
   switch(path.split('.').at(-1)){
     case 'png': return b.subarray(0,8).toString('hex')==='89504e470d0a1a0a';
     case 'jpg': return b.subarray(0,3).toString('hex')==='ffd8ff';
@@ -63,8 +71,14 @@ export function verifyHtml(html,files,tree,key){
   if(typeof html!=='string'||html.length>maxText||/<!doctype|<\/?(?:body|html|head)[\s>]/i.test(html))badZip();
   const seen=new Set();let main=0;
   const resource=(v,asDownload=false)=>{
-    if(!/^\/Newcitywellness\/(?:images|media\/homepage-studio)\/[A-Za-z0-9_./-]+$/.test(v)||v.split('/').slice(1).some(x=>!x||x==='..'||x==='.'))badZip();
-    const file='public'+v.slice('/Newcitywellness'.length);
+    // URLs may encode spaces in an original document filename, but may not
+    // smuggle separators, traversal, query strings or control characters.
+    if(/%(?:2f|5c|00)/i.test(v))badZip();
+    let decoded;
+    try { decoded=decodeURIComponent(v); } catch { badZip(); }
+    if(!/^\/Newcitywellness\/(?:images|media\/homepage-studio)\/[A-Za-z0-9_ .()\/-]+$/.test(decoded)
+      ||decoded.split('/').slice(1).some(x=>!x||x==='..'||x==='.'))badZip();
+    const file='public'+decoded.slice('/Newcitywellness'.length);
     if(isDocument(file)&&(!asDownload||!mediaPath(file)))badZip();
     if(!files.has(file)&&!tree.has(file))fail(422,'A homepage image, document or video is missing from the draft or repository.');
   };
