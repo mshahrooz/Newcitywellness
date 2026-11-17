@@ -15,5 +15,21 @@ const StudioDocuments=(()=>{
   function filename(name){
     return typeof name==='string'&&name.replace(/[\\/\x00-\x1f\x7f]/g,'_').trim().slice(0,180)||'download';
   }
-  return Object.freeze({MAX_FILE,MIME,parse,filename});
+  // GitHub Pages cannot force Content-Disposition on arbitrary uploads. Keep
+  // active formats (.html, .svg, .js, etc.) opaque to prevent same-origin code execution.
+  const downloadExtensions=new Set('pdf doc docx xls xlsx ppt pptx txt csv tsv rtf odt ods odp epub zip rar 7z tar tgz gz bz2 xz md markdown json yaml yml log jpg jpeg png gif webp avif heic heif bmp tif tiff mp3 m4a wav ogg flac mp4 webm mov avi mkv webp psd ai dwg dxf stl obj blend eot ttf otf woff woff2'.split(' '));
+  function storageName(name,digest){
+    const hash=String(digest).slice(0,32);
+    if(!/^[a-f0-9]{32}$/.test(hash))throw Error('Invalid document hash.');
+    const original=filename(name);
+    const extension=/\.([A-Za-z0-9]{1,12})$/.exec(original);
+    if(!extension||!downloadExtensions.has(extension[1].toLowerCase()))return hash+'.bin';
+    // Keep ordinary filenames (including spaces) at the end of their published URLs.
+    // Normalize unsafe URL/path characters and stay under the ZIP entry-size limit.
+    const suffix=extension[0];
+    const stem=original.slice(0,-suffix.length).replace(/[^A-Za-z0-9 ._()-]/g,'_')
+      .replace(/^\.+/,'_').trim().slice(0,80-suffix.length).replace(/[ .]+$/,'')||'download';
+    return hash+'/'+stem+suffix;
+  }
+  return Object.freeze({MAX_FILE,MIME,parse,filename,storageName});
 })();
