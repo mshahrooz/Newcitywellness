@@ -26,7 +26,7 @@ const StudioPublish = (() => {
     'src/app/floating-booking-link.tsx','src/app/floating-booking-link.css',
   ];
   const mediaMap={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif','image/gif':'gif','application/pdf':'pdf','application/octet-stream':'bin','video/mp4':'mp4','video/webm':'webm'};
-  const safeMedia=/^(?:images\/|media\/homepage-studio\/)[A-Za-z0-9_./-]+$/;
+  const safeMedia=/^(?:images\/|media\/homepage-studio\/)[A-Za-z0-9_ .()\/-]+$/;
   const SAMPLE_TAGS=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite'.split(' '));
   const utf8=new TextEncoder(), decode=new TextDecoder();
   const checkStyle=/(?:url\s*\(|expression\s*\(|@import|javascript\s*:|\\|[<>])/i;
@@ -103,12 +103,12 @@ const StudioPublish = (() => {
     if(!safeMedia.test(p)||p.split('/').some(n=>!n||n==='..'||n==='.'))throw Error('The draft contains an invalid local media path.');
     return p;
   }
-  async function fromData(value,isDoc){
+  async function fromData(value,isDoc,originalName=''){
     let encoded,ext;
     if(isDoc){
       const document=StudioDocuments.parse(value);
       if(!document)throw Error('Choose a valid document no larger than 25 MB.');
-      encoded=document.encoded;ext=document.legacyPdf?'pdf':'bin';
+      encoded=document.encoded;
     }else{
       const m=/^data:(image\/[a-z]+|video\/[a-z0-9]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
       if(!m||!mediaMap[m[1]])throw Error('A file in the draft is not a supported local image or video.');
@@ -116,7 +116,8 @@ const StudioPublish = (() => {
       encoded=m[2];ext=mediaMap[m[1]];
     }
     const digest=await sha256(unpack(encoded));
-    return {encoded,name:digest.slice(0,32)+'.'+ext,ext};
+    const name=isDoc?StudioDocuments.storageName(originalName,digest):digest.slice(0,32)+'.'+ext;
+    return {encoded,name,ext:name.split('.').pop().toLowerCase()};
   }
   function safeLink(value){
     if(!value||/[\x00-\x20\\]/.test(value)||value.startsWith('//'))throw Error('A button or link has an invalid address.');
@@ -142,18 +143,20 @@ const StudioPublish = (() => {
     top.querySelectorAll('.mobile-toggle,.nav-dropdown-toggle').forEach(n=>n.setAttribute('aria-expanded','false'));
     top.querySelectorAll('.mobile-toggle').forEach(n=>{n.setAttribute('aria-label','Open menu');n.querySelector('path')?.setAttribute('d','M4 7h16M4 12h16M4 17h16');});
     const files=new Map(), mediaCache=new Map(), documentsCache=new Map();
+    const docKey=(value,name)=>value+'\u0000'+StudioDocuments.filename(name);
     const clonedOperations=revision.operations.map(op=>({...op}));
-    async function media(value,isDoc=false){
+    async function media(value,isDoc=false,originalName=''){
       if(!value||value==='#')return value;
       if(value.startsWith('data:')){
         const cache=isDoc?documentsCache:mediaCache;
-        if(!cache.has(value))cache.set(value,(async()=>{
-          const f=await fromData(value,isDoc);
-          const path=(['png','jpg','webp','avif','gif'].includes(f.ext)?'images/homepage-studio/':'media/homepage-studio/')+f.name;
+        const key=isDoc?docKey(value,originalName):value;
+        if(!cache.has(key))cache.set(key,(async()=>{
+          const f=await fromData(value,isDoc,originalName);
+          const path=(isDoc?'media/homepage-studio/':['png','jpg','webp','avif','gif'].includes(f.ext)?'images/homepage-studio/':'media/homepage-studio/')+f.name;
           if(!context?.tree?.has('public/'+path))files.set('public/'+path,f.encoded);
-          return BASE+path;
+          return BASE+path.split('/').map(encodeURIComponent).join('/');
         })());
-        return cache.get(value);
+        return cache.get(key);
       }
       const here=new URL(context?.canvas||new URL('canvas.html',location.href)), url=new URL(value,here);
       if((url.origin!==here.origin&&url.origin!==new URL(LIVE).origin)||url.search||url.hash){
@@ -177,7 +180,7 @@ const StudioPublish = (() => {
       if(node.hasAttribute('href')){
         const href=node.getAttribute('href');
         if(href.startsWith('data:')&&(tag!=='a'||!node.hasAttribute('download')))throw Error('An uploaded document must be linked as a download.');
-        node.setAttribute('href',href.startsWith('data:')?await media(href,true):safeLink(href));
+        node.setAttribute('href',href.startsWith('data:')?await media(href,true,node.getAttribute('download')):safeLink(href));
         if(node.getAttribute('target')==='_blank'){
           const link=node.getAttribute('href');
           const external=/^https?:\/\//.test(link);
@@ -203,8 +206,9 @@ const StudioPublish = (() => {
       if((['image','file','video'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')){
         // Preserve full edit history but upload only media referenced by the final canvas.
         const cache=op.kind==='file'?documentsCache:mediaCache;
-        if(cache.has(op.value)){
-          const name=(await cache.get(op.value)).slice(BASE.length);
+        const key=op.kind==='file'?docKey(op.value,op.name):op.value;
+        if(cache.has(key)){
+          const name=decodeURIComponent((await cache.get(key)).slice(BASE.length));
           op.value={studioAsset:name};
         }
       }
@@ -267,10 +271,12 @@ const StudioPublish = (() => {
     if(!Array.isArray(revision?.operations))throw Error('There is no saved Studio publication to load yet.');
     const ops=await Promise.all(revision.operations.map(async op=>{
       if(!op.value||typeof op.value!=='object'||!op.value.studioAsset)return op;
-      const path=canonicalAsset(op.value.studioAsset),ext=path.split('.').pop();
-      const type=Object.keys(mediaMap).find(k=>mediaMap[k]===ext);
+      const path=canonicalAsset(op.value.studioAsset),ext=path.split('.').pop().toLowerCase();
+      const type=op.kind==='file'?(ext==='pdf'&&/^[a-f0-9]{32}\.pdf$/.test(path.split('/').at(-1))?'application/pdf':StudioDocuments.MIME)
+        :Object.keys(mediaMap).find(k=>mediaMap[k]===ext);
       if(!type||ext==='bin'&&op.kind!=='file')throw Error('The published draft contains an unknown media format.');
-      const answer=await fetch(LIVE+path,{cache:'force-cache',signal:AbortSignal.timeout(op.kind==='file'?90000:12000)});
+      const url=LIVE+path.split('/').map(encodeURIComponent).join('/');
+      const answer=await fetch(url,{cache:'force-cache',signal:AbortSignal.timeout(op.kind==='file'?90000:12000)});
       if(!answer?.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
       return {...op,value:'data:'+type+';base64,'+pack(new Uint8Array(await answer.arrayBuffer()))};
     }));
