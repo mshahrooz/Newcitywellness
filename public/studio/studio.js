@@ -5,7 +5,7 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=drag-guides1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=card-sort1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
 const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
 let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
 const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
@@ -38,7 +38,7 @@ const richKinds=['subheading','quote','callout','accordion','divider','spacer','
 let liveOps=[], liveRevision=null, liveSource=null, liveSync=null;
 const submittedDrafts=new Map();
 const rememberSubmitted=(key,id,raw)=>submittedDrafts.set(key,{id,raw});
-let D, original, list=[], savedOps=[], cursor=0, active=null, mode='edit', view='desktop', drag, guide, placement, stopBehavior, toastTimer, gesture, viewportTick, baselineReady=false;
+let D, original, list=[], savedOps=[], cursor=0, active=null, mode='edit', view='desktop', drag, guide, stopBehavior, toastTimer, gesture, viewportTick, baselineReady=false;
 const labels={hero:'Home hero',therapies:'Explore Our Therapies','first-visit':'Your First Visit',practitioner:'Meet the Practitioner',conditions:'Areas We Support',experiences:'Patient Experiences',contact:'Contact and hours'};
 const idOf=n=>n?.getAttribute('data-bs-id');
 const byId=id=>[...D.querySelectorAll('[data-bs-id]')].find(n=>idOf(n)===id);
@@ -50,7 +50,7 @@ const isExisting=e=>!!e&&!e.closest('[data-bs-new]');
 const rowTitle=n=>n?.dataset.bsLabel||labels[n?.getAttribute('data-builder-section')]||'Section';
 const therapyCard=n=>n?.closest('.therapy-card');
 const therapyPhoto=n=>n?.matches('.therapy-card .therapy-image > img');
-const titleOf=n=>n.matches('.therapy-card')?'Therapy card':n.matches('.testimonial-card,.reviews-card')?'Testimonial card':n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-zone')?rowTitle(n):n.hasAttribute('data-bs-column')?'Column':({image:'Image',button:'Button',document:'Document',title:'Heading',text:'Paragraph',link:'Link',component:'Component',detail:'Detail',form:'Form',field:'Form field',video:'Video',media:'Embedded media'})[n.dataset.bsKind]||types[n.dataset.bsKind]?.[0]||'Element';
+const titleOf=n=>n.matches('.condition-card')?'Condition card':n.matches('.therapy-card')?'Therapy card':n.matches('.testimonial-card,.reviews-card')?'Testimonial card':n.hasAttribute('data-bs-row')||n.hasAttribute('data-bs-zone')?rowTitle(n):n.hasAttribute('data-bs-column')?'Column':({image:'Image',button:'Button',document:'Document',title:'Heading',text:'Paragraph',link:'Link',component:'Component',detail:'Detail',form:'Form',field:'Form field',video:'Video',media:'Embedded media'})[n.dataset.bsKind]||types[n.dataset.bsKind]?.[0]||'Element';
 const rowList=()=>[...main().children].filter(x=>x.hasAttribute('data-bs-row'));
 const unique=()=> 'new-'+crypto.randomUUID();
 const asString=(v,len=3000)=>typeof v==='string'?v.slice(0,len):'';
@@ -118,7 +118,7 @@ function markCanvas() {
       } else if(el.matches('a.btn')&&!el.closest('.hero-actions')||page[0]!=='home'&&el.matches('img')&&!el.closest('.page-hero-photo')){el.dataset.bsMove='yes';}
     });
   });
-  registerExtraNodes();markMoreDraggables();
+  registerExtraNodes();markMoreDraggables();markRemainingElements();
 }
 function markMoreDraggables(){
   // Mark after legacy IDs so previously saved drafts retain their anchors.
@@ -139,6 +139,27 @@ function markMoreDraggables(){
     el.dataset.bsMove='yes';
   }
 }
+// Assign IDs in a separate pass so adding support for more elements never
+// renumbers existing edits or published drafts. Media players use their
+// enclosing element as a pointer surface while Studio is in edit mode.
+function markRemainingElements(){
+  const card='.therapy-card,.testimonial-card,.reviews-card,.condition-card,.service-card,.feature-card';
+  let serial=0;
+  for(const el of D.querySelectorAll('.ncw *, .floating-booking-link *')){
+    if(idOf(el)||(!zoneOf(el)&&!el.closest('.floating-booking-link'))||
+      el.closest('script,style,template,noscript,[hidden]')||el.hasAttribute('data-builder-anchor')||
+      el.matches('builder-copy,option,optgroup,source,track')||el.ownerSVGElement)continue;
+    if(el.matches('a:not([href]),br,wbr')||(!el.firstChild&&!el.attributes.length&&!el.matches('hr,svg,canvas')))continue;
+    el.dataset.bsId='item-'+(++serial);
+    el.dataset.bsKind=el.matches('img')?'image':el.matches('video,audio,iframe,canvas')?'media':
+      el.matches('h1,h2,h3,h4,h5,h6')?'title':el.matches('a')?'link':
+      el.matches('input,textarea,select,label')?'field':el.matches('button')?'detail':'component';
+  }
+  for(const n of D.querySelectorAll(card)){
+    if(n.dataset.bsKind&&rowOf(n))n.dataset.bsMove='yes';
+  }
+}
+const dragCard=el=>el.closest('.therapy-card,.testimonial-card,.reviews-card,.condition-card,.service-card,.feature-card,article[data-bs-kind],.faq-list > details,.acu-faq-list > details');
 function content(el){
   if(el.hasAttribute('data-bs-new')){
     if(imageKind(el.dataset.bsKind))return el.querySelector('img');
@@ -543,7 +564,7 @@ async function loadCanvasLive(localRaw){
 }
 function safeToSync(){
   const input=$('popup-body').contains(document.activeElement)&&document.activeElement?.matches('input,textarea,select,[contenteditable]');
-  return baselineReady&&!switching&&!drag&&!paletteDrag&&!resizeDrag&&!columnDrag&&!gridPick&&!placement&&!input&&!StudioPublish.isBusy();
+  return baselineReady&&!switching&&!drag&&!paletteDrag&&!resizeDrag&&!columnDrag&&!gridPick&&!input&&!StudioPublish.isBusy();
 }
 async function syncLiveCanvas(){
   if(liveSync||!safeToSync())return false;
@@ -711,7 +732,7 @@ function paint(){
   selection.style.top=y+'px';
   selection.style.left=Math.max(r.f.left,Math.min(l+2,r.f.right-selection.offsetWidth-1))+'px';
 }
-function close(){popup.hidden=true;placement=null;gesture=null;}
+function close(){popup.hidden=true;gesture=null;}
 function open(title,category,anchor=null){
   $('popup-title').textContent=title;$('popup-type').textContent=category;
   body.replaceChildren();body.scrollTop=0;popup.hidden=false;gesture=null;
@@ -757,7 +778,6 @@ function useKeys(){
     if(e.key==='Shift'&&drag?.moved)updateDrag(drag.x,drag.y,true);
     if(e.key==='Escape'){
       if(paletteDrag){finishPaletteDrag();return;}
-      if(placement){placement=null;$('hint').textContent=defaultHint();return;}
       if(drag){finishDrag();return;}
       if(resizeDrag){stopResize(false);return;}
       if(columnDrag){endColumnDrag(false);return;}
@@ -767,7 +787,7 @@ function useKeys(){
       active=null;paint();return;
     }
     if(e.target?.closest?.('input,textarea,select,[contenteditable],[role="textbox"],[role="slider"]'))return;
-    if(!e.defaultPrevented&&mode==='edit'&&!drag&&!paletteDrag&&!columnDrag&&!resizeDrag&&!gridPick&&!placement
+    if(!e.defaultPrevented&&mode==='edit'&&!drag&&!paletteDrag&&!columnDrag&&!resizeDrag&&!gridPick
       &&!e.ctrlKey&&!e.metaKey&&handleSelectionArrow(e))return;
     if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'&&now()){e.preventDefault();cloneSelected(now());return;}
     if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();stepHistory(e.shiftKey?1:-1);}
@@ -780,20 +800,34 @@ function useKeys(){
   if(!useKeys.outer){document.addEventListener('keydown',handle);document.addEventListener('keyup',release);useKeys.outer=true;}
   D.addEventListener('keydown',handle);D.addEventListener('keyup',release);
 }
+function mediaProxy(el){
+  // Nested browsing contexts and native media controls do not bubble pointer events.
+  return Array.from(el.children||[]).find(n=>n.matches('iframe[data-bs-kind],video[data-bs-kind],audio[data-bs-kind]'));
+}
 function targetFrom(el,wholeCard=false){
-  const card=therapyCard(el);
+  const card=dragCard(el);
   if(card&&wholeCard)return card;
+  const media=mediaProxy(el);
+  if(media)return media;
   const exact=el.closest('[data-bs-kind]');
   const interactive=el.closest('a[href][data-bs-kind],button[data-bs-kind],label[data-bs-kind],summary[data-bs-kind]');
   if(!wholeCard&&interactive&&exact?.dataset.bsId?.startsWith('detail-new-'))return interactive;
-  if(card){
-    if(therapyPhoto(exact)||exact?.matches('h3'))return exact;
+  if(card?.matches('.therapy-card')){
     const photo=el.closest('.therapy-image')?.querySelector('img[data-bs-kind="image"]');
-    return photo||card;
+    if(photo)return photo;
+    if(!exact||exact===card||exact.contains(card))return card;
   }
   if(exact)return exact;
   const col=el.closest('[data-bs-column]');if(col)return col;
   return el.closest('[data-bs-row],[data-bs-zone]');
+}
+function hitSelection(el,alt=false){
+  if(alt){
+    const card=dragCard(el);
+    if(card)return card;
+    return el.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row],[data-bs-zone]')||targetFrom(el);
+  }
+  return targetFrom(el);
 }
 function sectionNeighbor(n,step){
   const rows=rowList(), index=rows.indexOf(n);
@@ -1100,36 +1134,27 @@ function rowChoices(anchor,side='after',columnsOnly=false){
 function startAdd(n=now()) {
   clearGridPick();
   const place=open('Add element','PAGE ELEMENTS',n);
-  para('Drag a block onto the page. Drop at a left or right edge to make columns, or at a top or bottom edge to stack blocks.');
+  para('Grab an item and drop it onto the page. Drop beside a block to make columns, or above or below it to stack blocks.');
   const sections={};
   for(const [kind,[t,,description,category]] of Object.entries(types)){
     if(!sections[category]){
       body.append(create('h3',{class:'library-group'},category));
       sections[category]=group('quick-grid');
     }
-    const b=button(sections[category],t,e=>{
-      if(e.detail!==0&&paletteSuppressClick)return;
-      if(e.detail===0){
-        const selected=now(), row=rowOf(selected)||rowList().at(-1);
-        const choice=kind==='row'||!row?{node:row,side:'after',row:true}:
-          selected?.hasAttribute('data-bs-column')?{node:selected,side:'inside'}:{node:row,side:'section-end'};
-        if(placePaletteBlock(kind,choice))return;
-      }
-      close();placement=kind;
-      $('hint').textContent='Click where you want to place '+t.toLowerCase()+'. Esc cancels.';
-    },{class:'palette-block'});
-    b.append(create('small',{},description),create('span',{class:'palette-grip','aria-hidden':'true',title:'Drag handle'},'⠿'));
-    b.addEventListener('pointerdown',e=>beginPaletteDrag(e,kind));
+    const tile=create('div',{class:'palette-block',title:'Drag '+t+' onto the page'});
+    tile.append(create('span',{class:'palette-name'},t),create('small',{},description),
+      create('span',{class:'palette-grip','aria-hidden':'true'},'⠿'));
+    sections[category].append(tile);
+    tile.addEventListener('pointerdown',e=>beginPaletteDrag(e,kind));
   }
   place();
 }
-let paletteDrag=null,paletteSuppressClick=false,paletteTick=0;
+let paletteDrag=null,paletteTick=0;
 function beginPaletteDrag(e,kind){
-  paletteSuppressClick=false;
   if(e.button!==0||e.isPrimary===false||mode!=='edit'||switching||drag||resizeDrag||columnDrag||paletteDrag)return;
   if(e.pointerType==='touch'&&!e.target.closest('.palette-grip'))return;
-  // Capture before the pointer crosses into the iframe. The tile stays visible
-  // and receives regular clicks until this turns into a drag.
+  // Capture before the pointer crosses into the iframe. A press without
+  // enough movement does nothing and leaves the toolbox open.
   const capture=e.currentTarget;
   capture.setPointerCapture(e.pointerId);
   paletteDrag={kind,pointer:e.pointerId,capture,startX:e.clientX,startY:e.clientY,moved:false};
@@ -1140,7 +1165,7 @@ function updatePaletteDrag(x,y){
   d.x=x;d.y=y;
   if(!d.moved){
     if(Math.hypot(x-d.startX,y-d.startY)<6)return;
-    d.moved=true;paletteSuppressClick=true;
+    d.moved=true;
     d.capture=document.documentElement;
     d.capture.setPointerCapture(d.pointer);
     close();clearGridPick();paint();
@@ -1186,7 +1211,7 @@ function finishPaletteDrag(commit=false){
   if(!d)return;
   paletteDrag=null;cancelAnimationFrame(paletteTick);
   if(!d.moved){
-    if(!commit&&d.capture.hasPointerCapture(d.pointer))d.capture.releasePointerCapture(d.pointer);
+    if(d.capture.hasPointerCapture?.(d.pointer))d.capture.releasePointerCapture(d.pointer);
     return;
   }
   $('palette-drag-chip').hidden=true;
@@ -1208,6 +1233,7 @@ for(const name of ['pointercancel','lostpointercapture'])document.addEventListen
 window.addEventListener('blur',()=>{if(paletteDrag)finishPaletteDrag();});
 let flowPreview=null;
 function clearFlowPreview(){
+  flowPreview?.restore?.();
   flowPreview?.slot?.remove();
   flowPreview=null;
   $('drop-guide').hidden=true;
@@ -1228,6 +1254,13 @@ function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=f
   flowPreview={...choice,slot};
   positionFlowGuide(f);
 }
+function previewSort(choice,f){
+  const el=StudioFlow.unit(choice.source), peer=StudioFlow.unit(choice.node);
+  const parent=el.parentElement,next=el.nextSibling;
+  peer[choice.side](el);
+  flowPreview={...choice,restore:()=>parent.insertBefore(el,next)};
+  positionFlowGuide(f);
+}
 function showTargetOutline(f,r){
   const outline=$('drop-target-outline');
   const left=Math.max(1,r.left), right=Math.min(f.width-1,r.right);
@@ -1239,17 +1272,18 @@ function showTargetOutline(f,r){
 function positionFlowGuide(f){
   const marker=$('drop-guide'), side=flowPreview.side, vertical=StudioFlow.isSide(side);
   const target=flowPreview.node;
-  const anchor=target&&StudioFlow.unit(target).getBoundingClientRect();
+  const anchor=target&&StudioFlow.unit(flowPreview.source||target).getBoundingClientRect();
   if(anchor)showTargetOutline(f,anchor);
   const track=vertical?StudioFlow.sideAnchor(target).getBoundingClientRect():null;
   const line=vertical?Math.max(3,Math.min(f.width-3,track[side])):null;
-  const r=vertical?{left:line-2,right:line+2,top:track.top,bottom:track.bottom}:flowPreview.slot.getBoundingClientRect();
+  const r=flowPreview.sort?anchor:vertical?{left:line-2,right:line+2,top:track.top,bottom:track.bottom}:flowPreview.slot.getBoundingClientRect();
   marker.classList.toggle('side-guide',vertical);
+  marker.classList.toggle('sort-guide',!!flowPreview.sort);
   const left=Math.max(0,r.left), right=Math.min(f.width,r.right);
   const top=Math.max(0,r.top), bottom=Math.min(f.height,r.bottom);
   if(right<=left||bottom<=top){marker.hidden=true;return;}
   const label=$('guide-label');
-  label.textContent=vertical?(flowPreview.native?'Move ':'Add column ')+side:side==='inside'?'Place in column':
+  label.textContent=flowPreview.sort?'Move into this position':vertical?(flowPreview.native?'Move ':'Add column ')+side:side==='inside'?'Place in column':
     side==='before'||side==='section-start'?'Insert above':'Insert below';
   Object.assign(marker.style,{left:(f.left+left)+'px',top:(f.top+top)+'px',width:(right-left)+'px',height:(bottom-top)+'px'});
   marker.hidden=false;
@@ -1263,6 +1297,7 @@ function updateDrag(x,y,free=drag?.free){
     if(drag.direct){
       drag.capture.setPointerCapture(drag.pointer);
       drag.cancelClick();
+      active=idOf(drag.node);
     }
     drag.moved=true;
     clearGridPick();close();
@@ -1278,6 +1313,14 @@ function updateDrag(x,y,free=drag?.free){
   showDragGrid(f);
   if(!free||drag.section){
     const px=x-f.left, py=y-f.top;
+    const sort=StudioFlow.sortTarget(drag.sort,px,py);
+    if(sort){
+      guide=sort.same?null:sort;
+      freeGhostHide();
+      if(sort.same){clearFlowPreview();return;}
+      if(flowPreview?.sort&&flowPreview.node===sort.node){positionFlowGuide(f);return;}
+      clearFlowPreview();previewSort(sort,f);return;
+    }
     if(flowPreview?.slot){
       const r=flowPreview.slot.getBoundingClientRect();
       if(px>=r.left-10&&px<=r.right+10&&py>=r.top-12&&py<=r.bottom+12){
@@ -1291,7 +1334,7 @@ function updateDrag(x,y,free=drag?.free){
       freeGhostHide();showFlowPreview(choice,f);return;
     }
   } else clearFlowPreview();
-  if(drag.section){guide=null;freeGhostHide();return;}
+  if(drag.section||!canDragIndependently(drag.node)){guide=null;freeGhostHide();return;}
   guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,false);
   const {left,top,width,height}=guide;
   drawGhost(drag.node,f.left+left,f.top+top,width,height);
@@ -1330,9 +1373,9 @@ function beginItemDrag(e,n,capture,direct=false,cancelClick=null){
   if(e.button!==0||e.isPrimary===false||switching||mode!=='edit'||drag||paletteDrag||resizeDrag||columnDrag||!canDragCanvas(n))return;
   if(!direct){e.preventDefault();clearGridPick();capture.setPointerCapture(e.pointerId);}
   const f=frame.getBoundingClientRect(), x=e.clientX+(direct?f.left:0), y=e.clientY+(direct?f.top:0);
-  const section=n.hasAttribute('data-bs-row');
+  const section=n.hasAttribute('data-bs-row'), sort=section?null:StudioFlow.captureSort(n);
   const layout=section?{r:(surfaceOf(n)||n).getBoundingClientRect(),device:devicePlacement()}:offsetDragStart(n);
-  drag={node:n,section,pointer:e.pointerId,capture,direct,cancelClick,startX:x,startY:y,x,y,moved:false,free:e.shiftKey,layout};
+  drag={node:n,section,sort,pointer:e.pointerId,capture,direct,cancelClick,startX:x,startY:y,x,y,moved:false,free:e.shiftKey,layout};
   viewportTick=requestAnimationFrame(duringDrag);
 }
 function itemPointerMove(e,direct){
@@ -1360,10 +1403,16 @@ function bindCanvasDragging(doc){
   doc.addEventListener('pointerdown',e=>{
     if(e.isPrimary===false)return;
     dragged=false;
-    const n=now(), hit=e.target;
-    if(placement||gridPick||!n?.contains(hit)||hit.closest('[contenteditable]'))return;
-    // Don't capture a simple click. Once the pointer moves, capture on a stable
-    // node so it stays active as the element or insertion gap moves.
+    const selected=now(), hit=e.target;
+    if(gridPick||mode!=='edit'||hit.closest('[contenteditable]'))return;
+    if(hit.closest('input,textarea,select,button'))e.preventDefault();
+    const exact=hitSelection(hit,e.altKey);
+    const card=dragCard(hit);
+    const selectedHere=!!selected&&(selected.contains(hit)||exact===selected);
+    const n=e.altKey?exact:selectedHere&&!selected.hasAttribute('data-bs-row')&&!selected.hasAttribute('data-bs-zone')?
+      selected:card||exact;
+    // Keep ordinary clicks for settings. A drag can start over any item, with
+    // cards moving as a unit unless a specific part of that card was selected.
     beginItemDrag(e,n,doc.documentElement,true,()=>{dragged=true;});
   },true);
   doc.addEventListener('pointermove',e=>itemPointerMove(e,true),true);
@@ -1371,8 +1420,8 @@ function bindCanvasDragging(doc){
   doc.addEventListener('pointercancel',e=>itemPointerCancel(e,true),true);
   doc.addEventListener('lostpointercapture',e=>{if(e.target===drag?.capture)itemPointerCancel(e,true);},true);
   doc.addEventListener('pointerleave',e=>{if(!drag?.moved)itemPointerCancel(e,true);});
-  doc.addEventListener('dragstart',e=>{if(mode==='edit'&&canvasDragTarget?.contains(e.target))e.preventDefault();},true);
-  doc.addEventListener('selectstart',e=>{if(drag?.direct&&canvasDragTarget?.contains(e.target))e.preventDefault();},true);
+  doc.addEventListener('dragstart',e=>{if(mode==='edit'&&(drag?.direct||hitSelection(e.target)))e.preventDefault();},true);
+  doc.addEventListener('selectstart',e=>{if(drag?.direct)e.preventDefault();},true);
   doc.addEventListener('click',e=>{
     if(!dragged||e.detail===0||mode!=='edit')return;
     dragged=false;e.preventDefault();e.stopImmediatePropagation();
@@ -1543,9 +1592,9 @@ $('compare').onclick=()=>{toggleMenu(false);window.open(canvasPath(),'_blank','n
 $('help').onclick=()=>{
   toggleMenu(false);const place=open('How to edit this page','QUICK GUIDE');
   para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
-  para('Drag a block into the space beside another block. Release when the side guide appears. Use the green divider to adjust widths. Columns stack on phones.');
+  para('Drag a card over another card to take its spot. The other cards shift in order as you drag. Drag ordinary blocks beside each other to add columns. Columns stack on phones.');
   para('Use the up/down buttons on a selected block to move it directly above or below its neighbour. The arrow keys also move the selection. Hold Alt with an arrow key to nudge without reordering.');
-  para('Select an element, then press and drag it directly on the canvas or use its grip. The grid shows while dragging. Drop at an Insert above or Insert below marker to make room for it.');
+  para('Press and drag directly on the canvas or use the selection grip. Click a nested item to move it separately. Hold Alt and drag on a card to move the whole card.');
   para('For independent movement without reordering, hold Shift while dragging. Layout moves apply on every device.');
   para('Use Delete in the item settings to remove it from your draft. Undo restores deleted content.');
   para('Choose Columns in Add element, enter the count, then drag the green dividers to resize on desktop or tablet. Columns stack on mobile.');
@@ -1618,19 +1667,11 @@ function boot(){
     if(anchor)e.preventDefault();
     if(gridPick){e.preventDefault();commitPick(e);return;}
     const summary=e.target.closest('summary');
-    if(summary&&!summary.closest('[data-bs-new]')&&!placement&&!e.altKey&&!anchor){
-      e.preventDefault();summary.parentElement.open=!summary.parentElement.open;choose(summary.parentElement,false);return;
+    if(summary&&!summary.closest('[data-bs-new]')&&!e.altKey&&!anchor){
+      e.preventDefault();summary.parentElement.open=!summary.parentElement.open;choose(summary,false);return;
     }
     if(e.target.closest('input,textarea,select,button'))e.preventDefault();
-    const n=therapyCard(e.target)?targetFrom(e.target,e.altKey):e.altKey
-      ?e.target.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row]')||targetFrom(e.target):targetFrom(e.target);
-    if(placement){
-      e.preventDefault();
-      const kind=placement, choice=StudioFlow.libraryTarget(kind,e.clientX,e.clientY);
-      if(choice){placement=null;placePaletteBlock(kind,choice);}
-      else flash('Choose a spot in the page content.');
-      return;
-    }
+    const n=hitSelection(e.target,e.altKey);
     if(n){e.preventDefault();choose(n);}
     else {active=null;close();paint();}
   },true);

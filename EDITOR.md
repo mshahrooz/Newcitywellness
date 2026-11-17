@@ -43,7 +43,8 @@ Use the [GitHub Pages Page Studio](https://mshahrooz.github.io/Newcitywellness/s
 The **Add element** palette groups text, media and links, and layout blocks. Use **Preview** and the device buttons to check placement before publishing.
 
 - **Sections** in the top bar lists the current order. Move a section up or down from the list or with its selection toolbar arrows.
-- Select an element, then hold and drag it directly on the canvas or use its grip. The grid is visible while dragging. Drag a block from **Add element** onto an insertion gap to place it. Drag an existing block near another block’s edge to reorder it. Hold **Shift** to move without changing the order.
+- Grab and drag content directly on the canvas. Drag a card over another card in its group to take that slot. The other cards reflow during the drag. Click a specific part of a card to select it for an independent drag, or use **Alt** to grab the whole card. **Shift** moves an item visually without changing its order.
+- The **Add element** toolbox is drag-only. Hover a tile for its grip, then drag it onto the page. A click does not add the block or activate a placement mode.
 - **YouTube video** accepts watch, share, Shorts, and live URLs and renders the video automatically. Use **Preview** to play it.
 - **Embed code** accepts an HTTPS embed URL, iframe code, or HTML snippets. Custom code runs in an isolated frame. Some providers limit where embeds work.
 - Drop a block into the space to the left or right of another block to create columns without adding a row first. Drop at the edge of an existing automatic column to extend the group.
