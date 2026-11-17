@@ -385,7 +385,7 @@ const StudioPublish = (() => {
   }
   function bindSource(source){loadedSource=source;}
   function baseOfDraft(){return loadedSource;}
-  async function waitForLivePublication(target,id,feedback,links,pos){
+  async function waitForLivePublication(target,id,feedback,pos){
     if(!/^[a-f0-9-]{36}$/.test(id))return;
     const deadline=Date.now()+180000;
     let interval=1200;
@@ -393,10 +393,9 @@ const StudioPublish = (() => {
       try{
         const live=await liveManifest(target);
         if(live?.publication===id){
-          const href=await verifyLivePage(target,live);
+          await verifyLivePage(target,live);
           if(feedback.isConnected){
             feedback.textContent='Your changes are live on GitHub Pages.';
-            links.prepend(create('a',{href,target:'_blank',rel:'noopener noreferrer'},'Open updated page ↗'));
             if(!popup.hidden)pos();
           }
           if(selected()[0]===target[0])void syncLiveCanvas();
@@ -411,9 +410,7 @@ const StudioPublish = (() => {
   function panel(){
     if(busy)return;
     const pos=open('Publish '+selected()[1],'GITHUB PAGES');
-    para('Anyone can edit and preview. Only approved Supabase accounts can publish changes to the selected page.');
-    const links=group();
-    links.append(create('a',{href:liveUrl(),target:'_blank',rel:'noopener noreferrer'},'View live page ↗'));
+    para('Publish your changes to the selected page. Sign in with your approved publisher account.');
     const identity=create('p',{class:'muted',role:'status'});
     const authArea=group('publisher-auth');
     authArea.before(identity);
@@ -421,35 +418,19 @@ const StudioPublish = (() => {
     if(!activeDraft)para(mode==='edit'?'Make a page edit before publishing.':'Use Back to editing before publishing.');
     const feedback=create('p',{role:'status',class:'publish-feedback'});
     body.append(feedback);
-    const controls=group();
-    const publishedLinks=group();
+    const controls=group('publish-actions');
     const progress=message=>{feedback.textContent=message;};
     const running=value=>{
       busy=value;
-      test.disabled=value||!signedIn();
-      if(direct)direct.disabled=value||!signedIn();
-      if(download)download.disabled=value;
+      direct.disabled=value||!signedIn()||!activeDraft;
       $('publish').disabled=value;
       if($('page-picker'))$('page-picker').disabled=value;
       authArea.querySelectorAll('button,input').forEach(el=>{el.disabled=value;});
     };
-    const test=button(controls,'Test publishing access',async()=>{
-      if(busy||!signedIn())return;
+    const direct=button(controls,'Publish Website',async()=>{
+      if(busy||!signedIn()||!activeDraft)return;
       running(true);
       try{
-        progress('Checking access without publishing…');
-        await publisher('check');
-        progress('Write access confirmed. Checking the current page revision…');
-        await status();
-        progress('GitHub confirmed write access and the current page revision. No files, commits or deployments were changed.');
-      }catch(e){progress(e.message);}
-      finally{running(false);if(!signedIn())showAuth();pos();}
-    });
-    const direct=activeDraft?button(controls,'Publish to GitHub Pages',async()=>{
-      if(busy||!signedIn())return;
-      running(true);
-      try{
-        publishedLinks.replaceChildren();
         const target=selected(), snapshot=draftString();
         const {zip,id}=await preparedRevision(progress);
         if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
@@ -458,28 +439,15 @@ const StudioPublish = (() => {
         const result=await publisher('publish',zip);
         const pendingLive=create('span');
         feedback.replaceChildren(pendingLive);
-        pendingLive.textContent='Committed to GitHub. Waiting for the new page to go live…';
-        publishedLinks.replaceChildren(
-          create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/commit/'+result.sha,target:'_blank',rel:'noopener noreferrer'},'View GitHub commit ↗'),
-          create('a',{href:'https://github.com/'+OWNER+'/'+REPO+'/actions/workflows/deploy.yml',target:'_blank',rel:'noopener noreferrer'},'Watch Pages build ↗'));
+        pendingLive.textContent='Changes saved to GitHub. Waiting for the updated page to go live…';
         if(result.id===id&&VALID_SHA.test(result.source)){
           rememberSubmitted(target[0],id,snapshot);
           void save({quiet:true});
-          void waitForLivePublication(target,id,pendingLive,publishedLinks,pos);
+          void waitForLivePublication(target,id,pendingLive,pos);
         }
       }catch(e){progress(e.message);}
       finally{running(false);if(!signedIn())showAuth();pos();}
-    },{class:'publish-cta'}):null;
-    const download=activeDraft?button(controls,'Download GitHub upload package',async()=>{
-      if(busy)return;
-      running(true);
-      try{
-        const zip=await githubPackage(progress);
-        exportFile(zip,pageIdentity()+'-github-upload.zip','application/zip');
-        progress('Package ready. Nothing was published.');
-      }catch(e){progress(e.message);}
-      finally{running(false);pos();}
-    }):null;
+    },{class:'publish-website-button'});
     function showAuth(){
       authArea.replaceChildren();
       const ready=supabaseReady()&&location.origin===SITE_ORIGIN;
