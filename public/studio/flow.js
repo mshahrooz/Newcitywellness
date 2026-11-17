@@ -1,13 +1,15 @@
 'use strict';
 
-/* Normal-flow drops are intentionally limited to content that can move without
-   detaching part of a native card, form, menu, or image mask. */
+/* Normal-flow moves keep native widgets intact. Moving within a sibling
+   group reorders the group in place without creating columns or wrappers. */
 const StudioFlow = (() => {
   // Keep connected widgets intact during structural moves. Their individual
   // pieces can still be positioned visually in their original container.
   const blocked = 'a,button,form,nav,label,p,ul,ol,dl,li,details,summary,.therapy-card,.testimonial-card,.reviews-card,.condition-card,.clinic-hours,.contact-form-wrap,.page-hero-photo,.bs-pair';
-  const nativeLane = '.therapy-grid,.testimonial-grid,.reviews-grid,.hero-actions';
-  const strictLane = nativeLane+',.faq-list';
+  const nativeLane = '.therapy-grid,.testimonial-grid,.reviews-grid,.condition-grid,.hero-actions';
+  const cardUnit = 'article,.therapy-card,.testimonial-card,.reviews-card,.condition-card,.service-card,.feature-card,[data-bs-new]';
+  const lockedUnit = 'source,track,summary,legend,option,optgroup,svg,picture,script,style,template';
+  const strictLane = nativeLane+',.faq-list,.acu-faq-list';
   function unit(n) {
     if(n?.matches('img')&&n.parentElement?.matches('picture'))return n.parentElement;
     return n;
@@ -28,7 +30,24 @@ const StudioFlow = (() => {
   function isNativeSibling(el,dest){
     return el.parentElement===dest.parentElement&&!!el.parentElement?.matches(strictLane);
   }
+  function localPair(origin,dest) {
+    const parent=origin?.parentElement;
+    if(!parent||parent!==dest?.parentElement||origin===dest)return false;
+    if(origin.hasAttribute('data-bs-column')&&dest.hasAttribute('data-bs-column')&&parent.matches('.bs-grid'))return true;
+    if(!origin.dataset?.bsId||!dest.dataset?.bsId||origin.matches(lockedUnit)||dest.matches(lockedUnit)||
+      parent.matches('svg,picture,video,audio,select,thead,tfoot')||parent.closest?.('.bs-free-layer'))return false;
+    if(parent.matches(strictLane))return !!origin.dataset.bsKind&&!!dest.dataset.bsKind;
+    if(origin.matches('input,textarea,select,label')||dest.matches('input,textarea,select,label'))return false;
+    if(!origin.dataset.bsKind||!dest.dataset.bsKind)return false;
+    if(origin.matches(cardUnit)&&dest.matches(cardUnit))return true;
+    if(origin.localName!==dest.localName||!origin.localName)return false;
+    // Reorder matching list entries, fields wrapped in groups, links and label/value stacks
+    // without allowing a piece of a widget to move into another widget.
+    return origin.matches('li,tr,dd,dt,h2,h3,h4,p,button,a,figure,blockquote,details')||
+      !!origin.classList?.length&&Array.from(origin.classList).some(name=>dest.classList?.contains(name));
+  }
   function target(n,t,side) {
+    if(n&&t&&['before','after'].includes(side)&&n.isConnected&&t.isConnected&&localPair(unit(n),unit(t)))return true;
     if(!source(n)||!t?.isConnected||!rowOf(t)||t===n||n.contains(t)||t.contains(n))return false;
     const el=unit(t), origin=unit(n);
     if(origin===el||origin.contains(el)||el.contains(origin)||el.closest('.bs-free-layer'))return false;
@@ -55,10 +74,11 @@ const StudioFlow = (() => {
   // Reordering controls follow the rendered lane, never a descendant of the
   // next block. Treat a responsive picture and an automatic group as units.
   function stepTarget(n,step){
-    if(!source(n)||![1,-1].includes(step))return null;
+    if(!n?.isConnected||![1,-1].includes(step))return null;
     const el=unit(n), side=step<0?'before':'after';
     const nodeIn=peer=>{
       if(peer.matches('[data-bs-move="yes"]'))return peer;
+      if(peer.dataset?.bsId&&localPair(el,peer))return peer;
       if(peer.matches('picture'))return peer.querySelector('img[data-bs-move="yes"]');
       if(peer.matches('.bs-auto-columns[data-bs-id]'))return peer;
       return null;
@@ -77,6 +97,11 @@ const StudioFlow = (() => {
   function move(n,t,side) {
     if(!target(n,t,side))return false;
     const el=unit(n), dest=unit(t), shell=freeShell(n), old=el.parentElement;
+    if(el.hasAttribute('data-bs-column')&&dest.hasAttribute('data-bs-column')&&old===dest.parentElement){
+      const siblings=Array.from(old.children), widths=StudioColumns.read(old);
+      dest[side](el);
+      StudioColumns.set(old,Array.from(old.children,c=>widths[siblings.indexOf(c)]));return true;
+    }
     if(side==='section-start'||side==='section-end'){if(!placeNew(el,t,side))return false;}
     else if(side==='inside')dest.append(el);else dest[side](el);
     clearOffsets(n,shell);
@@ -96,6 +121,45 @@ const StudioFlow = (() => {
     const band=Math.min(23,Math.max(10,rect.height*.34));
     return [['before',Math.abs(y-rect.top)],['after',Math.abs(y-rect.bottom)]].filter(([,d])=>d<=band);
   }
+  function visible(n) {
+    const el=unit(n);
+    return !el.closest('[hidden]')&&(!el.closest('details:not([open])')||el.matches('details,summary')||!!el.closest('summary'));
+  }
+  function captureSort(n) {
+    const el=unit(n), parent=el?.parentElement;
+    if(!parent||n.hasAttribute('data-bs-row'))return null;
+    if((n.dataset.bsMove==='yes'&&!el.matches(cardUnit))||el.matches('.bs-new')){
+      // Ordinary blocks still support side-by-side column creation on their
+      // outer edges. Slot sorting is for cards and contained sibling groups.
+      if(!parent.matches(strictLane)&&!parent.closest(blocked))return null;
+    }
+    const bounds=parent.getBoundingClientRect();
+    const children=Array.from(parent.children);
+    const slots=children.map((child,index)=>{
+      const peer=child.matches('picture')?child.querySelector('img[data-bs-id]'):child;
+      if(child!==el&&(!peer||!localPair(el,child)||!visible(peer)))return null;
+      const r=child.getBoundingClientRect();
+      return r.width>=4&&r.height>=4?{node:peer||n,index,left:r.left-bounds.left+parent.scrollLeft,
+        right:r.right-bounds.left+parent.scrollLeft,top:r.top-bounds.top+parent.scrollTop,bottom:r.bottom-bounds.top+parent.scrollTop}:null;
+    }).filter(Boolean);
+    const ownIndex=children.indexOf(el);
+    return slots.length>1&&slots.some(peer=>peer.index===ownIndex)?{n,parent,slots,ownIndex}:null;
+  }
+  function sortTarget(sort,x,y) {
+    if(!sort?.parent.isConnected)return null;
+    const {n,parent,slots,ownIndex}=sort;
+    const bounds=parent.getBoundingClientRect();
+    if(x<bounds.left-16||x>bounds.right+16||y<bounds.top-16||y>bounds.bottom+16)return null;
+    const px=x-bounds.left+parent.scrollLeft,py=y-bounds.top+parent.scrollTop;
+    let slot=null,score=Infinity;
+    for(const item of slots){
+      const gap=distance(item,px,py);
+      if(gap<score){slot=item;score=gap;}
+    }
+    if(!slot||score>42)return null;
+    const side=slot.index<ownIndex?'before':'after';
+    return {node:slot.node,side,sort:true,same:slot.index===ownIndex,source:n};
+  }
   function find(n,x,y) {
     let best=null;
     if(!source(n)||!freeShell(n)&&['absolute','fixed'].includes(D.defaultView.getComputedStyle(unit(n)).position))return null;
@@ -107,21 +171,29 @@ const StudioFlow = (() => {
       return y>=bounds.top-10&&y<=bounds.bottom+10;
     });
     if(!row)return null;
+    let nearest=null;
     for(const t of row.querySelectorAll('[data-bs-move="yes"],[data-bs-column]')){
-      if(t.closest('[hidden]')||t.closest('details:not([open])')&&!t.closest('summary'))continue;
+      if(!visible(t))continue;
       const rect=unit(t).getBoundingClientRect();
       if(rect.width<12||rect.height<6)continue;
       if(!t.children.length&&x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom&&target(n,t,'inside'))
         return {node:t,side:'inside'};
       const candidates=edges(rect,x,y);
-      if(!candidates.length||!lane(unit(t)))continue;
+      if(!lane(unit(t)))continue;
+      const middle=y<(rect.top+rect.bottom)/2?'before':'after';
+      const delta=distance(rect,x,y);
+      if(delta<=35&&target(n,t,middle)){
+        const score=delta+(hit&&unit(t).contains(hit)?-1:0)+Math.min(1,rect.width*rect.height/1000000);
+        if(!nearest||score<nearest.score)nearest={node:t,side:middle,score};
+      }
+      if(!candidates.length)continue;
       for(const [side,d] of candidates) {
         if(!target(n,t,side))continue;
         const score=d+(hit&&unit(t).contains(hit)?-.5:0);
         if(!best||score<best.score)best={node:t,side,score};
       }
     }
-    if(best)return best;
+    if(best||nearest)return best||nearest;
     const column=hit?.closest('[data-bs-column]');
     if(column&&target(n,column,'inside'))return {node:column,side:'inside'};
     // Use a clear section edge for cross-section drops. Do not hijack arbitrary
@@ -299,5 +371,5 @@ const StudioFlow = (() => {
     if(shell)removeFreeContainer(shell);else cleanupAutoColumn(old);
     return true;
   }
-  return {unit,source,target,move,edges,find,noop,stepTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
+  return {unit,source,target,move,edges,find,noop,stepTarget,captureSort,sortTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
 })();

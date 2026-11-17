@@ -90,7 +90,7 @@
 .ncw [hidden]{display:none!important}
 
 /* Editor affordances stay off the public site. */
-.bs-editor-mode iframe{pointer-events:none}
+.bs-editor-mode :is(iframe,video,audio){pointer-events:none}
 .bs-editor-mode .ncw .bs-grid>.bs-col{outline:1px dashed #45866b80;outline-offset:-1px;min-height:38px}
 .bs-editor-mode .ncw .bs-grid>.bs-col:empty::after{content:"Add here";min-height:38px;display:grid;place-items:center;color:#34684f;font:600 11px system-ui}
 
@@ -105,7 +105,8 @@
 /* A temporary layout slot shows the space that the drop will create. */
 .bs-editor-mode [data-bs-drop-slot]{display:block!important;box-sizing:border-box;flex:none;pointer-events:none;width:100%;min-width:0;margin:0;grid-column:auto}
 
-/* Only the selected item grabs a pointer; the rest of the canvas still scrolls. */
+/* Unselected items support mouse dragging without disabling touch scrolling. */
+@media(pointer:fine){.bs-editor-mode [data-bs-kind]{cursor:grab}}
 .bs-editor-mode [data-bs-drag-ready]{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .bs-editor-mode [data-bs-drag-ready] :not(input,textarea,select,button,[contenteditable]){cursor:inherit}
 .bs-editor-mode.bs-dragging,.bs-editor-mode.bs-dragging *{cursor:grabbing!important}

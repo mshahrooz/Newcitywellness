@@ -134,10 +134,14 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 
 #stage.bs-dragging,#selection #drag:active{cursor:grabbing}
 
-.quick-grid .palette-block{position:relative;cursor:grab;touch-action:pan-y;user-select:none;padding-right:23px}
-.palette-grip{position:absolute;right:6px;top:3px;min-width:20px;min-height:32px;display:grid;place-items:center;touch-action:none;color:#608878;font-size:13px}
+.quick-grid .palette-block{position:relative;cursor:grab;touch-action:pan-y;user-select:none;padding:8px 28px 8px 9px;min-height:45px;border:1px solid #ceddd4;border-radius:8px;background:#f7faf8;font-size:12px;font-weight:700;line-height:1.25}
+.quick-grid .palette-block:hover{border-color:#699e86;background:#eaf5ee}
+.quick-grid .palette-block:active{cursor:grabbing}
+.quick-grid .palette-block small{display:block;margin-top:3px;color:#486157;font-weight:400}
+.palette-grip{position:absolute;right:6px;top:3px;min-width:20px;min-height:32px;display:grid;place-items:center;touch-action:none;color:#28634c;font-size:17px;opacity:0}
+.palette-block:hover .palette-grip,.palette-block:active .palette-grip{opacity:1}
 #palette-drag-chip{position:fixed;pointer-events:none;z-index:10;padding:6px 11px;border:1px solid #fff;border-radius:6px;background:#235e4b;color:white;font-size:12px;font-weight:700;box-shadow:0 2px 9px #123f2b60}
-@media(pointer:coarse){.quick-grid .palette-block{min-height:48px}}
+@media(pointer:coarse){.quick-grid .palette-block{min-height:48px}.palette-grip{opacity:1}}
 
 #drop-guide.side-guide{border:0;border-radius:4px;background:#278662;box-shadow:0 0 0 1px #fff}
 #drop-guide.side-guide #guide-label{top:4px}
@@ -146,3 +150,5 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 #selection #selection-up,#selection #selection-down{min-width:28px;font-size:16px;padding-inline:5px}
 #selection button:disabled{opacity:.42;cursor:default}
 #selection-label{display:inline-block;max-width:clamp(54px,18vw,135px);overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+
+#drop-guide.sort-guide{background:transparent;border:2px dashed #247e5a;box-shadow:0 0 0 2px #fff9}

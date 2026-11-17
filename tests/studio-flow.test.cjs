@@ -123,3 +123,29 @@ test('adjacent layout moves skip hidden anchors and do not move inside nested co
   n.nextElementSibling=null;
   assert.equal(flow.stepTarget(n,1),null);
 });
+
+test('card sorting accepts tile centers and gaps, with existing cards reflowing into the source slot',()=>{
+  let scrollTop=0, frameTop=100;
+  const box=(left,top,width,height)=>({left,top,width,height,right:left+width,bottom:top+height});
+  const parent={isConnected:true,scrollLeft:0,get scrollTop(){return scrollTop;},children:[],
+    getBoundingClientRect:()=>box(100,frameTop,520,360),matches:q=>q.includes('.condition-grid'),closest:()=>null};
+  const positions=[[100,100],[280,100],[460,100],[100,280]];
+  for(const [index,[left,top]] of positions.entries()){
+    parent.children.push({dataset:{bsId:'card-'+index,bsKind:'link'},parentElement:parent,isConnected:true,
+      matches:()=>false,hasAttribute:()=>false,closest:()=>null,
+      getBoundingClientRect:()=>box(left,top+(frameTop-100)-scrollTop,160,140)});
+  }
+  const [a,b,c,d]=parent.children;
+  const flow=vm.runInNewContext(code+'\nStudioFlow');
+  const first=flow.captureSort(a), last=flow.captureSort(d);
+  assert.equal(flow.sortTarget(first,360,170).node,b);
+  assert.equal(flow.sortTarget(first,360,170).side,'after');
+  assert.equal(flow.sortTarget(first,455,170).node,c);
+  assert.equal(flow.sortTarget(first,180,170).same,true);
+  assert.equal(flow.sortTarget(last,180,170).side,'before');
+  assert.equal(flow.sortTarget(first,920,300),null);
+  frameTop=55; scrollTop=30;
+  assert.equal(flow.sortTarget(first,540,115).node,c);
+  assert.equal(flow.target(a,c,'after'),true);
+  assert.equal(flow.target(a,c,'before'),true);
+});
