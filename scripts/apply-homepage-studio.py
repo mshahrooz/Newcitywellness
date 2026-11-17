@@ -7,13 +7,17 @@ import re
 from html.parser import HTMLParser
 from pathlib import Path
 from html import escape
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, unquote
 from studio_seo import apply_seo, baseline_seo, draft_overrides
 
 TAGS = set("a article body br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite".split())
 BLOCKED_ATTRS = {"srcdoc", "action", "formaction", "ping", "nonce", "integrity", "contenteditable", "autofocus"}
 STYLE_BLOCKED = re.compile(r"url\s*\(|expression\s*\(|@import|javascript\s*:|\\|[<>]", re.I)
-ASSET_PATH = re.compile(r"(?:images/|media/homepage-studio/)[a-zA-Z0-9_./-]+$")
+ASSET_PATH = re.compile(r"(?:images/|media/homepage-studio/)[a-zA-Z0-9_ .()/-]+$")
+DOCUMENT_EXTENSIONS = set("pdf doc docx xls xlsx ppt pptx txt csv tsv rtf odt ods odp epub zip rar 7z tar tgz gz bz2 xz md markdown json yaml yml log jpg jpeg png gif webp avif heic heif bmp tif tiff mp3 m4a wav ogg flac mp4 webm mov avi mkv psd ai dwg dxf stl obj blend eot ttf otf woff woff2".split())
+DOCUMENT_NAME = re.compile(r"media/homepage-studio/[a-f0-9]{32}/[A-Za-z0-9_][A-Za-z0-9_ .()-]{0,79}$")
+def named_document(path):
+    return bool(DOCUMENT_NAME.fullmatch(path) and path.rsplit(".", 1)[-1].lower() in DOCUMENT_EXTENSIONS)
 EMBED_SANDBOX = {
     "youtube": "allow-scripts allow-same-origin allow-presentation",
     "remote": "allow-scripts allow-forms allow-presentation",
@@ -105,11 +109,15 @@ class StudioPage(HTMLParser):
     def asset(self, value, as_download=False):
         if not value.startswith(self.base):
             raise ValueError("Studio media must be local")
-        path = value[len(self.base):]
+        raw = value[len(self.base):]
+        if re.search(r"%(?:2f|5c|00)", raw, re.I):
+            raise ValueError("Invalid Studio asset path")
+        path = unquote(raw)
         if not ASSET_PATH.fullmatch(path) or any(p in (".", "..", "") for p in path.split("/")):
             raise ValueError("Invalid Studio asset path")
-        if path.endswith(".bin") and (not as_download or not re.fullmatch(r"media/homepage-studio/[a-f0-9]{32}\.bin", path)):
-            raise ValueError("Studio documents must be linked as downloads")
+        if path.endswith(".bin") or named_document(path):
+            if not as_download or (path.endswith(".bin") and not re.fullmatch(r"media/homepage-studio/[a-f0-9]{32}\.bin", path)):
+                raise ValueError("Studio documents must be linked as downloads")
         if not (self.output / path).is_file():
             raise ValueError("Missing Studio asset: " + path)
 
@@ -148,7 +156,7 @@ class StudioPage(HTMLParser):
             if key in {"href", "xlink:href"}:
                 if re.search(r"[\x00-\x20\\]", v) or v.startswith("//") or urlsplit(v).scheme not in ("", "http", "https", "tel", "mailto"):
                     raise ValueError("Unsafe page link")
-                if v.startswith(self.base + "media/homepage-studio/") and urlsplit(v).path.endswith(".bin"):
+                if v.startswith(self.base + "media/homepage-studio/") and (urlsplit(v).path.endswith(".bin") or named_document(unquote(urlsplit(v).path[len(self.base):]))):
                     self.asset(v, tag == "a" and key == "href" and "download" in a)
             if key == "id":
                 if v in self.ids:
