@@ -104,11 +104,11 @@ const StudioPublish = (() => {
     return p;
   }
   async function fromData(value,isDoc,originalName=''){
-    let encoded,ext;
+    let encoded,ext,legacyPdf=false;
     if(isDoc){
       const document=StudioDocuments.parse(value);
       if(!document)throw Error('Choose a valid document no larger than 25 MB.');
-      encoded=document.encoded;
+      encoded=document.encoded;legacyPdf=document.legacyPdf;
     }else{
       const m=/^data:(image\/[a-z]+|video\/[a-z0-9]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
       if(!m||!mediaMap[m[1]])throw Error('A file in the draft is not a supported local image or video.');
@@ -116,7 +116,7 @@ const StudioPublish = (() => {
       encoded=m[2];ext=mediaMap[m[1]];
     }
     const digest=await sha256(unpack(encoded));
-    const name=isDoc?StudioDocuments.storageName(originalName,digest):digest.slice(0,32)+'.'+ext;
+    const name=isDoc?(legacyPdf&&!originalName?digest.slice(0,32)+'.pdf':StudioDocuments.storageName(originalName,digest)):digest.slice(0,32)+'.'+ext;
     return {encoded,name,ext:name.split('.').pop().toLowerCase()};
   }
   function safeLink(value){
