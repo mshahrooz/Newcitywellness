@@ -28,7 +28,7 @@ const StudioDocuments=(()=>{
     // Normalize unsafe URL/path characters and stay under the ZIP entry-size limit.
     const suffix=extension[0];
     const stem=original.slice(0,-suffix.length).replace(/[^A-Za-z0-9 ._()-]/g,'_')
-      .replace(/^\.+/,'_').trim().slice(0,80-suffix.length).replace(/[ .]+$/,'')||'download';
+      .replace(/^\.+/,'_').trim().replace(/^[^A-Za-z0-9_]/,'_').slice(0,80-suffix.length).replace(/[ .]+$/,'')||'download';
     return hash+'/'+stem+suffix;
   }
   return Object.freeze({MAX_FILE,MIME,parse,filename,storageName});
