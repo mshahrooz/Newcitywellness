@@ -554,18 +554,23 @@ function showGridVisual(z, p, n, pointOut){
   else freeGhostHide();
 }
 let liveGhost=null, liveGhostSource=null;
-function drawGhost(n,left,top,w,h){
+function drawGhost(n,left,top,w,h,lifted=false){
   const f=frame.getBoundingClientRect();
   if(liveGhostSource!==n||!liveGhost?.isConnected){
     freeGhostHide();liveGhost=addNative('div',{class:'bs-drag-ghost','aria-hidden':'true'});
     const c=n.cloneNode(true);
+    c.removeAttribute('data-bs-drag-origin');
     c.querySelectorAll('iframe').forEach(el=>el.replaceWith(D.createTextNode(el.title||'Embedded content')));c.classList.add('bs-drag-look');c.removeAttribute('id');c.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
     const look=D.defaultView.getComputedStyle(n);
     for(const key of [...preserveList,'font-size','padding-top','padding-bottom','padding-left','padding-right','display']){const value=look.getPropertyValue(key);if(value)c.style.setProperty(key,value);}
     for(const v of c.querySelectorAll('video')){v.removeAttribute('autoplay');v.removeAttribute('src');v.querySelectorAll('source').forEach(s=>s.removeAttribute('src'));}
     liveGhost.append(c);D.querySelector('.ncw').append(liveGhost);liveGhostSource=n;
   }
-  Object.assign(liveGhost.style,{left:(left-f.left)+'px',top:(top-f.top)+'px',width:w+'px',minHeight:h+'px'});
+  liveGhost.toggleAttribute('data-bs-lifted',lifted);
+  const transform='translate3d('+(left-f.left)+'px,'+(top-f.top)+'px,0)';
+  if(liveGhost.style.transform!==transform)liveGhost.style.transform=transform;
+  if(liveGhost.style.width!==w+'px')liveGhost.style.width=w+'px';
+  if(liveGhost.style.minHeight!==h+'px')liveGhost.style.minHeight=h+'px';
 }
 function freeGhostHide(){liveGhost?.remove();liveGhost=null;liveGhostSource=null;}
 function hideGridVisual(){

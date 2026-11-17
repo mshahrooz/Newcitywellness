@@ -44,7 +44,7 @@ The **Add element** palette groups text, media and links, and layout blocks. Use
 
 - **Sections** in the top bar lists the current order. Move a section up or down from the list or with its selection toolbar arrows.
 - Select an element, then hold and drag it directly on the canvas or use its grip. The grid is visible while dragging. Drag a block from **Add element** onto an insertion gap to place it. Drag an existing block near another block’s edge to reorder it. Hold **Shift** to move without changing the order.
-- Drag a card over another card in **Explore Our Therapies** or **Areas We Support** to reorder it within that group. Drag decorative dividers as a unit, or drop them into a nearby flow position.
+- Drag a card over another card in **Explore Our Therapies** or **Areas We Support**. The card follows your pointer and its neighbors shift while you drag. Release to keep the new order or press **Escape** to cancel. Drag decorative dividers as a unit, or drop them into a nearby flow position.
 - The **Add element** toolbox is drag-only. Hover over a tile for its grip, then drag it onto the page. Clicking the tile does not add a block or activate placement.
 - **YouTube video** accepts watch, share, Shorts, and live URLs and renders the video automatically. Use **Preview** to play it.
 - **Embed code** accepts an HTTPS embed URL, iframe code, or HTML snippets. Custom code runs in an isolated frame. Some providers limit where embeds work.
