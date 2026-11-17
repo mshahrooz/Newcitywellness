@@ -42,3 +42,16 @@ test('document filenames keep extensions, and old PDF drafts still publish', asy
   const old='data:application/pdf;base64,'+Buffer.from('%PDF-1.7').toString('base64');
   assert.equal((await client.publish.fromData(old,true)).ext,'pdf');
 });
+
+test('safe document URLs keep the original basename, spaces, and extension', async()=>{
+  const data=prefix+Buffer.from('%PDF-1.7\\n').toString('base64');
+  const expected=createHash('sha256').update(Buffer.from('%PDF-1.7\\n')).digest('hex').slice(0,32);
+  const file=await client.publish.fromData(data,true,'Q17 consignment.pdf');
+  assert.equal(file.name,expected+'/Q17 consignment.pdf');
+  assert.equal(file.ext,'pdf');
+  const other=await client.publish.fromData(data,true,'financial-report.xlsx');
+  assert.equal(other.name,expected+'/financial-report.xlsx');
+  assert.equal(client.docs.storageName('my source.html',expected),expected+'.bin');
+  assert.equal(client.docs.storageName('custom-script.js',expected),expected+'.bin');
+  assert.equal(client.docs.storageName('../../report.docx',expected),expected+'/.._.._report.docx');
+});
