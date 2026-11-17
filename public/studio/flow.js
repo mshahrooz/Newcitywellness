@@ -7,6 +7,7 @@ const StudioFlow = (() => {
   // pieces can still be positioned visually in their original container.
   const blocked = 'a,button,form,nav,label,p,ul,ol,dl,li,details,summary,.therapy-card,.testimonial-card,.reviews-card,.condition-card,.clinic-hours,.contact-form-wrap,.page-hero-photo,.bs-pair';
   const nativeLane = '.therapy-grid,.condition-grid,.testimonial-grid,.reviews-grid,.hero-actions';
+  const cardSelector = '.therapy-grid > .therapy-card,.condition-grid > .condition-card,.testimonial-grid > .testimonial-card,.reviews-grid > .reviews-card';
   const strictLane = nativeLane+',.faq-list';
   function unit(n) {
     if(n?.matches('img')&&n.parentElement?.matches('picture'))return n.parentElement;
@@ -24,6 +25,21 @@ const StudioFlow = (() => {
   function sideAnchor(t){
     const el=unit(t);
     return autoParent(el)||el;
+  }
+  function layoutBox(n){
+    const r=n.getBoundingClientRect();
+    if(r.width>=1&&r.height>=1)return r;
+    // A native section can be display:contents. Its painted section is the
+    // target, while its stable wrapper still owns the draft operation ID.
+    return n.firstElementChild?.getBoundingClientRect()||r;
+  }
+  function sideBox(t){
+    const anchor=sideAnchor(t), r=layoutBox(anchor);
+    if(anchor!==unit(t)||!anchor.matches('h1,h2,h3,h4,h5,h6,p,.eyebrow')||!D.createRange)return r;
+    const range=D.createRange();range.selectNodeContents(anchor);
+    const text=range.getBoundingClientRect?.();
+    if(!text||text.width<20||text.width>=r.width*.88)return r;
+    return {left:text.left,right:text.right,top:r.top,bottom:r.bottom,width:text.width,height:r.height};
   }
   function isNativeSibling(el,dest){
     return el.parentElement===dest.parentElement&&!!el.parentElement?.matches(strictLane);
@@ -92,8 +108,8 @@ const StudioFlow = (() => {
     }
   }
   function edges(rect,x,y){
-    if(rect.width<12||rect.height<6||x<rect.left-10||x>rect.right+10)return [];
-    const band=Math.min(23,Math.max(10,rect.height*.34));
+    if(rect.width<12||rect.height<1||x<rect.left-26||x>rect.right+26)return [];
+    const band=Math.min(48,Math.max(17,rect.height*.42));
     return [['before',Math.abs(y-rect.top)],['after',Math.abs(y-rect.bottom)]].filter(([,d])=>d<=band);
   }
   function find(n,x,y) {
@@ -103,14 +119,14 @@ const StudioFlow = (() => {
     const hit=D.elementFromPoint?.(x,y);
     // Include targets on either side of a gap, not just the one under the pointer.
     const row=hit?.closest('[data-bs-row]')||rowList().find(r=>{
-      const bounds=r.getBoundingClientRect();
-      return y>=bounds.top-10&&y<=bounds.bottom+10;
+      const bounds=layoutBox(r);
+      return y>=bounds.top-24&&y<=bounds.bottom+24;
     });
     if(!row)return null;
     for(const t of row.querySelectorAll('[data-bs-move="yes"],[data-bs-column]')){
       if(t.closest('[hidden]')||t.closest('details:not([open])')&&!t.closest('summary'))continue;
-      const rect=unit(t).getBoundingClientRect();
-      if(rect.width<12||rect.height<6)continue;
+      const rect=layoutBox(unit(t));
+      if(rect.width<12||rect.height<1)continue;
       if(!t.children.length&&x>=rect.left&&x<=rect.right&&y>=rect.top&&y<=rect.bottom&&target(n,t,'inside'))
         return {node:t,side:'inside'};
       const candidates=edges(rect,x,y);
@@ -126,8 +142,8 @@ const StudioFlow = (() => {
     if(column&&target(n,column,'inside'))return {node:column,side:'inside'};
     // Use a clear section edge for cross-section drops. Do not hijack arbitrary
     // drags over existing content that are intended as pixel offsets.
-    const r=row.getBoundingClientRect();
-    const sideAt=y<r.top+36?'section-start':y>r.bottom-36?'section-end':null;
+    const r=layoutBox(row);
+    const sideAt=y<r.top+44?'section-start':y>r.bottom-44?'section-end':null;
     return sideAt&&target(n,row,sideAt)?{node:row,side:sideAt}:null;
   }
   function libraryParent(t,side) {
@@ -157,13 +173,13 @@ const StudioFlow = (() => {
   function distance(r,x,y){
     return Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom));
   }
-  // Only the two home card collections opt in to center-based reordering.
-  const sortableCard='.therapy-grid > .therapy-card,.condition-grid > .condition-card';
-  const cardOf=hit=>hit?.closest(sortableCard)||null;
+  // Card rail slots remain fixed for the gesture, even while the live
+  // DOM order changes or the user scrolls to the collection's next row.
+  const cardOf=hit=>hit?.closest(cardSelector)||null;
   function captureCardSlots(n){
     const group=n.parentElement, bounds=group.getBoundingClientRect();
     const dx=bounds.left-(group.scrollLeft||0), dy=bounds.top-(group.scrollTop||0);
-    const cards=Array.from(group.children).filter(item=>item.matches(sortableCard));
+    const cards=Array.from(group.children).filter(item=>item.matches(cardSelector));
     const slots=cards.map((node,index)=>{
       const r=node.getBoundingClientRect();
       return r.width>=4&&r.height>=4&&!node.hidden?
@@ -174,7 +190,7 @@ const StudioFlow = (() => {
   function cardTarget(n,x,y,state=captureCardSlots(n)){
     const {group,slots,origin}=state;
     const bounds=group.getBoundingClientRect();
-    if(x<bounds.left-10||x>bounds.right+10||y<bounds.top-10||y>bounds.bottom+10)return null;
+    if(x<bounds.left-30||x>bounds.right+30||y<bounds.top-30||y>bounds.bottom+30)return null;
     const px=x-bounds.left+(group.scrollLeft||0),py=y-bounds.top+(group.scrollTop||0);
     let closest=null,score=Infinity;
     for(const slot of slots){
@@ -182,29 +198,29 @@ const StudioFlow = (() => {
       if(d<score){score=d;closest=slot;}
     }
     // Hit the original slots, not the cards moving underneath the pointer.
-    if(!closest||score>30||closest.node===n)return null;
+    if(!closest||score>Math.max(32,Math.min(68,(closest.bottom-closest.top)*.28))||closest.node===n)return null;
     return {node:closest.node,side:closest.index<origin?'before':'after',card:true};
   }
   function sectionTarget(n,x,y){
     const hit=D.elementFromPoint?.(x,y);
     if(hit&&!main().contains(hit))return null;
-    const rows=rowList().filter(t=>t!==n&&t.getBoundingClientRect().height>1);
-    const node=rows.reduce((best,t)=>!best||distance(t.getBoundingClientRect(),x,y)<distance(best.getBoundingClientRect(),x,y)?t:best,null);
+    const rows=rowList().filter(t=>t!==n&&layoutBox(t).height>1);
+    const node=rows.reduce((best,t)=>!best||distance(layoutBox(t),x,y)<distance(layoutBox(best),x,y)?t:best,null);
     if(!node)return null;
-    const r=node.getBoundingClientRect();
+    const r=layoutBox(node);
     return {node,side:y<(r.top+r.bottom)/2?'before':'after',row:true};
   }
   function libraryTarget(kind,x,y){
     const hit=D.elementFromPoint?.(x,y);
     if(hit&&!main().contains(hit))return null;
     const rows=rowList().filter(row=>{
-      const r=row.getBoundingClientRect();return r.width>1&&r.height>1;
+      const r=layoutBox(row);return r.width>1&&r.height>1;
     });
     const row=hit?.closest('[data-bs-row]')||rows.reduce((closest,r)=>{
-      return !closest||distance(r.getBoundingClientRect(),x,y)<distance(closest.getBoundingClientRect(),x,y)?r:closest;
+      return !closest||distance(layoutBox(r),x,y)<distance(layoutBox(closest),x,y)?r:closest;
     },null);
     if(!row)return {node:null,side:'section-end',row:true};
-    const bounds=row.getBoundingClientRect();
+    const bounds=layoutBox(row);
     if(kind==='row')return {node:row,side:y<(bounds.top+bounds.bottom)/2?'before':'after',row:true};
     const side=sideHit(x,y,null,row);if(side)return side;
     let best=null;
@@ -212,8 +228,8 @@ const StudioFlow = (() => {
     const scope=col||row;
     for(const t of scope.querySelectorAll('[data-bs-move="yes"]')){
       if(t.closest('[hidden],details:not([open])')||!libraryParent(t,'before')||!lane(unit(t)))continue;
-      const r=unit(t).getBoundingClientRect();
-      if(r.width<4||r.height<4)continue;
+      const r=layoutBox(unit(t));
+      if(r.width<4||r.height<1)continue;
       const d=distance(r,x,y);
       if(!best||d<best.distance||d===best.distance&&unit(t).contains(hit)&&!unit(best.node).contains(hit))
         best={node:t,side:y<(r.top+r.bottom)/2?'before':'after',distance:d};
@@ -230,10 +246,10 @@ const StudioFlow = (() => {
   }
   function sideEdges(r,x,y){
     if(r.width<16||r.height<5)return [];
-    const overlap=Math.min(28,r.height*.3+6);
+    const overlap=Math.min(32,r.height*.33+8);
     if(y<r.top-overlap||y>r.bottom+overlap)return [];
-    const outer=Math.max(64,Math.min(200,r.width*.58));
-    const inner=Math.min(100,r.width*.36);
+    const outer=Math.max(82,Math.min(208,r.width*.62));
+    const inner=Math.min(105,r.width*.37);
     const nearEnd=y<r.top+Math.min(27,r.height*.20)||y>r.bottom-Math.min(27,r.height*.20);
     const inset=nearEnd?Math.min(10,inner):inner;
     const vertical=Math.max(r.top-y,0,y-r.bottom);
@@ -246,7 +262,7 @@ const StudioFlow = (() => {
     if(!D.defaultView.matchMedia?.('(min-width: 768px)')?.matches)return null;
     const hit=D.elementFromPoint?.(x,y);
     const row=selectedRow||hit?.closest('[data-bs-row]')||rowList().find(r=>{
-      const rect=r.getBoundingClientRect();return y>=rect.top-14&&y<=rect.bottom+14&&x>=rect.left-200&&x<=rect.right+200;
+      const rect=layoutBox(r);return y>=rect.top-20&&y<=rect.bottom+14&&x>=rect.left-200&&x<=rect.right+200;
     });
     if(!row)return null;
     // Top and bottom insertion take priority when directly over those edges.
@@ -260,12 +276,12 @@ const StudioFlow = (() => {
       if(t.closest('[hidden]')||t.parentElement?.closest('details:not([open])'))continue;
       const el=unit(t), native=n&&isNativeSibling(unit(n),el)&&el.parentElement.matches(nativeLane);
       if(n?!target(n,t,'left'):!sideTarget(t))continue;
-      const anchor=sideAnchor(t), r=anchor.getBoundingClientRect();
+      const r=sideBox(t);
       const probes=sideEdges(r,x,y);
       if(!probes.length)continue;
       if(!autoGrid(el)&&!native&&!lane(el))continue;
       const candidateColumn=el.closest('[data-bs-column]');
-      const vertical=el.getBoundingClientRect();
+      const vertical=layoutBox(el);
       if(!native&&(!column||candidateColumn===column)&&x>=vertical.left+9&&x<=vertical.right-9){
         for(const [,distance] of edges(vertical,x,y))stack=Math.min(stack,distance);
       }
@@ -280,7 +296,26 @@ const StudioFlow = (() => {
     }
     // A small overlap of the two zones is intentional. A close horizontal
     // edge keeps precise side drops possible while top/bottom wins in the middle.
-    return best&&best.score<=stack+26?best:null;
+    return best&&best.score<=stack+31?best:null;
+  }
+  // Transient editor-only column preview. Undo restores the exact anchor
+  // and original track styles before the one real operation is recorded.
+  function previewAside(t,side,slot){
+    if(!isSide(side)||!sideTarget(t))return null;
+    const anchor=unit(t), col=autoParent(anchor), grid=autoGrid(anchor);
+    if(grid){
+      const oldStyle=grid.getAttribute('style'), widths=StudioColumns.read(grid);
+      const at=Array.from(grid.children).indexOf(col), half=widths[at]/2;
+      widths[at]=half;widths.splice(at+(side==='right'?1:0),0,half);
+      col[side==='left'?'before':'after'](slot);
+      grid.style.setProperty('--bs-tracks',widths.map(w=>'minmax(0,'+w+'fr)').join(' '));
+      return ()=>{slot.remove();if(oldStyle===null)grid.removeAttribute('style');else grid.setAttribute('style',oldStyle);};
+    }
+    const wrap=addNative('div',{class:'bs-grid','data-bs-preview-columns':''});
+    const anchorCol=addNative('div',{class:'bs-col'});
+    anchor.before(wrap);anchorCol.append(anchor);
+    wrap.append(...(side==='left'?[slot,anchorCol]:[anchorCol,slot]));
+    return ()=>{wrap.replaceWith(anchor);};
   }
   function cleanupAutoColumn(column){
     const grid=column?.matches('.bs-auto-col')&&column.parentElement;
@@ -327,5 +362,5 @@ const StudioFlow = (() => {
     if(shell)removeFreeContainer(shell);else cleanupAutoColumn(old);
     return true;
   }
-  return {unit,source,target,move,edges,find,noop,stepTarget,cardOf,captureCardSlots,cardTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
+  return {unit,layoutBox,cardSelector,sideBox,source,target,move,edges,find,noop,stepTarget,cardOf,captureCardSlots,cardTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,previewAside,alongside,cleanupAutoColumn,compactAutoGrid};
 })();

@@ -105,13 +105,18 @@
 /* A temporary layout slot shows the space that the drop will create. */
 .bs-editor-mode [data-bs-drop-slot]{display:block!important;box-sizing:border-box;flex:none;pointer-events:none;width:100%;min-width:0;margin:0;grid-column:auto}
 
-/* Only the selected item grabs a pointer; the rest of the canvas still scrolls. */
+/* Mouse can grab content directly. Touch keeps scrolling until a block is selected. */
 .bs-editor-mode [data-bs-drag-ready]{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
 .bs-editor-mode [data-bs-drag-ready] :not(input,textarea,select,button,[contenteditable]){cursor:inherit}
 .bs-editor-mode.bs-dragging,.bs-editor-mode.bs-dragging *{cursor:grabbing!important}
 
 .bs-editor-mode [data-bs-divider]{cursor:grab;touch-action:none}
-@media(pointer:fine){.bs-editor-mode :is(.therapy-grid > .therapy-card,.condition-grid > .condition-card),.bs-editor-mode .therapy-grid > .therapy-card a{cursor:grab}}
+@media(pointer:fine){
+  .bs-editor-mode :is([data-bs-move="yes"],[data-bs-kind="image"],[data-bs-kind="link"],[data-bs-kind="media"]){cursor:grab}
+  .bs-editor-mode :is(.therapy-card,.condition-card,.testimonial-card,.reviews-card) :not(input,textarea,select,button,[contenteditable]){cursor:inherit}
+}
+.bs-editor-mode [data-bs-preview-columns]>.bs-col{min-width:0}
+.bs-editor-mode .bs-grid>[data-bs-drop-slot]{align-self:stretch;min-height:24px}
 
 .bs-editor-mode [data-bs-drag-origin]{opacity:0!important;pointer-events:none!important}
 .bs-editor-mode [data-bs-drag-origin] *{pointer-events:none!important}

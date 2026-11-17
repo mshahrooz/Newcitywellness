@@ -5,7 +5,7 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=live-drag1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=studio-drag2':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
 const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
 let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
 const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
@@ -118,7 +118,7 @@ function markCanvas() {
       } else if(el.matches('a.btn')&&!el.closest('.hero-actions')||page[0]!=='home'&&el.matches('img')&&!el.closest('.page-hero-photo')){el.dataset.bsMove='yes';}
     });
   });
-  registerExtraNodes();markMoreDraggables();markCardAndDividerTargets();
+  registerExtraNodes();markMoreDraggables();markCardAndDividerTargets();markDirectDragSurfaces();
 }
 function markMoreDraggables(){
   // Mark after legacy IDs so previously saved drafts retain their anchors.
@@ -163,6 +163,24 @@ function dividerFrom(hit,x,y){
     if((px||py)&&r.width+r.height>5&&x>=r.left-px&&x<=r.right+px&&y>=r.top-py&&y<=r.bottom+py)return n;
   }
   return null;
+}
+// Register additions after the old targets. Published operations and local
+// drafts keep their pre-existing IDs and continue to replay in their old order.
+function markDirectDragSurfaces(){
+  let serial=0;
+  const extras='h5,h6,a[href],.eyebrow,.section-kicker,.text-link,.reviewer,.clinic-footer-brand,.footer-col,figure';
+  for(const n of D.querySelectorAll(extras)){
+    if(!zoneOf(n)||n.closest('[hidden],template,svg,input,textarea,select'))continue;
+    if(!idOf(n)){
+      n.dataset.bsId='studio-drag-surface-'+(++serial);
+      n.dataset.bsKind=n.matches('h5,h6')?'title':n.matches('a')?'link':n.matches('figure,.footer-col,.clinic-footer-brand')?'component':'detail';
+    }
+    if(rowOf(n)&&n.matches('h5,h6,.eyebrow,.section-kicker,figure,a.text-link')&&!n.closest('a:not(.text-link),form,.therapy-card,.condition-card,.testimonial-card,.reviews-card,.hero-media,.page-hero-photo'))
+      n.dataset.bsMove='yes';
+  }
+  for(const card of D.querySelectorAll(StudioFlow.cardSelector)){
+    if(idOf(card)&&rowOf(card))card.dataset.bsMove='yes';
+  }
 }
 function content(el){
   if(el.hasAttribute('data-bs-new')){
@@ -1189,10 +1207,7 @@ function updatePaletteDrag(x,y){
     const width=Math.min(290,Math.max(120,f.width-24));
     drawGhost(d.preview,x-Math.min(width*.32,72),y-18,width,42,true);
   }
-  const r=flowPreview?.slot?.getBoundingClientRect();
-  if(r&&r.width>0&&r.height>0&&px>=r.left-8&&px<=r.right+8&&py>=r.top-9&&py<=r.bottom+9){
-    positionFlowGuide(f);return;
-  }
+  if(retainFlowPreview(px,py)){positionFlowGuide(f);return;}
   clearFlowPreview();
   d.choice=StudioFlow.libraryTarget(d.kind,px,py);
   if(d.choice)showFlowPreview(d.choice,f,d.kind==='row'?72:48,true);
@@ -1241,25 +1256,50 @@ for(const name of ['pointercancel','lostpointercapture'])document.addEventListen
 window.addEventListener('blur',()=>{if(paletteDrag)finishPaletteDrag();});
 let flowPreview=null;
 function clearFlowPreview(){
+  flowPreview?.restore?.();
   flowPreview?.slot?.remove();
+  flowPreview?.animations?.forEach(a=>a.cancel());
   flowPreview=null;
   $('drop-guide').hidden=true;
   $('drop-target-outline').hidden=true;
 }
-function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=false){
-  if(choice.card||StudioFlow.isSide(choice.side)){
-    flowPreview=choice;positionFlowGuide(f);return;
+function retainFlowPreview(x,y){
+  if(flowPreview?.edgeBox){
+    const r=flowPreview.edgeBox, dy=flowPreview.scrollY-D.defaultView.scrollY;
+    return StudioFlow.sideEdges({...r,top:r.top+dy,bottom:r.bottom+dy},x,y).some(([side])=>side===flowPreview.side);
   }
+  const r=flowPreview?.slot?.getBoundingClientRect();
+  return !!(r&&r.width>0&&r.height>0&&x>=r.left-10&&x<=r.right+10&&y>=r.top-12&&y<=r.bottom+12);
+}
+function showFlowPreview(choice,f,height=drag?.layout.r.height||48,fromPalette=false){
+  if(choice.card){flowPreview=choice;positionFlowGuide(f);return;}
   const el=choice.node&&StudioFlow.unit(choice.node);
   const slot=addNative('div',{'data-bs-drop-slot':'','aria-hidden':'true'});
-  // This placeholder participates in layout, so the page shows the gap before release.
   slot.style.height=Math.max(24,Math.min(height,240))+'px';
+  if(StudioFlow.isSide(choice.side)){
+    const edgeBox=StudioFlow.sideBox(choice.node),scrollY=D.defaultView.scrollY;
+    const restore=!choice.native?StudioFlow.previewAside(choice.node,choice.side,slot):null;
+    flowPreview={...choice,edgeBox,scrollY,restore,...(restore?{slot}:{})};
+    positionFlowGuide(f);return;
+  }
+  // Animate ordinary neighbors as they make space for a drop. No transient
+  // transform, placeholder, or preview column ever enters the saved draft.
+  const peers=D.defaultView.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches?[]:
+    Array.from(el?.parentElement?.children||[]).filter(n=>n!==drag?.node&&n.animate).slice(0,36)
+      .map(n=>[n,StudioFlow.layoutBox(n)]).filter(([,r])=>r.height&&r.bottom>=0&&r.top<=f.height);
   if(!el)main().append(slot);
   else if(!choice.row&&(fromPalette||choice.side.startsWith('section-'))){if(!StudioFlow.placeNew(slot,choice.node,choice.side))return;}
   else if(choice.side==='inside')el.append(slot);
   else el[choice.side](slot);
-  flowPreview={...choice,slot};
-  positionFlowGuide(f);
+  const animations=peers.flatMap(([n,before])=>{
+    const visual=n.getBoundingClientRect().height?n:n.firstElementChild;
+    const now=StudioFlow.layoutBox(n), dx=before.left-now.left,dy=before.top-now.top;
+    return visual?.animate&&Math.abs(dx)+Math.abs(dy)>1?[visual.animate([
+      {transform:'translate('+dx+'px,'+dy+'px)',composite:'add'},
+      {transform:'translate(0,0)',composite:'add'}
+    ],{duration:145,easing:'cubic-bezier(.18,.62,.24,1)'})]:[];
+  });
+  flowPreview={...choice,slot,animations};positionFlowGuide(f);
 }
 function showTargetOutline(f,r){
   const outline=$('drop-target-outline');
@@ -1272,10 +1312,10 @@ function showTargetOutline(f,r){
 function positionFlowGuide(f){
   const marker=$('drop-guide'), side=flowPreview.side, vertical=StudioFlow.isSide(side);
   const target=flowPreview.node;
-  const anchor=target&&StudioFlow.unit(flowPreview.landing||target).getBoundingClientRect();
+  const anchor=target&&StudioFlow.layoutBox(StudioFlow.unit(flowPreview.landing||target));
   if(anchor)showTargetOutline(f,anchor);
-  const track=vertical?StudioFlow.sideAnchor(target).getBoundingClientRect():null;
-  const line=vertical?Math.max(3,Math.min(f.width-3,track[side])):null;
+  const track=vertical?(flowPreview.slot?.getBoundingClientRect()||StudioFlow.sideBox(target)):null;
+  const line=vertical?Math.max(3,Math.min(f.width-3,track[flowPreview.slot?(side==='left'?'right':'left'):side])):null;
   const r=flowPreview.card?
     {left:anchor.left+3,right:anchor.right-3,top:anchor.top+3,bottom:anchor.bottom-3}:
     vertical?{left:line-2,right:line+2,top:track.top,bottom:track.bottom}:flowPreview.slot.getBoundingClientRect();
@@ -1331,7 +1371,7 @@ function updateDrag(x,y,free=drag?.free){
     if(drag.direct){
       drag.capture.setPointerCapture(drag.pointer);
       drag.cancelClick();
-      if(drag.card||drag.node.hasAttribute('data-bs-divider'))active=idOf(drag.node);
+      active=idOf(drag.node);
     }
     drag.moved=true;
     if(drag.card)drag.cardSlots=StudioFlow.captureCardSlots(drag.node);
@@ -1360,12 +1400,8 @@ function updateDrag(x,y,free=drag?.free){
   if(drag.cardChoice)moveLiveCard(drag,null);
   if(!free||drag.section){
     const px=x-f.left, py=y-f.top;
-    if(flowPreview?.slot){
-      const r=flowPreview.slot.getBoundingClientRect();
-      if(px>=r.left-10&&px<=r.right+10&&py>=r.top-12&&py<=r.bottom+12){
-        liftDragItem(drag,x,y);
-        positionFlowGuide(f);return;
-      }
+    if(retainFlowPreview(px,py)){
+      liftDragItem(drag,x,y);positionFlowGuide(f);return;
     }
     clearFlowPreview();
     const choice=drag.section?StudioFlow.sectionTarget(drag.node,px,py):StudioFlow.find(drag.node,px,py);
@@ -1375,7 +1411,7 @@ function updateDrag(x,y,free=drag?.free){
     }
   } else clearFlowPreview();
   if(drag.section){guide=null;liftDragItem(drag,x,y);return;}
-  guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,false);
+  guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,!!free&&!drag.layout.crop);
   const {left,top,width,height}=guide;
   drawGhost(drag.node,f.left+left,f.top+top,width,height,true);
   drag.node.setAttribute('data-bs-drag-origin','');
@@ -1443,19 +1479,32 @@ grip.addEventListener('pointermove',e=>itemPointerMove(e,false));
 grip.addEventListener('pointerup',e=>itemPointerUp(e,false));
 grip.addEventListener('pointercancel',e=>itemPointerCancel(e,false));
 grip.addEventListener('lostpointercapture',e=>itemPointerCancel(e,false));
+function directDragTarget(hit,selected,e){
+  if(!hit?.closest||hit.closest('[contenteditable],input,textarea,select,option,form button,.mobile-toggle,.nav-dropdown-toggle,[data-studio-runtime]'))return null;
+  // Unselected touch content stays scrollable. Tap it first to reveal a grip.
+  if(e.pointerType==='touch'&&!selected?.contains(hit))return null;
+  const divider=dividerFrom(hit,e.clientX,e.clientY), card=StudioFlow.cardOf(hit);
+  if(divider&&canDragCanvas(divider))return divider;
+  if(card){
+    if(e.altKey){const detail=targetFrom(hit);if(detail!==card&&canDragCanvas(detail))return detail;}
+    if(!e.shiftKey&&selected!==card&&selected?.contains(hit)&&card.contains(selected)&&canDragCanvas(selected))return selected;
+    if(canDragCanvas(card))return card;
+  }
+  // Preserve an explicit selection of a nested part. Otherwise lift the
+  // visible element on the first drag, without opening its settings first.
+  const target=targetFrom(hit);
+  if(selected?.contains(hit)&&selected!==target&&canDragCanvas(selected)&&!selected.hasAttribute('data-bs-row')&&
+     !selected.hasAttribute('data-bs-column')&&(e.altKey||!target?.dataset.bsMove))return selected;
+  if(canDragCanvas(target)&&(!target.hasAttribute('data-bs-row')||target===selected))return target;
+  return selected?.contains(hit)&&canDragCanvas(selected)?selected:null;
+}
 function bindCanvasDragging(doc){
   let dragged=false;
   doc.addEventListener('pointerdown',e=>{
     if(e.isPrimary===false)return;
     dragged=false;
-    const selected=now(), hit=e.target;
-    if(gridPick||hit.closest('[contenteditable]'))return;
-    const divider=dividerFrom(hit,e.clientX,e.clientY), card=StudioFlow.cardOf(hit);
-    // A selected detail inside a card still drags independently. Only these
-    // card groups and dividers can start a drag before they've been selected.
-    const n=divider||(card
-      ?(!e.altKey&&!e.shiftKey&&selected?.contains(hit)&&card.contains(selected)?selected:card)
-      :selected?.contains(hit)?selected:null);
+    if(gridPick)return;
+    const n=directDragTarget(e.target,now(),e);
     if(!n)return;
     // Don't capture a simple click. Once the pointer moves, capture on a stable
     // node so it stays active as the element or insertion gap moves.
@@ -1466,8 +1515,8 @@ function bindCanvasDragging(doc){
   doc.addEventListener('pointercancel',e=>itemPointerCancel(e,true),true);
   doc.addEventListener('lostpointercapture',e=>{if(e.target===drag?.capture)itemPointerCancel(e,true);},true);
   doc.addEventListener('pointerleave',e=>{if(!drag?.moved)itemPointerCancel(e,true);});
-  doc.addEventListener('dragstart',e=>{if(mode==='edit'&&(canvasDragTarget?.contains(e.target)||drag?.card))e.preventDefault();},true);
-  doc.addEventListener('selectstart',e=>{if(drag?.direct&&(canvasDragTarget?.contains(e.target)||drag.card))e.preventDefault();},true);
+  doc.addEventListener('dragstart',e=>{if(mode==='edit'&&(canvasDragTarget?.contains(e.target)||drag?.direct))e.preventDefault();},true);
+  doc.addEventListener('selectstart',e=>{if(drag?.direct)e.preventDefault();},true);
   doc.addEventListener('click',e=>{
     if(!dragged||e.detail===0||mode!=='edit')return;
     dragged=false;e.preventDefault();e.stopImmediatePropagation();

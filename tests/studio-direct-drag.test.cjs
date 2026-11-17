@@ -6,40 +6,34 @@ const test=require('node:test');
 const studio=fs.readFileSync('public/studio/studio.js','utf8');
 const grid=fs.readFileSync('public/studio/grid.js','utf8');
 
-test('direct canvas drag preserves ordinary clicks and opts only cards and dividers into first-press dragging',()=>{
-  const listeners={}, calls=[];
-  let eligible=true, card=null, divider=null;
-  const capture={}, doc={documentElement:capture,addEventListener:(name,handler)=>listeners[name]=handler};
-  const hit={closest:()=>!eligible}, selected={contains:n=>n===hit};
-  const env={now:()=>selected,StudioFlow:{cardOf:()=>card},dividerFrom:()=>divider,beginItemDrag:(...args)=>calls.push(args),
-    itemPointerMove:()=>{},itemPointerUp:()=>{},itemPointerCancel:()=>{},
-    placement:null,gridPick:null,mode:'edit',canvasDragTarget:selected};
-  vm.runInNewContext(studio.slice(studio.indexOf('function bindCanvasDragging('),studio.indexOf("$('drag').addEventListener('click'"))+'\nbindCanvasDragging(doc);',{...env,doc});
+test('first-press dragging lifts ordinary blocks, cards and dividers without consuming simple clicks or touch scrolling',()=>{
+  const listeners={},calls=[];
+  const capture={},doc={documentElement:capture,addEventListener:(name,handler)=>listeners[name]=handler};
+  const el=(name,attrs=[])=>({name,dataset:{bsMove:'yes'},closest:()=>null,hasAttribute:k=>attrs.includes(k),
+    contains:n=>n===hit});
+  const selected=el('selected'),block=el('ordinary'),card=el('card'),divider=el('divider'),section=el('section',['data-bs-row']);
+  const hit=el('hit');let picked=block,selection=null,whole=null,line=null;
+  const env={now:()=>selection,StudioFlow:{cardOf:()=>whole},dividerFrom:()=>line,targetFrom:()=>picked,
+    canDragCanvas:n=>!!n,beginItemDrag:(...args)=>calls.push(args),itemPointerMove:()=>{},itemPointerUp:()=>{},itemPointerCancel:()=>{},
+    gridPick:null,mode:'edit',canvasDragTarget:selected};
+  vm.runInNewContext(studio.slice(studio.indexOf('function directDragTarget('),studio.indexOf("$('drag').addEventListener('click'"))+'\nbindCanvasDragging(doc);',{...env,doc});
   const down={target:hit,isPrimary:true};
   listeners.pointerdown(down);
-  assert.equal(calls.length,1);
-  assert.deepEqual(calls[0].slice(0,4),[down,selected,capture,true]);
+  assert.deepEqual(calls[0].slice(0,4),[down,block,capture,true]);
   let suppressed=0;
   const click={detail:1,preventDefault:()=>suppressed++,stopImmediatePropagation:()=>suppressed++};
-  listeners.click(click);
-  assert.equal(suppressed,0);
-  calls[0][4]();
-  listeners.click(click);
-  assert.equal(suppressed,2);
-  listeners.click(click);
-  assert.equal(suppressed,2);
-  eligible=false;
-  listeners.pointerdown(down);
-  const elsewhere={closest:()=>null};
-  listeners.pointerdown({target:elsewhere,isPrimary:true});
+  listeners.click(click);assert.equal(suppressed,0);
+  calls[0][4]();listeners.click(click);assert.equal(suppressed,2);
+  listeners.click(click);assert.equal(suppressed,2);
+  listeners.pointerdown({...down,pointerType:'touch'});
   assert.equal(calls.length,1);
-  card={};
-  listeners.pointerdown({target:elsewhere,isPrimary:true});
-  assert.equal(calls.at(-1)[1],card);
-  card=null;
-  divider={};
-  listeners.pointerdown({target:elsewhere,isPrimary:true});
-  assert.equal(calls.at(-1)[1],divider);
+  whole=card;listeners.pointerdown(down);assert.equal(calls.at(-1)[1],card);
+  line=divider;listeners.pointerdown(down);assert.equal(calls.at(-1)[1],divider);
+  line=null;whole=null;picked=section;listeners.pointerdown(down);assert.equal(calls.length,3);
+  picked=null;selection=selected;listeners.pointerdown({...down,pointerType:'touch'});
+  assert.equal(calls.at(-1)[1],selected);
+  const formField={closest:()=>true};listeners.pointerdown({target:formField,isPrimary:true});
+  assert.equal(calls.length,4);
 });
 
 test('drag grid stays aligned to the active canvas and its scroll offset',()=>{

@@ -43,12 +43,12 @@ Use the [GitHub Pages Page Studio](https://mshahrooz.github.io/Newcitywellness/s
 The **Add element** palette groups text, media and links, and layout blocks. Use **Preview** and the device buttons to check placement before publishing.
 
 - **Sections** in the top bar lists the current order. Move a section up or down from the list or with its selection toolbar arrows.
-- Select an element, then hold and drag it directly on the canvas or use its grip. The grid is visible while dragging. Drag a block from **Add element** onto an insertion gap to place it. Drag an existing block near another block’s edge to reorder it. Hold **Shift** to move without changing the order.
-- Drag a card over another card in **Explore Our Therapies** or **Areas We Support**. The card follows your pointer and its neighbors shift while you drag. Release to keep the new order or press **Escape** to cancel. Drag decorative dividers as a unit, or drop them into a nearby flow position.
+- Grab a heading, image, text, button, divider, or other canvas element directly without opening its settings first. The grid and dotted outline show the landing area, and nearby blocks shift to preview the new position. Hold **Shift** to move without reordering. On touchscreens, tap a block and use its grip so normal scrolling still works.
+- Drag a therapy, condition, testimonial, or review card over another card in the same collection. The card follows your pointer and its neighbors shift while you drag. Release to keep the new order or press **Escape** to cancel. After selecting a detail inside a card, you can still drag that detail independently.
 - The **Add element** toolbox is drag-only. Hover over a tile for its grip, then drag it onto the page. Clicking the tile does not add a block or activate placement.
 - **YouTube video** accepts watch, share, Shorts, and live URLs and renders the video automatically. Use **Preview** to play it.
 - **Embed code** accepts an HTTPS embed URL, iframe code, or HTML snippets. Custom code runs in an isolated frame. Some providers limit where embeds work.
-- Drop a block into the space to the left or right of another block to create columns without adding a row first. Drop at the edge of an existing automatic column to extend the group.
+- Drag a block beside another block to preview the new columns, then release to create them. Drop at the edge of an existing automatic column to extend the group.
 - The dotted outline identifies the active drop target. The selected block’s up/down arrows reorder adjacent content. Arrow keys move the selection, and Alt plus an arrow nudges without reordering.
 - **Columns** accepts a custom count from 1 to 100. Click the row or a column, then drag the green divider between two columns. A focused divider also supports keyboard arrow keys. Rows stack on phones. Very wide rows can scroll horizontally on larger screens.
 

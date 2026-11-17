@@ -137,5 +137,46 @@ test('homepage cards move into a peer’s position from the center or nearby gap
   assert.equal(flow.cardTarget(d,110,160).side,'before');
   assert.equal(flow.cardTarget(a,215,165).node,b);
   assert.equal(flow.cardTarget(a,110,160),null);
-  assert.equal(flow.cardTarget(a,110,390),null);
+  assert.equal(flow.cardTarget(a,110,387).node,d);
+  assert.equal(flow.cardTarget(a,110,394),null);
+});
+
+test('side guides use the visible text edge for wide headings and accept thin rules as vertical targets',()=>{
+  const rect=(left,top,width,height)=>({left,top,width,height,right:left+width,bottom:top+height});
+  const heading={matches:s=>s.includes('h1'),getBoundingClientRect:()=>rect(50,70,900,60)};
+  const range={selectNodeContents:n=>assert.equal(n,heading),getBoundingClientRect:()=>rect(320,80,360,40)};
+  const flow=vm.runInNewContext(code+'\nStudioFlow',{D:{createRange:()=>range}});
+  const edge=flow.sideBox(heading);
+  assert.deepEqual([edge.left,edge.right,edge.top,edge.bottom],[320,680,70,130]);
+  assert.equal(flow.sideEdges(edge,745,100)[0][0],'right');
+  assert.equal(flow.edges(rect(30,400,200,1),100,415).length,2);
+  const wrapper={getBoundingClientRect:()=>rect(0,0,0,0),firstElementChild:heading};
+  assert.equal(flow.layoutBox(wrapper).height,60);
+});
+
+test('the live side preview restores the original native block and never writes saved column attributes',()=>{
+  const rect={width:100,height:50};
+  const make=(tag='div',attrs={})=>{
+    const node={tag,attrs:{...attrs},childNodes:[],dataset:{bsMove:'yes'},isConnected:true,getBoundingClientRect:()=>rect,
+      get parentElement(){return node.parent;},get children(){return node.childNodes;},matches:()=>false,closest:()=>null,
+      getAttribute:k=>node.attrs[k]??null,setAttribute:(k,v)=>{node.attrs[k]=v;},removeAttribute:k=>{delete node.attrs[k];},
+      remove(){if(node.parent){const l=node.parent.childNodes;l.splice(l.indexOf(node),1);node.parent=null;}},
+      append(...items){for(const n of items){n.remove();n.parent=node;node.childNodes.push(n);}},
+      before(n){const p=node.parent;n.remove();p.childNodes.splice(p.childNodes.indexOf(node),0,n);n.parent=p;},
+      replaceWith(n){node.before(n);node.remove();},
+    };return node;
+  };
+  const flow=vm.runInNewContext(code+'\nStudioFlow',{rowOf:()=>true,addNative:make});
+  const parent=make(),heading=make('h2'),after=make('p'),slot=make('div',{'data-bs-drop-slot':''});
+  parent.append(heading,after);
+  const restore=flow.previewAside(heading,'right',slot);
+  assert.equal(typeof restore,'function');
+  const wrapper=parent.children[0];
+  assert.equal(wrapper.getAttribute('data-bs-preview-columns'),'');
+  assert.equal(wrapper.getAttribute('data-bs-widths'),null);
+  assert.equal(wrapper.children[0].children[0],heading);
+  assert.equal(wrapper.children[1],slot);
+  restore();
+  assert.deepEqual(parent.children,[heading,after]);
+  assert.equal(heading.parentElement,parent);
 });
