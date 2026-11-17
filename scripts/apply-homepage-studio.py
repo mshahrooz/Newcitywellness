@@ -191,7 +191,8 @@ def restore_legacy_document_urls(fragment, output, prefix):
             return tag
         suffix = extension[0]
         stem = re.sub(r"[^A-Za-z0-9 ._()-]", "_", original[:-len(suffix)])
-        stem = re.sub(r"^\.+", "_", stem).strip()[:80-len(suffix)].rstrip(" .") or "download"
+        stem = re.sub(r"^\.+", "_", stem).strip()
+        stem = re.sub(r"^[^A-Za-z0-9_]", "_", stem)[:80-len(suffix)].rstrip(" .") or "download"
         name = stem + suffix
         old = output / "media/homepage-studio" / (legacy[1] + ".bin")
         new = output / "media/homepage-studio" / legacy[1] / name
