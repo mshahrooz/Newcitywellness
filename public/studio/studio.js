@@ -1815,6 +1815,9 @@ async function openPage(next) {
   if(baselineReady&&dirty&&!await save({quiet:true})){
     switching=false;busyCanvas(false);showState();if(picker){picker.disabled=false;picker.value=page[0];}return;
   }
+  if(next[0]==='home'&&new URL(location.href).searchParams.get('editor')!=='classic'){
+    location.assign(new URL('homepage/',location.href).href);return;
+  }
   canvasEpoch++;stopBehavior?.();stopSize?.();
   stopBehavior=null;stopSize=null;baselineReady=false;active=null;D=null;
   list=[];savedOps=[];cursor=0;liveOps=[];liveRevision=null;liveSource=null;liveSync=null;

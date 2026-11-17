@@ -36,7 +36,13 @@ The dashboard now opens directly into the website canvas in draft mode and does 
 
 The integration adapts the drag state and midpoint insertion behavior of [PageForge Studio](https://github.com/VinodPrabhashvara/PageForge-Studio), distributed under MIT. See [the license](licenses/PageForge-Studio.txt). The old `/admin/grapes/` address is a compatibility entry to the same dashboard.
 
-## Page Studio
+## Homepage Builder
+
+The [normal Page Studio address](https://mshahrooz.github.io/Newcitywellness/studio/) now opens the [visual Homepage Builder](https://mshahrooz.github.io/Newcitywellness/studio/homepage/). It edits the homepage only, saves in this browser, and exports a ZIP or portable project JSON. Download a project JSON from the separate private builder and import it in **Export / Classic Studio** to move that draft and its media. Websites, browser drafts, and authentication stay separate. The new builder does not send drafts to the live clinic site.
+
+**Pages** links to the existing editor for the other pages. The [Classic homepage editor](https://mshahrooz.github.io/Newcitywellness/studio/?page=home&editor=classic) is still available for its own drafts and authenticated live homepage publishing. The builder's initial homepage is the captured live layout, not a continuous mirror of later Classic publications. The bundled app under `public/studio/homepage/` is built from the private builder's source with the GitHub Studio integration described in `studio-integrations/homepage-builder/README.md`.
+
+## Classic Page Studio
 
 Use the [GitHub Pages Page Studio](https://mshahrooz.github.io/Newcitywellness/studio/) to draft and preview edits. Approved editors sign in with credentials from the dedicated NewCity Wellness Supabase project and click **Publish to GitHub Pages**. Choose any of the 15 public pages using the dropdown. Switching pages saves the current draft in this browser. New browsers open the last fully deployed draft when one exists. Publishing updates only the selected page and never updates another page’s draft.
 

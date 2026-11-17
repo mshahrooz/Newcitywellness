@@ -1,0 +1,213 @@
+diff --git a/src/editor/App.tsx b/src/editor/App.tsx
+index 8c1a908..e3f1de9 100644
+--- a/src/editor/App.tsx
++++ b/src/editor/App.tsx
+@@ -9,6 +9,7 @@ import { Icon } from './Icons';
+ import { IconButton, Modal } from './controls';
+ import { Canvas, ReferencePreview, moveElement } from './Canvas';
+ import { Inspector, SidePanel } from './Panels';
++import { classicStudio, githubStudio, homepageOnly } from './hosting';
+ 
+ const tabs: Tab[] = ['Build', 'Pages', 'Design', 'Settings'];
+ const devices: Device[] = ['desktop', 'tablet', 'mobile'];
+@@ -31,6 +32,12 @@ export default function App() {
+     const timer=setTimeout(()=>void store.getState().save(),850);
+     return ()=>clearTimeout(timer);
+   },[project,ready,saving,saved,readError,saveError,undoDepth,hadSave,store]);
++  useEffect(()=>{
++    if(!githubStudio||!ready||saved||(!undoDepth&&!hadSave))return;
++    const retain=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue='';};
++    window.addEventListener('beforeunload',retain);
++    return ()=>window.removeEventListener('beforeunload',retain);
++  },[ready,saved,undoDepth,hadSave]);
+   const requestDelete = useCallback((id: string) => setDialog({ type: 'delete', id }), []);
+   const save = useCallback(() => {
+     const state = store.getState();
+@@ -102,11 +109,11 @@ export default function App() {
+         <span className="save-state" data-saved={saved} role="status"><span aria-hidden="true"/>{status}</span>
+         <button type="button" className="top-link" onClick={save} disabled={!ready || saving}>Save</button>
+         <IconButton icon="eye" label="Preview site" onClick={() => setDialog({ type: 'preview' })}/>
+-        <button type="button" className="publish-button" onClick={() => {setExportError('');setDialog({ type: 'export' });}} disabled={!ready}><Icon name="download"/><span>Publish / Export</span></button>
++        <button type="button" className="publish-button" onClick={() => {setExportError('');setDialog({ type: 'export' });}} disabled={!ready}><Icon name="download"/><span>{githubStudio?'Export / Classic Studio':'Publish / Export'}</span></button>
+       </div>
+     </header>
+     <div className="builder-subbar">
+-      <span className="isolation-note"><Icon name="lock"/> Independent workspace <span className="divider-dot">·</span> No live site connection</span>
++      <span className="isolation-note"><Icon name="lock"/> {githubStudio?'Homepage draft only':'Independent workspace'} <span className="divider-dot">·</span> {githubStudio?<a href={classicStudio()} title="Open the separate Classic homepage draft">Classic Studio</a>:'No live site connection'}</span>
+       <div className="subbar-right">
+         <span className="save-state save-state-compact" data-saved={saved} role="status"><span aria-hidden="true"/>{status}</span>
+         <span className="subbar-phase">Autosaves in this browser</span>
+@@ -128,16 +135,16 @@ export default function App() {
+       </div>
+     </Modal>}
+     {dialog?.type === 'preview' && <Modal title="Site preview" onClose={closeDialog} wide><ReferencePreview/></Modal>}
+-    {dialog?.type === 'export' && <Modal title="Publish / Export" onClose={closeDialog}>
++    {dialog?.type === 'export' && <Modal title={githubStudio?"Export homepage":"Publish / Export"} onClose={closeDialog}>
+       <div className="modal-body">
+-        <p>Download a finished website ZIP, or back up the editable project and its media. This separate editor does not overwrite your current live site.</p>
+-        <div className="export-actions"><button className="publish-button" disabled={exporting} onClick={()=>void runExport('website')}><Icon name="download"/> {exporting?'Working…':'Download website ZIP'}</button>
++        {githubStudio ? <><p>Export this homepage or back up its editable draft. Edits in this builder are local and do not change the live site.</p><p><a className="studio-host-link" href={classicStudio()}>Open Classic Studio for live publishing</a>. Classic uses its own draft. To move a draft here from the private builder, download its project JSON there and import it below.</p></> : <p>Download a finished website ZIP, or back up the editable project and its media. This separate editor does not overwrite your current live site.</p>}
++        <div className="export-actions"><button className="publish-button" disabled={exporting} onClick={()=>void runExport('website')}><Icon name="download"/> {exporting?'Working…':githubStudio?'Download homepage ZIP':'Download website ZIP'}</button>
+          <button className="secondary-button" disabled={exporting} onClick={()=>void runExport('backup')}>Download project JSON</button></div>
+         <label className="field"><span>Import a project backup</span><input type="file" accept="application/json,.json" disabled={exporting} onChange={async e=>{
+           const input=e.currentTarget,file=input.files?.[0];input.value='';
+           if(!file||!window.confirm('Replace this local draft with the selected backup? You can undo this.'))return;
+           setExporting(true);setExportError('');
+-          try{const {importBackup}=await import('../site/export');const restored=await importBackup(file);store.getState().edit('Import project',()=>restored);store.getState().setPage(restored.site.homePageId);closeDialog();}
++          try{const {importBackup}=await import('../site/export');const imported=await importBackup(file);const restored=githubStudio?homepageOnly(imported):imported;store.getState().edit('Import project',()=>restored);store.getState().setPage(restored.site.homePageId);closeDialog();}
+           catch(error){setExportError(error instanceof Error?error.message:'Import failed.');}
+           finally{setExporting(false);}
+         }}/></label>
+diff --git a/src/editor/Panels.tsx b/src/editor/Panels.tsx
+index 7695466..ce4f219 100644
+--- a/src/editor/Panels.tsx
++++ b/src/editor/Panels.tsx
+@@ -12,6 +12,7 @@ import type { TileKind } from '../site/catalog';
+ import { ElementSettings, MediaField, SelectField, StyleSettings, Toggle, defaultBackground } from './ElementSettings';
+ import { themes } from '../site/themes';
+ import { fontChoices } from '../site/renderer';
++import { classicStudio, githubStudio, legacyPages } from './hosting';
+ 
+ const palettes:[PaletteKey,string][]=[['primary','Primary'],['secondary','Secondary'],['accent','Accent'],['background','Background'],['text','Text']];
+ export function SidePanel(){
+@@ -44,7 +45,7 @@ export function SidePanel(){
+     onClick={()=>store.getState().select({kind:'section',id:s.id})}><span>{shared?'◆':String(i+1).padStart(2,'0')}</span><strong>{s.label}</strong></button>
+  </li>;
+  return <aside className="left-panel" aria-label={tab+' tools'}>
+-  <div className="panel-intro"><div className="panel-kicker">WORKSPACE</div><h2>{tab==='Build'?'Build your site':tab}</h2><p>{{Build:'Drag from here or grab a block on the page. Hold Shift to move without reordering.',Pages:'Manage the homepage and optional draft pages.',Design:'Change the look of the whole draft.',Settings:'Manage your local editor project.'}[tab]}</p></div>
++  <div className="panel-intro"><div className="panel-kicker">WORKSPACE</div><h2>{tab==='Build'?'Build your site':tab}</h2><p>{{Build:'Drag from here or grab a block on the page. Hold Shift to move without reordering.',Pages:githubStudio?'Edit Home here. Other pages still open in Classic Studio.':'Manage the homepage and optional draft pages.',Design:'Change the look of the whole draft.',Settings:'Manage your local editor project.'}[tab]}</p></div>
+   {tab==='Build'&&<>
+    <div className="rail-switch" role="group" aria-label="Build sidebar view">
+     <button type="button" aria-pressed={mode==='elements'} onClick={()=>setMode('elements')}><Icon name="grid"/> Elements</button>
+@@ -62,7 +63,12 @@ export function SidePanel(){
+      <div className="outline-caption mt-4">SHARED FOOTER</div><ol>{line(p.site.globalFooter,0,true)}</ol>
+     </div>}
+    </div></>}
+-  {tab==='Pages'&&<div className="rail-body px-4 pb-4">
++  {tab==='Pages'&&githubStudio&&<div className="rail-body px-4 pb-4">
++   <div className="page-row"><button type="button" className="page-item" aria-pressed="true" onClick={()=>store.getState().setTab('Build')}><Icon name="page"/><span>Home</span><small>BUILDER</small></button></div>
++   <p className="outline-caption mt-4 px-0">OTHER PAGES · CLASSIC STUDIO</p>
++   {legacyPages.map(([id,label])=><div className="page-row" key={id}><a className="page-item studio-host-page" href={classicStudio(id)}><Icon name="page"/><span>{label}</span></a></div>)}
++  </div>}
++  {tab==='Pages'&&!githubStudio&&<div className="rail-body px-4 pb-4">
+    {p.site.pages.map((item,i)=><div key={item.id} className="page-row" style={{paddingLeft:item.parentId?12:0}}>
+      <button className="page-item" type="button" draggable aria-pressed={item.id===pageId}
+       onClick={()=>store.getState().setPage(item.id)} onDragStart={e=>{e.dataTransfer.setData('text/plain',item.id);setDragPage(item.id);}}
+diff --git a/src/editor/hosting.ts b/src/editor/hosting.ts
+new file mode 100644
+index 0000000..71ed9db
+--- /dev/null
++++ b/src/editor/hosting.ts
+@@ -0,0 +1,13 @@
++import type { Project } from '../model/types';
++import studioLinks from './legacy-pages.json';
++
++export const githubStudio = import.meta.env?.MODE === 'github-studio';
++export const classicStudio = (page='home') => page === 'home' ? '../?page=home&editor=classic' : '../?page='+encodeURIComponent(page);
++export const legacyPages = studioLinks.map(([id,label]) => [id!,label!] as const);
++export function homepageOnly(project:Project):Project {
++  // Older private-builder backups can contain extra draft pages. Bring the
++  // native homepage and its shared elements over, never create real pages.
++  const homepage=project.site.pages.find(p=>p.id==='page-home');
++  if(!homepage)throw new Error('This backup does not contain the New City Wellness homepage.');
++  return {...project,site:{...project.site,homePageId:homepage.id,pages:[{...homepage,slug:'',parentId:null,hiddenFromNavigation:false}]}};
++}
+diff --git a/src/editor/legacy-pages.json b/src/editor/legacy-pages.json
+new file mode 100644
+index 0000000..23b7768
+--- /dev/null
++++ b/src/editor/legacy-pages.json
+@@ -0,0 +1,58 @@
++[
++  [
++    "about-us",
++    "About Us"
++  ],
++  [
++    "services",
++    "Services"
++  ],
++  [
++    "acupuncture",
++    "Acupuncture"
++  ],
++  [
++    "chinese-herbal-medicine",
++    "Chinese Herbal Medicine"
++  ],
++  [
++    "chinese-medical-massage-tui-na",
++    "Chinese Medical Massage (Tui Na)"
++  ],
++  [
++    "cupping",
++    "Cupping"
++  ],
++  [
++    "gua-sha",
++    "Gua Sha"
++  ],
++  [
++    "moxibustion",
++    "Moxibustion"
++  ],
++  [
++    "qi-gong",
++    "Qi Gong"
++  ],
++  [
++    "conditions-treated",
++    "Conditions Treated"
++  ],
++  [
++    "contact-us",
++    "Contact Us"
++  ],
++  [
++    "faqs",
++    "FAQs"
++  ],
++  [
++    "insurance",
++    "Insurance"
++  ],
++  [
++    "testimonials",
++    "Testimonials"
++  ]
++]
+diff --git a/src/styles.css b/src/styles.css
+index 38b5dc3..61fe222 100644
+--- a/src/styles.css
++++ b/src/styles.css
+@@ -211,3 +211,5 @@
+ @layer components {
+   .fidelity-floating{top:auto;bottom:8px}
+ }
++
++.studio-host-link,.isolation-note a{text-decoration:underline;text-underline-offset:3px}.studio-host-page{text-decoration:none}
+diff --git a/tests/hosting.test.ts b/tests/hosting.test.ts
+new file mode 100644
+index 0000000..6cad927
+--- /dev/null
++++ b/tests/hosting.test.ts
+@@ -0,0 +1,19 @@
++import {test} from 'node:test';
++import assert from 'node:assert/strict';
++import {classicStudio,homepageOnly,legacyPages} from '../src/editor/hosting';
++import {makeSeedProject} from '../src/model/seed';
++import {newPage} from '../src/model/layout';
++import {projectSchema} from '../src/model/schema';
++
++test('homepage builder keeps the Classic routes and accepts only the native homepage from a backup',()=>{
++ const p=makeSeedProject();const home=p.site.pages[0]!;
++ newPage(p,'Private draft page');
++ const imported=homepageOnly(p);
++ assert.equal(imported.site.pages.length,1);
++ assert.equal(imported.site.homePageId,home.id);
++ assert.equal(p.site.pages.length,2);
++ assert.equal(projectSchema.safeParse(imported).success,true);
++ assert.equal(classicStudio(),'../?page=home&editor=classic');
++ assert.equal(classicStudio('about-us'),'../?page=about-us');
++ assert.equal(legacyPages.length,14);
++});
