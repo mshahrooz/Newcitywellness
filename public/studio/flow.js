@@ -160,19 +160,30 @@ const StudioFlow = (() => {
   // Only the two home card collections opt in to center-based reordering.
   const sortableCard='.therapy-grid > .therapy-card,.condition-grid > .condition-card';
   const cardOf=hit=>hit?.closest(sortableCard)||null;
-  function cardTarget(n,x,y){
+  function captureCardSlots(n){
     const group=n.parentElement, bounds=group.getBoundingClientRect();
-    if(x<bounds.left-10||x>bounds.right+10||y<bounds.top-10||y>bounds.bottom+10)return null;
-    let closest=null, score=Infinity, index=-1;
+    const dx=bounds.left-(group.scrollLeft||0), dy=bounds.top-(group.scrollTop||0);
     const cards=Array.from(group.children).filter(item=>item.matches(sortableCard));
-    for(const [i,item] of cards.entries()){
-      const r=item.getBoundingClientRect();
-      if(r.width<4||r.height<4||item.hidden)continue;
-      const d=distance(r,x,y);
-      if(d<score){score=d;closest=item;index=i;}
+    const slots=cards.map((node,index)=>{
+      const r=node.getBoundingClientRect();
+      return r.width>=4&&r.height>=4&&!node.hidden?
+        {node,index,left:r.left-dx,right:r.right-dx,top:r.top-dy,bottom:r.bottom-dy}:null;
+    }).filter(Boolean);
+    return {group,cards,slots,origin:cards.indexOf(n),next:n.nextSibling};
+  }
+  function cardTarget(n,x,y,state=captureCardSlots(n)){
+    const {group,slots,origin}=state;
+    const bounds=group.getBoundingClientRect();
+    if(x<bounds.left-10||x>bounds.right+10||y<bounds.top-10||y>bounds.bottom+10)return null;
+    const px=x-bounds.left+(group.scrollLeft||0),py=y-bounds.top+(group.scrollTop||0);
+    let closest=null,score=Infinity;
+    for(const slot of slots){
+      const d=distance(slot,px,py);
+      if(d<score){score=d;closest=slot;}
     }
-    if(!closest||score>30||closest===n)return null;
-    return {node:closest,side:index<cards.indexOf(n)?'before':'after',card:true};
+    // Hit the original slots, not the cards moving underneath the pointer.
+    if(!closest||score>30||closest.node===n)return null;
+    return {node:closest.node,side:closest.index<origin?'before':'after',card:true};
   }
   function sectionTarget(n,x,y){
     const hit=D.elementFromPoint?.(x,y);
@@ -316,5 +327,5 @@ const StudioFlow = (() => {
     if(shell)removeFreeContainer(shell);else cleanupAutoColumn(old);
     return true;
   }
-  return {unit,source,target,move,edges,find,noop,stepTarget,cardOf,cardTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
+  return {unit,source,target,move,edges,find,noop,stepTarget,cardOf,captureCardSlots,cardTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
 })();

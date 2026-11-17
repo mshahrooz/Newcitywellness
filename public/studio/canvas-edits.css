@@ -67,7 +67,7 @@
 .bs-bg-layer::after{content:"";position:absolute;inset:0;background:color-mix(in srgb,black var(--bs-bg-shade,12%),transparent)}
 .hero>.bs-bg-layer::after{background:color-mix(in srgb,black var(--bs-bg-shade,48%),transparent)}
 .bs-duplicated-column{min-height:32px}
-.ncw .bs-drag-ghost{position:fixed;z-index:999999;pointer-events:none;opacity:.72;filter:drop-shadow(0 7px 14px #112f37a0);overflow:hidden}
+.ncw .bs-drag-ghost{position:fixed;top:0;left:0;z-index:999999;pointer-events:none;opacity:.72;filter:drop-shadow(0 7px 14px #112f37a0);overflow:hidden}
 .ncw .bs-drag-ghost>.bs-drag-look{position:static!important;transform:none!important;translate:none!important;animation:none!important;margin:0!important;width:100%!important;max-width:100%!important;pointer-events:none!important}
 .ncw .bs-drag-ghost>img{height:auto!important}
 
@@ -112,6 +112,10 @@
 
 .bs-editor-mode [data-bs-divider]{cursor:grab;touch-action:none}
 @media(pointer:fine){.bs-editor-mode :is(.therapy-grid > .therapy-card,.condition-grid > .condition-card),.bs-editor-mode .therapy-grid > .therapy-card a{cursor:grab}}
+
+.bs-editor-mode [data-bs-drag-origin]{opacity:0!important;pointer-events:none!important}
+.bs-editor-mode [data-bs-drag-origin] *{pointer-events:none!important}
+.bs-editor-mode .bs-drag-ghost[data-bs-lifted]{opacity:.94;will-change:transform}
 
 /* Desktop offsets are shared. Smaller screens can add their own adjustments. */
 .ncw .bs-offset-item,.floating-booking-link.bs-offset-item{
