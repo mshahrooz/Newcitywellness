@@ -277,7 +277,7 @@ const StudioPublish = (() => {
     return {...revision,operations:ops};
   }
   async function checkedPackage(update){
-    if(drag||paletteDrag)throw Error('Finish the drag before publishing.');
+    if(drag||paletteDrag||resizeDrag)throw Error('Finish dragging or resizing before publishing.');
     const {SOURCE,DRAFT}=paths();
     if(!cursor&&!loadedSource)throw Error('Make a page edit first.');
     update('Checking the latest page revision…');

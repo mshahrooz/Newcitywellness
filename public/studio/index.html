@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#152c25">
 <title>New City Wellness · Page Studio</title>
-<link rel="stylesheet" href="studio.css?v=blue-divider1">
+<link rel="stylesheet" href="studio.css?v=edge-resize1">
 <script src="pages.js?v=drag-guides1" defer></script>
 <script src="canvas-behavior.js?v=drag-guides1" defer></script>
 <script src="../homepage-studio/page-runtime.js?v=drag-guides1" data-preview-runtime defer></script>
@@ -18,10 +18,11 @@
 <script src="seo.js?v=1" defer></script>
 <script src="element-icons.js?v=1" defer></script>
 <script src="documents.js?v=1" defer></script>
-<script src="studio.js?v=blue-divider1" defer></script>
+<script src="resize.js?v=1" defer></script>
+<script src="studio.js?v=edge-resize1" defer></script>
 <script src="studio-revision.js?v=publish2" defer></script>
 <script src="publisher-config.js" defer></script>
-<script src="publish.js?v=document-uploads1" defer></script>
+<script src="publish.js?v=edge-resize1" defer></script>
 </head>
 <body>
 <header class="studio-bar">
@@ -71,9 +72,11 @@
     <button id="selection-duplicate" type="button" title="Duplicate selected element" aria-label="Duplicate selected element">⧉</button>
     <button id="selection-up" type="button" title="Move element up" aria-label="Move element up" hidden>↑</button>
     <button id="selection-down" type="button" title="Move element down" aria-label="Move element down" hidden>↓</button>
+    <button id="selection-section" type="button" title="Select the surrounding section to resize it" aria-label="Select surrounding section to resize" hidden>Section</button>
     <button id="selection-add" type="button" title="Add an element here" aria-label="Add an element here">＋</button>
 </div>
-<button id="resize-selection" type="button" title="Drag to resize this grid item" aria-label="Resize grid item" hidden></button>
+<div id="resize-handles" role="group" aria-label="Resize selection" hidden></div>
+<output id="resize-size" aria-hidden="true" hidden></output>
 <section class="popup" id="popup" role="dialog" aria-label="Edit item" hidden>
   <div class="popup-head"><div><span id="popup-type">ELEMENT SETTINGS</span><h2 id="popup-title">Edit item</h2></div><button id="popup-close" type="button" title="Close settings" aria-label="Close settings">×</button></div>
   <div class="popup-body" id="popup-body"></div>

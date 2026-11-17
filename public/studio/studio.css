@@ -87,7 +87,17 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 #free-grid{background-image:linear-gradient(to right,#44847969 1px,transparent 1px),linear-gradient(to bottom,#62c1bd69 1px,transparent 1px);background-color:#31bfd215;border:1px solid #58b5be8a}
 #free-ghost{border:2px solid #80e2e2;background:#137e9a21;border-radius:3px;box-shadow:0 0 0 1px #20445b}
 #free-ghost-label{position:absolute;left:-1px;top:-24px;border-radius:4px;background:#155966;color:white;padding:3px 7px;font-size:11px;white-space:nowrap}
-#resize-selection{position:fixed;z-index:5;width:15px;height:15px;border:2px solid #fff;border-radius:4px;padding:0;background:#327f65;box-shadow:0 0 0 1px #275c4e;cursor:ew-resize;touch-action:none}
+#resize-handles{position:fixed;inset:0;z-index:5;pointer-events:none}
+.resize-grip{position:absolute;display:grid;place-items:center;width:24px;height:30px;transform:translate(-50%,-50%);padding:0;border:0;background:transparent;cursor:ew-resize;pointer-events:auto;touch-action:none}
+.resize-grip::before{content:"";width:8px;height:20px;border:1px solid #fff;border-radius:5px;background:#267b5f;box-shadow:0 0 0 1px #215946}
+.resize-grip[data-axis="height"]{width:32px;height:23px;cursor:ns-resize}
+.resize-grip[data-axis="height"]::before{width:21px;height:8px}
+#resize-handles[data-section] .resize-grip{width:64px}
+#resize-handles[data-section] .resize-grip::before{width:45px;background:#3756ff;box-shadow:0 0 0 1px #263fbb}
+.resize-grip:is(:hover,:focus-visible,:active)::before{background:#14513c}
+#resize-handles[data-section] .resize-grip:is(:hover,:focus-visible,:active)::before{background:#2439cf}
+#resize-size{position:fixed;z-index:8;pointer-events:none;background:#193d31;color:#fff;border-radius:5px;padding:3px 7px;font-size:11px;white-space:nowrap}
+html.bs-resizing,html.bs-resizing *{cursor:var(--resize-cursor,ns-resize)!important;user-select:none!important}
 .bs-placement-mode iframe{outline-offset:-2px;outline:2px solid #20849d}
 .section-background{padding:9px!important;background:#f6faf6;border:1px solid #dbe7df!important;border-radius:8px}
 .section-background legend{padding-inline:3px}

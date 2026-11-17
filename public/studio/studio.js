@@ -84,6 +84,7 @@ function replay(){
   showState();paint();
 }
 function stepHistory(step){
+  if(resizeDrag)stopResize(false);
   if(drag)finishDrag(false);
   if(paletteDrag)finishPaletteDrag();
   endColumnDrag(false);
@@ -387,11 +388,8 @@ function apply(op){
       return n.hasAttribute('data-bs-row')&&sectionBackground(n,op);
     case 'section-name':
       if(!n.hasAttribute('data-bs-row'))return false;n.dataset.bsLabel=asString(op.value,80);return true;
-    case 'section-height':
-      if(!n.hasAttribute('data-bs-row'))return false;
-      const el=surfaceOf(n), h=bounded(op.value,0,2500);
-      el.classList.toggle('bs-manual-size',h>0);
-      el.style.setProperty('--bs-manual-height',h+'px');return true;
+    case 'section-height':return StudioResize.applySection(n,op);
+    case 'edge-size':return StudioResize.apply(n,op);
     case 'flow-move':return StudioFlow.isSide(op.side)?StudioFlow.alongside(n,target,op.side,op.pair):StudioFlow.move(n,target,op.side);
     case 'move': {
       if(n.hasAttribute('data-bs-row')){
@@ -649,7 +647,7 @@ function fileRead(file,kind,done){
   };reader.onerror=()=>flash('This file could not be opened.');reader.readAsDataURL(file);
 }
 function exportStandalone(){
-  if(drag||paletteDrag){flash('Finish the drag before exporting.');return;}
+  if(drag||paletteDrag||resizeDrag){flash('Finish dragging or resizing before exporting.');return;}
   const url=new URL(canvasPath(),location.href), name=pageIdentity();
   const abs=(x,base=url)=>new URL(x,base).href;
   const cache=new Map();
@@ -700,7 +698,7 @@ function exportStandalone(){
 }
 function anchorRect(n){
   if(!n?.isConnected)return null;
-  const f=frame.getBoundingClientRect(), r=(n.hasAttribute('data-bs-row')?surfaceOf(n):n).getBoundingClientRect();
+  const f=frame.getBoundingClientRect(), r=StudioResize.box(n).getBoundingClientRect();
   const line=n.hasAttribute('data-bs-divider'), px=line&&r.width>0&&r.width<6?4:0,py=line&&r.height>0&&r.height<6?4:0;
   return {left:f.left+r.left-px,right:f.left+r.right+px,top:f.top+r.top-py,bottom:f.top+r.bottom+py,
     width:r.width+2*px,height:r.height+2*py,f};
@@ -737,18 +735,19 @@ function paint(){
   const n=now();
   syncCanvasDragTarget(n);
   paintColumnHandles();
-  if(!D||mode!=='edit'||!active||paletteDrag?.moved||(drag?.moved&&drag.direct)){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
+  if(!D||mode!=='edit'||!active||paletteDrag?.moved||(drag?.moved&&drag.direct)){outline.hidden=true;selection.hidden=true;hideResizeHandles();return;}
   const r=anchorRect(n);
-  if(!r){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
+  if(!r){outline.hidden=true;selection.hidden=true;hideResizeHandles();return;}
   const top=Math.max(r.f.top,r.top),bt=Math.min(r.f.bottom,r.bottom);
   const l=Math.max(r.f.left,r.left),rt=Math.min(r.f.right,r.right);
-  if(bt-top<3||rt-l<3){outline.hidden=true;selection.hidden=true;$('resize-selection').hidden=true;return;}
+  if(bt-top<3||rt-l<3){outline.hidden=true;selection.hidden=true;hideResizeHandles();return;}
   const row=n.hasAttribute('data-bs-row'); outline.toggleAttribute('data-row',row);
   Object.assign(outline.style,{left:l+'px',top:top+'px',width:(rt-l)+'px',height:(bt-top)+'px'});
   outline.hidden=false;
   $('selection-label').textContent=titleOf(n);
   $('drag').hidden=!canDragCanvas(n);
   $('selection-add').hidden=false;
+  $('selection-section').hidden=row||!rowOf(n);
   for(const [id,step] of [['selection-up',-1],['selection-down',1]]){
     const control=$(id), direction=step<0?'up':'down';
     const label='Move '+(row?'section ':'element ')+direction;
@@ -758,8 +757,7 @@ function paint(){
     control.title=control.disabled?'No movable item '+(step<0?'above':'below'):label;
   }
   $('selection-duplicate').hidden=false;
-  const resize=$('resize-selection');resize.hidden=!freeShell(n)||drag?.moved||!!resizeDrag||!!gridPick;
-  if(!resize.hidden)Object.assign(resize.style,{left:Math.max(l,rt-15)+'px',top:Math.max(top,bt-15)+'px'});
+  paintResizeHandles(n,r);
   selection.hidden=false;
   const y=top-35>=r.f.top?top-35:top+2;
   selection.style.top=y+'px';
@@ -999,7 +997,8 @@ function openSettings(n) {
     const place=open(rowTitle(n),'SECTION SETTINGS',n);
     const labelToken=Symbol();input(body,'Section name',rowTitle(n),{maxlength:80},x=>record({kind:'section-name',id:idOf(n),value:x.value},labelToken));
     backgroundPanel(n);
-    const heightToken=Symbol();input(body,'Minimum height (px)',parseInt(surfaceOf(n).style.getPropertyValue('--bs-manual-height'))||'',{type:'number',min:0,max:2500,placeholder:'Automatic'},x=>record({kind:'section-height',id:idOf(n),value:x.value},heightToken));
+    para('Drag the blue grip on the top or bottom border to resize the section.');
+    const heightToken=Symbol();input(body,'Minimum height (px)',parseInt(surfaceOf(n).style.getPropertyValue('--bs-manual-height'))||'',{type:'number',min:0,max:StudioResize.SECTION_LIMIT,placeholder:'Automatic'},x=>record({kind:'section-height',id:idOf(n),value:x.value},heightToken));
     if(custom){
       const count=inner.children.length;
       columnCountControl(body,count,'Apply column count',next=>{
@@ -1611,6 +1610,7 @@ $('selection-up').onclick=()=>stepSelection(now(),-1);
 $('selection-down').onclick=()=>stepSelection(now(),1);
 $('selection-settings').onclick=()=>now()&&openSettings(now());
 $('selection-add').onclick=()=>startAdd();
+$('selection-section').onclick=()=>{const row=rowOf(now());if(row){close();choose(row,false);}};
 $('selection-duplicate').onclick=()=>now()&&cloneSelected(now());
 $('add-section').onclick=()=>rowChoices(now());
 /* These handles live above the canvas, so they never enter a saved page or capture video clicks. */
@@ -1697,33 +1697,91 @@ function endColumnDrag(commit,e){
   else {StudioColumns.set(r.grid,r.widths);paint();}
 }
 
-const resizeControl=$('resize-selection');
-resizeControl.addEventListener('pointerdown',e=>{
-  const n=now(), shell=freeShell(n), zone=zoneOf(n);
-  if(!n||!shell||!zone||e.button!==0)return;
-  e.preventDefault();clearGridPick();close();resizeControl.setPointerCapture(e.pointerId);
-  const device=devicePlacement(),p=knownPosition(n,zone,device);
-  resizeDrag={n,zone,device,p,pointer:e.pointerId,start:e.clientX,width:zoneDims(zone).width};
-});
-resizeControl.addEventListener('pointermove',e=>{
-  if(!resizeDrag)return;
-  const r=resizeDrag, step=100/GRID_COLS;
-  const raw=r.p.w+(e.clientX-r.start)/r.width*100;
-  r.next={...r.p,w:Math.min(100-r.p.x,Math.max(step*2,snapGrid?Math.round(raw/step)*step:raw))};
-  showGridVisual(r.zone,r.next,r.n);
-});
-function stopResize(commit){
-  if(!resizeDrag)return;
-  const r=resizeDrag;resizeDrag=null;hideGridVisual();
-  if(resizeControl.hasPointerCapture(r.pointer))resizeControl.releasePointerCapture(r.pointer);
-  if(commit&&r.next)record(gridOperation(r.n,r.zone,r.device,r.next));
-  paint();
+const resizeHandles=$('resize-handles'), resizeSize=$('resize-size');
+const resizeGrips={};
+function hideResizeHandles(){
+  if(!resizeDrag)resizeHandles.hidden=true;
 }
-resizeControl.addEventListener('pointerup',()=>stopResize(true));
-resizeControl.addEventListener('pointercancel',()=>stopResize(false));
-resizeControl.addEventListener('click',e=>{if(e.detail===0&&now())gridPanel(now());});
+function paintResizeHandles(n,rect){
+  if(switching||drag||paletteDrag?.moved||columnDrag||gridPick){hideResizeHandles();return;}
+  const edges=StudioResize.edges(n), positions=StudioResize.gripPositions(rect);
+  const section=n.hasAttribute('data-bs-row');
+  resizeHandles.toggleAttribute('data-section',section);
+  let visible=false;
+  for(const [edge,button] of Object.entries(resizeGrips)){
+    const held=resizeDrag?.control===button;
+    const position=edges.includes(edge)&&positions[edge];
+    button.hidden=!(held||position&&!resizeDrag);
+    if(button.hidden)continue;
+    visible=true;
+    if(position)Object.assign(button.style,{left:position[0]+'px',top:position[1]+'px'});
+    const name='Resize '+(section?'section height':StudioResize.vertical(edge)?'element height':'element width')+' from '+edge+' edge';
+    button.setAttribute('aria-label',name);button.title=name+' · drag or use arrow keys';
+  }
+  resizeHandles.hidden=!visible;
+}
+function allowResize(n,edge){
+  return baselineReady&&mode==='edit'&&!switching&&!drag&&!paletteDrag&&!columnDrag&&!resizeDrag&&!gridPick&&!StudioPublish.isBusy()&&StudioResize.edges(n).includes(edge);
+}
+function updateResize(e){
+  const d=resizeDrag;
+  if(!d||e.pointerId!==d.pointer)return;
+  const dX=e.clientX-d.x,dY=e.clientY-d.y;
+  if(!d.moved&&Math.abs(StudioResize.signedDelta(d.edge,dX,dY))<3)return;
+  d.moved=true;
+  d.next=StudioResize.preview(d,StudioResize.signedDelta(d.edge,dX,dY));
+  refreshFreeSizes();paint();
+  const r=d.el.getBoundingClientRect();
+  resizeSize.textContent=d.row?Math.round(r.height)+' px tall':Math.round(r.width)+' × '+Math.round(r.height)+' px';
+  resizeSize.hidden=false;
+  resizeSize.style.left=Math.max(4,Math.min(innerWidth-resizeSize.offsetWidth-8,e.clientX+16))+'px';
+  resizeSize.style.top=Math.max(4,Math.min(innerHeight-25,e.clientY+14))+'px';
+}
+function stopResize(commit,e){
+  const d=resizeDrag;
+  if(!d||e&&e.pointerId!==d.pointer)return;
+  if(commit&&e&&Number.isFinite(e.clientX))updateResize(e);
+  resizeDrag=null;resizeSize.hidden=true;
+  document.documentElement.classList.remove('bs-resizing');
+  document.documentElement.style.removeProperty('--resize-cursor');
+  if(d.control.hasPointerCapture(d.pointer))d.control.releasePointerCapture(d.pointer);
+  d.restore();
+  if(commit&&d.next&&record(d.next))return;
+  refreshFreeSizes();paint();
+}
+for(const edge of ['top','right','bottom','left']){
+  const vertical=StudioResize.vertical(edge), control=create('button',{
+    type:'button',class:'resize-grip','data-edge':edge,'data-axis':vertical?'height':'width',hidden:''
+  });
+  resizeGrips[edge]=control;resizeHandles.append(control);
+  control.addEventListener('pointerdown',e=>{
+    const n=now();
+    if(e.button!==0||e.isPrimary===false||!allowResize(n,edge))return;
+    e.preventDefault();close();toggleElementSidebar(false);
+    resizeDrag={...StudioResize.start(n,edge),control,pointer:e.pointerId,x:e.clientX,y:e.clientY};
+    control.setPointerCapture(e.pointerId);
+    document.documentElement.style.setProperty('--resize-cursor',vertical?'ns-resize':'ew-resize');
+    document.documentElement.classList.add('bs-resizing');paint();
+  });
+  control.addEventListener('pointermove',updateResize);
+  control.addEventListener('pointerup',e=>stopResize(true,e));
+  control.addEventListener('pointercancel',e=>stopResize(false,e));
+  control.addEventListener('lostpointercapture',e=>stopResize(false,e));
+  control.addEventListener('keydown',e=>{
+    const n=now(), keys=vertical?['ArrowUp','ArrowDown']:['ArrowLeft','ArrowRight'];
+    if(!keys.includes(e.key)||!allowResize(n,edge))return;
+    e.preventDefault();e.stopPropagation();
+    const delta=(e.key===keys[0]?-1:1)*(e.shiftKey?24:4);
+    close();
+    const d=StudioResize.start(n,edge), op=StudioResize.preview(d,StudioResize.signedDelta(edge,delta,delta));
+    d.restore();
+    if(op)record(op);else paint();
+  });
+}
+window.addEventListener('blur',()=>stopResize(false));
 $('popup-close').onclick=close;
 $('preview').onclick=()=>{
+  if(resizeDrag)stopResize(false);
   if(drag)finishDrag(false);
   if(paletteDrag)finishPaletteDrag();
   endColumnDrag(false);clearGridPick();mode=mode==='edit'?'preview':'edit';
@@ -1737,6 +1795,7 @@ $('preview').onclick=()=>{
   $('page-seo').disabled=mode==='preview';close();paint();
 };
 function switchView(b){
+  if(resizeDrag)stopResize(false);
   if(drag)finishDrag(false);
   if(paletteDrag)finishPaletteDrag();
   endColumnDrag(false);view=b.dataset.view;stage.dataset.view=view;syncViewport();
@@ -1883,7 +1942,7 @@ function boot(){
     if(!current())return;
     busyCanvas(false);
     if(mode==='preview')for(const id of ['add','add-section','section-order','page-seo'])$(id).disabled=true;
-    switching=false;if(picker)picker.disabled=false;
+    switching=false;if(picker)picker.disabled=false;paint();
     $('hint').textContent=mode==='edit'?defaultHint():$('hint').textContent;showState();
   });
 }
