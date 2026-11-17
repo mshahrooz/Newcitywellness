@@ -810,7 +810,7 @@ function useKeys(){
       if(columnDrag){endColumnDrag(false);return;}
       if(gridPick){clearGridPick();return;}
       if(!popup.hidden){const seo=$('popup-type').textContent==='PAGE SEO';close();$(seo?'page-seo':'selection-settings').focus();return;}
-      if(!$('element-sidebar').hidden){toggleElementSidebar(false,true);return;}
+      if(!$('element-sidebar').hasAttribute('data-collapsed')){toggleElementSidebar(false,true);return;}
       if(!$('menu').hidden){toggleMenu(false);$('more').focus();return;}
       active=null;paint();return;
     }
@@ -1154,32 +1154,35 @@ function rowChoices(anchor,side='after',columnsOnly=false){
   place();
 }
 function toggleElementSidebar(visible,returnFocus=false){
-  $('element-sidebar').hidden=!visible;
-  $('add').setAttribute('aria-expanded',String(visible));
-  $('add-label').textContent=visible?'Hide elements':'Add elements';
-  if(returnFocus)$('add').focus({preventScroll:true});
-  requestAnimationFrame(()=>{if(D){refreshFreeSizes();paint();}});
+  const sidebar=$('element-sidebar'), toggle=$('add');
+  if(returnFocus)toggle.focus({preventScroll:true});
+  if(sidebar.hasAttribute('data-collapsed')===!visible)return;
+  sidebar.toggleAttribute('data-collapsed',!visible);
+  toggle.setAttribute('aria-expanded',String(visible));
+  const label=visible?'Collapse Add Elements':'Expand Add Elements';
+  toggle.setAttribute('aria-label',label);toggle.title=label;
+  requestAnimationFrame(()=>{if(D){refreshFreeSizes();paint();if(now()&&!popup.hidden)adjustPopup(now());}});
+}
+function buildElementPalette(){
+  const palette=$('element-sidebar-body');
+  if(palette.hasChildNodes())return;
+  palette.append(create('p',{class:'palette-instruction'},'Drag any tool onto the page.'));
+  const sections={};
+  for(const [kind,[t,,description,category]] of Object.entries(types)){
+    if(!sections[category]){
+      palette.append(create('h3',{class:'library-group'},category));
+      sections[category]=create('div',{class:'quick-grid'});palette.append(sections[category]);
+    }
+    const tile=create('div',{class:'palette-block',title:'Drag '+t+' onto the page','aria-label':t+' · '+description});
+    tile.append(StudioElementIcons.create(kind),create('span',{class:'palette-name'},t),
+      create('span',{class:'palette-grip','aria-hidden':'true'},'⠿'));
+    sections[category].append(tile);
+    tile.addEventListener('pointerdown',e=>beginPaletteDrag(e,kind));
+  }
 }
 function startAdd(){
   if(mode!=='edit'||switching)return;
-  clearGridPick();close();
-  const palette=$('element-sidebar-body');
-  if(!palette.hasChildNodes()){
-    palette.append(create('p',{class:'muted'},'Drag an element onto the page. Drop it beside another block for columns, or above or below to stack it.'));
-    const sections={};
-    for(const [kind,[t,,description,category]] of Object.entries(types)){
-      if(!sections[category]){
-        palette.append(create('h3',{class:'library-group'},category));
-        sections[category]=create('div',{class:'quick-grid'});palette.append(sections[category]);
-      }
-      const tile=create('div',{class:'palette-block',title:'Drag '+t+' onto the page'});
-      tile.append(create('span',{class:'palette-name'},t),create('small',{},description),
-        create('span',{class:'palette-grip','aria-hidden':'true'},'⠿'));
-      sections[category].append(tile);
-      tile.addEventListener('pointerdown',e=>beginPaletteDrag(e,kind));
-    }
-  }
-  toggleElementSidebar(true);
+  clearGridPick();close();toggleElementSidebar(true);
 }
 function openSeo(){
   if(!baselineReady||switching||mode!=='edit'||StudioPublish.isBusy())return;
@@ -1728,8 +1731,7 @@ function switchView(b){
   }});
 }
 document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>switchView(b));
-$('add').onclick=()=>{if($('element-sidebar').hidden)startAdd();else toggleElementSidebar(false);};
-$('element-sidebar-close').onclick=()=>toggleElementSidebar(false,true);
+$('add').onclick=()=>{if($('element-sidebar').hasAttribute('data-collapsed'))startAdd();else toggleElementSidebar(false);};
 $('page-seo').onclick=()=>{if(!popup.hidden&&$('popup-type').textContent==='PAGE SEO')close();else openSeo();};
 $('undo').onclick=()=>stepHistory(-1);
 $('redo').onclick=()=>stepHistory(1);
@@ -1829,13 +1831,14 @@ function boot(){
     if(gridPick){e.preventDefault();commitPick(e);return;}
     const summary=e.target.closest('summary');
     if(summary&&!summary.closest('[data-bs-new]')&&!e.altKey&&!anchor){
-      e.preventDefault();summary.parentElement.open=!summary.parentElement.open;choose(summary.parentElement,false);return;
+      e.preventDefault();toggleElementSidebar(false);summary.parentElement.open=!summary.parentElement.open;choose(summary.parentElement,false);return;
     }
     if(e.target.closest('input,textarea,select,button'))e.preventDefault();
     const n=dividerFrom(e.target,e.clientX,e.clientY)||
       (StudioFlow.cardOf(e.target)&&e.altKey?StudioFlow.cardOf(e.target):
         therapyCard(e.target)?targetFrom(e.target,e.altKey):e.altKey
           ?e.target.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row]')||targetFrom(e.target):targetFrom(e.target));
+    toggleElementSidebar(false);
     if(n){e.preventDefault();choose(n);}
     else {active=null;close();paint();}
   },true);
@@ -1910,6 +1913,7 @@ if(picker) {
   }
   picker.addEventListener('change',()=>void openPage(pages.find(p=>p[0]===picker.value)));
 }
+buildElementPalette();
 frame.addEventListener('load',boot);
 loadCanvas();
 

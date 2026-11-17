@@ -40,7 +40,7 @@ The integration adapts the drag state and midpoint insertion behavior of [PageFo
 
 Use the [GitHub Pages Page Studio](https://mshahrooz.github.io/Newcitywellness/studio/) to draft and preview edits. Approved editors sign in with credentials from the dedicated NewCity Wellness Supabase project and click **Publish to GitHub Pages**. Choose any of the 15 public pages using the dropdown. Switching pages saves the current draft in this browser. New browsers open the last fully deployed draft when one exists. Publishing updates only the selected page and never updates another page’s draft.
 
-Use **Add elements** to show the right-hand sidebar and **Hide elements** to collapse it. The palette still groups text, media and links, and layout blocks. Use **Preview** and the device buttons to check placement before publishing.
+The **Add elements** palette stays on the left. Drag its icon tiles onto the page. The arrow collapses it to an icon-only rail or expands it again. Clicking an element on the canvas collapses the palette automatically. Use **Preview** and the device buttons to check placement before publishing.
 
 The sticky **Page SEO** button edits the selected page’s title, meta description, canonical URL, search indexing, and social sharing text. **Apply to draft** records these as one undoable edit. Blank fields keep the page’s original site defaults. Saving a draft does not update public search metadata. Use the regular authenticated **Publish page** action to publish it.
 
