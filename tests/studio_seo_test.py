@@ -71,6 +71,24 @@ class SeoPublishingTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Missing Studio asset"):
                 validate(f'<main><a href="{url}" download="clinic.docx">Download</a></main>')
 
+    def test_named_document_url_with_spaces_requires_download(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = pathlib.Path(tmp)
+            relative = "media/homepage-studio/" + "d" * 32 + "/Q17 consignment.pdf"
+            asset = output / relative
+            asset.parent.mkdir(parents=True)
+            asset.write_bytes(b"%PDF-1.7\\nexample")
+            url = "/Newcitywellness/" + relative.replace(" ", "%20")
+
+            def validate(markup):
+                parser = publisher.StudioPage(output, "/Newcitywellness/", "home")
+                parser.feed(markup)
+
+            validate(f'<main><a href="{url}" download="Q17 consignment.pdf">Download</a></main>')
+            for item in (f'<a href="{url}">Download</a>', f'<img src="{url}">', f'<a href="{url.replace("%20", "%2f")}">Invalid</a>'):
+                with self.assertRaises(ValueError):
+                    validate(f"<main>{item}</main>")
+
     def test_pages_export_applies_compressed_seo_only_to_target_publication(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "repo"
