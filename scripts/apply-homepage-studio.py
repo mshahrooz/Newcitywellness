@@ -6,8 +6,8 @@ import json
 import re
 from html.parser import HTMLParser
 from pathlib import Path
-from html import escape
-from urllib.parse import urlsplit, unquote
+from html import escape, unescape
+from urllib.parse import urlsplit, unquote, quote
 from studio_seo import apply_seo, baseline_seo, draft_overrides
 
 TAGS = set("a article body br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite".split())
@@ -167,6 +167,47 @@ class StudioPage(HTMLParser):
         raise ValueError("A Studio publication must contain only page body content")
 
 
+def restore_legacy_document_urls(fragment, output, prefix):
+    """Give existing safe .bin downloads filename-ending URLs at build time.
+
+    The opaque original remains in the repo for draft recovery. Active formats
+    deliberately keep their .bin URLs because Pages has no attachment headers.
+    """
+    base = prefix.rstrip("/") + "/"
+    tag_pattern = re.compile(r"<a\\b[^>]*>", re.I)
+    def rewrite(match):
+        tag = match.group()
+        href = re.search(r'\\bhref="([^"]+)"', tag, re.I)
+        download = re.search(r'\\bdownload="([^"]+)"', tag, re.I)
+        if not href or not download:
+            return tag
+        url = unescape(href[1])
+        legacy = re.fullmatch(re.escape(base) + r"media/homepage-studio/([a-f0-9]{32})\\.bin", url)
+        if not legacy:
+            return tag
+        original = unescape(download[1])
+        extension = re.search(r"\\.([A-Za-z0-9]{1,12})$", original)
+        if not extension or extension[1].lower() not in DOCUMENT_EXTENSIONS:
+            return tag
+        suffix = extension[0]
+        stem = re.sub(r"[^A-Za-z0-9 ._()-]", "_", original[:-len(suffix)])
+        stem = re.sub(r"^\\.+", "_", stem).strip()[:80-len(suffix)].rstrip(" .") or "download"
+        name = stem + suffix
+        old = output / "media/homepage-studio" / (legacy[1] + ".bin")
+        new = output / "media/homepage-studio" / legacy[1] / name
+        if not old.is_file():
+            raise ValueError("Missing original Studio document: " + old.name)
+        if suffix.lower() == ".pdf" and not old.read_bytes().startswith(b"%PDF-"):
+            return tag
+        new.parent.mkdir(parents=True, exist_ok=True)
+        if not new.exists():
+            new.write_bytes(old.read_bytes())
+        new_url = base + "media/homepage-studio/" + legacy[1] + "/" + quote(name)
+        return tag[:href.start(1)] + escape(new_url, quote=True) + tag[href.end(1):]
+
+    return tag_pattern.sub(rewrite, fragment)
+
+
 def strip_scripts(html):
     html = SCRIPT.sub(
         lambda m: m[0] if re.match(r"""<script\b[^>]*\btype=["']application/ld\+json["']""", m[0], re.I) else "",
@@ -199,6 +240,13 @@ def apply(root, output, prefix, key="home", route="", embed=None):
     raw_draft = draft.read_bytes() if draft.is_file() else b""
     if not raw_draft or hashlib.sha256(raw_draft).hexdigest() != obj["draftSha256"]:
         raise ValueError("Published draft failed its integrity check")
+    check = StudioPage(output, prefix, key, embed)
+    check.feed(fragment)
+    check.close()
+    if check.main != 1:
+        raise ValueError("A Studio publication requires one main element")
+    fragment = restore_legacy_document_urls(fragment, output, prefix)
+    # Validate the resolved filenames and copied files before adding them to HTML.
     check = StudioPage(output, prefix, key, embed)
     check.feed(fragment)
     check.close()
