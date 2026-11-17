@@ -8,12 +8,12 @@ const grid=fs.readFileSync('public/studio/grid.js','utf8');
 
 test('clicking the therapy image mask selects its photo and the whole card can be selected explicitly',()=>{
   const card={matches:s=>s==='.therapy-card'};
-  const photo={matches:s=>s.includes('.therapy-image'),contains:()=>false};
-  const heading={matches:s=>s==='h3',contains:()=>false};
-  const src=studio.slice(studio.indexOf('const dragCard'),studio.indexOf('function content('))+
-    studio.slice(studio.indexOf('function mediaProxy('),studio.indexOf('function sectionNeighbor('));
+  const photo={matches:s=>s.includes('.therapy-image')};
+  const heading={matches:s=>s==='h3'};
+  const src=studio.slice(studio.indexOf('const therapyCard'),studio.indexOf('const titleOf'))+
+    studio.slice(studio.indexOf('function targetFrom('),studio.indexOf('function moveInDirection('));
   const env=vm.createContext({});vm.runInContext(src,env);
-  const make=(exact,mask)=>({closest:s=>s.startsWith('.therapy-card,')?card:s==='[data-bs-kind]'?exact:s==='.therapy-image'?mask:null});
+  const make=(exact,mask)=>({closest:s=>s==='.therapy-card'?card:s==='[data-bs-kind]'?exact:s==='.therapy-image'?mask:null});
   assert.equal(env.targetFrom(make(photo,null)),photo);
   assert.equal(env.targetFrom(make(card,{querySelector:()=>photo})),photo);
   assert.equal(env.targetFrom(make(heading,null)),heading);

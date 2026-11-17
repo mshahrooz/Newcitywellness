@@ -444,8 +444,8 @@ function applyDragOffset(n,op){
   return true;
 }
 function canDragIndependently(n){
-  return !!(n?.isConnected&&(n.dataset.bsKind||n.hasAttribute('data-bs-column')||n.hasAttribute('data-bs-zone'))
-    && !n.hasAttribute('data-bs-row'));
+  return !!(n?.isConnected&&(n.dataset.bsKind||n.hasAttribute('data-bs-column'))
+    && !n.hasAttribute('data-bs-row')&&!n.hasAttribute('data-bs-zone'));
 }
 function offsetDragStart(n){
   const win=D.defaultView, device=devicePlacement(), r=n.getBoundingClientRect();
@@ -517,7 +517,7 @@ function clearGridPick(){
   if(mode==='edit')$('hint').textContent=defaultHint();
 }
 function defaultHint(){
-  return 'Drag blocks from Add element, or grab an existing item on the page.';
+  return 'Drag blocks onto the page, or select and drag an existing element.';
 }
 function markerFrame(rect){
   const x=Math.max(rect.f.left,rect.left), y=Math.max(rect.f.top,rect.top);
