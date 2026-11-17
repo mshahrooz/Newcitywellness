@@ -12,18 +12,20 @@ test('the Add element tile is a drag surface with a hover grip and no click acti
   const make = (tag, attrs, text) => ({
     tag, attrs, text, children: [], handlers: {},
     append(...children) { this.children.push(...children); },
+    hasChildNodes() { return this.children.length>0; },
     addEventListener(name, handler) { this.handlers[name] = handler; }
   });
   const body = make('div');
   const calls = [];
   const ctx = {
-    body, create: make, clearGridPick() {}, open: () => () => {},
-    para() {}, group: () => { const row = make('div'); body.append(row); return row; },
+    create: make, clearGridPick() {}, close() {}, mode:'edit', switching:false,
+    $: id => { assert.equal(id,'element-sidebar-body');return body; },
+    toggleElementSidebar: visible => assert.equal(visible,true),
     beginPaletteDrag: (event, kind) => calls.push([event, kind]),
     types: { title: ['Heading', '', 'Section title', 'Text'] }
   };
   vm.runInNewContext(code + '\nstartAdd(null);', ctx);
-  const tile = body.children[1].children[0];
+  const tile = body.children[2].children[0];
   assert.equal(tile.tag, 'div');
   assert.equal(tile.attrs.class, 'palette-block');
   assert.ok(tile.children.some(child => child.attrs.class === 'palette-grip'));

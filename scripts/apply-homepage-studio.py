@@ -8,6 +8,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from html import escape
 from urllib.parse import urlsplit
+from studio_seo import apply_seo, baseline_seo, draft_overrides
 
 TAGS = set("a article body br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite".split())
 BLOCKED_ATTRS = {"srcdoc", "action", "formaction", "ping", "nonce", "integrity", "contenteditable", "autofocus"}
@@ -183,7 +184,8 @@ def apply(root, output, prefix, key="home", route="", embed=None):
     if not isinstance(obj.get("draftSha256"), str) or not HEX.fullmatch(obj["draftSha256"]):
         raise ValueError("Missing publication draft digest")
     draft = output / draft_path
-    if not draft.is_file() or hashlib.sha256(draft.read_bytes()).hexdigest() != obj["draftSha256"]:
+    raw_draft = draft.read_bytes() if draft.is_file() else b""
+    if not raw_draft or hashlib.sha256(raw_draft).hexdigest() != obj["draftSha256"]:
         raise ValueError("Published draft failed its integrity check")
     check = StudioPage(output, prefix, key, embed)
     check.feed(fragment)
@@ -194,10 +196,10 @@ def apply(root, output, prefix, key="home", route="", embed=None):
     current = root_page.read_text()
     if not BODY.search(current) or not HEAD_END.search(current):
         raise ValueError("Cannot locate the exported page head/body")
-    # Retain exactly the current Pages build's head, SEO metadata, global CSS, and local fonts.
+    # Retain the native head and styles except for explicit Studio SEO overrides.
     # The edited DOM is no longer the Next React tree, so no hydration scripts run on this page.
     changed = BODY.sub(lambda m: m[1] + fragment + m[2], current, count=1)
-    changed = strip_scripts(changed)
+    changed = apply_seo(strip_scripts(changed), draft_overrides(raw_draft))
     base = prefix.rstrip("/") + "/"
     def versioned(file):
         asset = output / file
@@ -232,13 +234,15 @@ def emit_studio(root, output, prefix):
     routes = escape(json.dumps([p[2] for p in pages]), quote=True)
     for key, _label, route in pages:
         html_file = output / route / "index.html"
+        native_html = html_file.read_text()
+        assets[key] = {"seo": baseline_seo(native_html)}
         if route:
-            canvas = strip_scripts(html_file.read_text())
+            canvas = strip_scripts(native_html)
             canvas = HEAD_END.sub(lambda m: f'<meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="{base}studio/canvas-edits.css?v={suffix}">' + m[0], canvas, count=1)
             target = output / f"studio/pages/{key}.html"
             target.parent.mkdir(exist_ok=True)
             target.write_text(canvas)
-            assets[key] = {"guard": guard(root, route), "canvas": hashlib.sha256(canvas.encode()).hexdigest()[:16]}
+            assets[key].update({"guard": guard(root, route), "canvas": hashlib.sha256(canvas.encode()).hexdigest()[:16]})
         published = apply(root, output, prefix, key, route, embeds.get(key))
         html = html_file.read_text()
         revision = hashlib.sha256(html.encode() + asset_hash.encode()).hexdigest()[:24]

@@ -6,8 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#152c25">
 <title>New City Wellness · Page Studio</title>
-<script src="homepage-route.js?v=1"></script>
-<link rel="stylesheet" href="studio.css?v=cards-divider1">
+<link rel="stylesheet" href="studio.css?v=sidebar-seo1">
 <script src="pages.js?v=drag-guides1" defer></script>
 <script src="canvas-behavior.js?v=drag-guides1" defer></script>
 <script src="../homepage-studio/page-runtime.js?v=drag-guides1" data-preview-runtime defer></script>
@@ -16,7 +15,8 @@
 <script src="columns.js?v=drag-guides1" defer></script>
 <script src="grid.js?v=studio-drag2" defer></script>
 <script src="flow.js?v=studio-drag2" defer></script>
-<script src="studio.js?v=homepage-builder1" defer></script>
+<script src="seo.js?v=1" defer></script>
+<script src="studio.js?v=sidebar-seo1" defer></script>
 <script src="studio-revision.js?v=publish2" defer></script>
 <script src="publisher-config.js" defer></script>
 <script src="publish.js?v=live-drag1" defer></script>
@@ -26,7 +26,7 @@
   <div class="identity"><span class="brand-symbol" aria-hidden="true">✳</span><div><strong>Page Studio</strong><small>NEW CITY WELLNESS</small></div></div>
   <label class="page-picker" for="page-picker"><span>Page</span><select id="page-picker" aria-label="Page to edit"><option value="home">Home</option></select></label>
   <div class="tools" aria-label="Page tools">
-    <button class="accent" id="add" type="button"><b aria-hidden="true">＋</b> Add<span class="wide"> element</span></button>
+    <button class="accent" id="add" type="button" aria-controls="element-sidebar" aria-expanded="false"><b aria-hidden="true">＋</b> <span id="add-label">Add elements</span></button>
     <button id="add-section" type="button" title="Add a page section"><b aria-hidden="true">＋</b> Section</button>
     <button id="section-order" type="button" title="Reorder page sections">↕ Sections</button>
     <button class="icon" id="undo" type="button" title="Undo (Ctrl + Z)" aria-label="Undo">↶</button>
@@ -45,7 +45,14 @@
   </div>
 </header>
 <div id="subbar" class="subbar"><div><span class="badge"><span>●</span> Editing sandbox</span><span class="hint" id="hint">Drag blocks onto the page, or select and drag an existing element.</span></div><span class="status-pair"><span id="publish-status" class="connection">Ready to edit</span><span class="saved" id="saved" role="status">Opening page…</span></span></div>
+<div id="workspace">
 <main id="stage" aria-label="Page editor canvas"><iframe id="canvas" title="New City Wellness page canvas" sandbox="allow-scripts allow-same-origin allow-presentation allow-downloads allow-popups allow-popups-to-escape-sandbox" allowfullscreen></iframe></main>
+<aside id="element-sidebar" aria-labelledby="element-sidebar-title" hidden>
+  <header class="element-sidebar-head"><div><span>PAGE ELEMENTS</span><h2 id="element-sidebar-title">Add elements</h2></div><button type="button" id="element-sidebar-close" aria-label="Hide Add Elements" title="Hide Add Elements">×</button></header>
+  <div id="element-sidebar-body" class="element-sidebar-body"></div>
+</aside>
+</div>
+<button type="button" id="page-seo" aria-label="Edit SEO settings for this page" aria-controls="popup" aria-expanded="false"><span aria-hidden="true">✦</span> Page SEO</button>
 <div id="outline" hidden></div>
 <div id="column-handles" role="group" aria-label="Resize column widths" hidden></div>
 <div id="free-grid" aria-hidden="true" hidden></div>
@@ -78,6 +85,6 @@
 </div>
 <input type="file" id="import-file" accept=".json,application/json" hidden>
 <div id="toast" role="status" hidden></div>
-<noscript>Page Studio requires JavaScript. <a href="homepage/">Open the Homepage Builder</a> or <a href="canvas.html?v=studio-drag2">View the homepage copy.</a></noscript>
+<noscript>Page Studio requires JavaScript. <a href="canvas.html?v=studio-drag2">View the homepage copy.</a></noscript>
 </body>
 </html>

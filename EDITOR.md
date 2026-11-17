@@ -36,17 +36,13 @@ The dashboard now opens directly into the website canvas in draft mode and does 
 
 The integration adapts the drag state and midpoint insertion behavior of [PageForge Studio](https://github.com/VinodPrabhashvara/PageForge-Studio), distributed under MIT. See [the license](licenses/PageForge-Studio.txt). The old `/admin/grapes/` address is a compatibility entry to the same dashboard.
 
-## Homepage Builder
-
-The [normal Page Studio address](https://mshahrooz.github.io/Newcitywellness/studio/) now opens the [visual Homepage Builder](https://mshahrooz.github.io/Newcitywellness/studio/homepage/). It edits the homepage only, saves in this browser, and exports a ZIP or portable project JSON. Download a project JSON from the separate private builder and import it in **Export / Classic Studio** to move that draft and its media. Websites, browser drafts, and authentication stay separate. The new builder does not send drafts to the live clinic site.
-
-**Pages** links to the existing editor for the other pages. The [Classic homepage editor](https://mshahrooz.github.io/Newcitywellness/studio/?page=home&editor=classic) is still available for its own drafts and authenticated live homepage publishing. The builder's initial homepage is the captured live layout, not a continuous mirror of later Classic publications. The bundled app under `public/studio/homepage/` is built from the private builder's source with the GitHub Studio integration described in `studio-integrations/homepage-builder/README.md`.
-
-## Classic Page Studio
+## Page Studio
 
 Use the [GitHub Pages Page Studio](https://mshahrooz.github.io/Newcitywellness/studio/) to draft and preview edits. Approved editors sign in with credentials from the dedicated NewCity Wellness Supabase project and click **Publish to GitHub Pages**. Choose any of the 15 public pages using the dropdown. Switching pages saves the current draft in this browser. New browsers open the last fully deployed draft when one exists. Publishing updates only the selected page and never updates another page’s draft.
 
-The **Add element** palette groups text, media and links, and layout blocks. Use **Preview** and the device buttons to check placement before publishing.
+Use **Add elements** to show the right-hand sidebar and **Hide elements** to collapse it. The palette still groups text, media and links, and layout blocks. Use **Preview** and the device buttons to check placement before publishing.
+
+The sticky **Page SEO** button edits the selected page’s title, meta description, canonical URL, search indexing, and social sharing text. **Apply to draft** records these as one undoable edit. Blank fields keep the page’s original site defaults. Saving a draft does not update public search metadata. Use the regular authenticated **Publish page** action to publish it.
 
 - **Sections** in the top bar lists the current order. Move a section up or down from the list or with its selection toolbar arrows.
 - Grab a heading, image, text, button, divider, or other canvas element directly without opening its settings first. The grid and dotted outline show the landing area, and nearby blocks shift to preview the new position. Hold **Shift** to move without reordering. On touchscreens, tap a block and use its grip so normal scrolling still works.

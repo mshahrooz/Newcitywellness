@@ -345,6 +345,7 @@ function deleteElement(n){
 }
 function apply(op){
   if(!op||typeof op!=='object')return false;
+  if(op.kind==='seo')return op.id==='page-seo'&&!!StudioSeo.normalize(op.value);
   const n=byId(op.id), target=op.target?byId(op.target):null;
   if(op.kind==='grid-add'&&!n&&target&&Object.hasOwn(types,op.type)&&op.type!=='row'){
     return attachFree(makeBlock(op.type,op.id),target,op.device,op.p);
@@ -585,7 +586,7 @@ async function loadCanvasLive(localRaw){
   return true;
 }
 function safeToSync(){
-  const input=$('popup-body').contains(document.activeElement)&&document.activeElement?.matches('input,textarea,select,[contenteditable]');
+  const input=(!popup.hidden&&$('popup-type').textContent==='PAGE SEO')||$('popup-body').contains(document.activeElement)&&document.activeElement?.matches('input,textarea,select,[contenteditable]');
   return baselineReady&&!switching&&!drag&&!paletteDrag&&!resizeDrag&&!columnDrag&&!gridPick&&!input&&!StudioPublish.isBusy();
 }
 async function syncLiveCanvas(){
@@ -757,9 +758,10 @@ function paint(){
   selection.style.top=y+'px';
   selection.style.left=Math.max(r.f.left,Math.min(l+2,r.f.right-selection.offsetWidth-1))+'px';
 }
-function close(){popup.hidden=true;gesture=null;}
+function close(){popup.hidden=true;gesture=null;$('page-seo').setAttribute('aria-expanded','false');}
 function open(title,category,anchor=null){
   $('popup-title').textContent=title;$('popup-type').textContent=category;
+  $('page-seo').setAttribute('aria-expanded',String(category==='PAGE SEO'));
   body.replaceChildren();body.scrollTop=0;popup.hidden=false;gesture=null;
   const footer=$('popup-footer'),remove=$('delete-element');
   footer.hidden=!canDeleteElement(anchor)||!['ELEMENT SETTINGS','CARD SETTINGS','SECTION SETTINGS','ROW / COLUMN'].includes(category);
@@ -807,7 +809,8 @@ function useKeys(){
       if(resizeDrag){stopResize(false);return;}
       if(columnDrag){endColumnDrag(false);return;}
       if(gridPick){clearGridPick();return;}
-      if(!popup.hidden){close();$('selection-settings').focus();return;}
+      if(!popup.hidden){const seo=$('popup-type').textContent==='PAGE SEO';close();$(seo?'page-seo':'selection-settings').focus();return;}
+      if(!$('element-sidebar').hidden){toggleElementSidebar(false,true);return;}
       if(!$('menu').hidden){toggleMenu(false);$('more').focus();return;}
       active=null;paint();return;
     }
@@ -1150,23 +1153,80 @@ function rowChoices(anchor,side='after',columnsOnly=false){
   if(!r)button(group(),side==='before'?'Insert at the bottom instead':'Insert at the top instead',()=>rowChoices(null,side==='before'?'after':'before',columnsOnly));
   place();
 }
-function startAdd(n=now()) {
-  clearGridPick();
-  const place=open('Add element','PAGE ELEMENTS',n);
-  para('Grab an item and drop it onto the page. Drop beside a block to make columns, or above or below it to stack blocks.');
-  const sections={};
-  for(const [kind,[t,,description,category]] of Object.entries(types)){
-    if(!sections[category]){
-      body.append(create('h3',{class:'library-group'},category));
-      sections[category]=group('quick-grid');
+function toggleElementSidebar(visible,returnFocus=false){
+  $('element-sidebar').hidden=!visible;
+  $('add').setAttribute('aria-expanded',String(visible));
+  $('add-label').textContent=visible?'Hide elements':'Add elements';
+  if(returnFocus)$('add').focus({preventScroll:true});
+  requestAnimationFrame(()=>{if(D){refreshFreeSizes();paint();}});
+}
+function startAdd(){
+  if(mode!=='edit'||switching)return;
+  clearGridPick();close();
+  const palette=$('element-sidebar-body');
+  if(!palette.hasChildNodes()){
+    palette.append(create('p',{class:'muted'},'Drag an element onto the page. Drop it beside another block for columns, or above or below to stack it.'));
+    const sections={};
+    for(const [kind,[t,,description,category]] of Object.entries(types)){
+      if(!sections[category]){
+        palette.append(create('h3',{class:'library-group'},category));
+        sections[category]=create('div',{class:'quick-grid'});palette.append(sections[category]);
+      }
+      const tile=create('div',{class:'palette-block',title:'Drag '+t+' onto the page'});
+      tile.append(create('span',{class:'palette-name'},t),create('small',{},description),
+        create('span',{class:'palette-grip','aria-hidden':'true'},'⠿'));
+      sections[category].append(tile);
+      tile.addEventListener('pointerdown',e=>beginPaletteDrag(e,kind));
     }
-    const tile=create('div',{class:'palette-block',title:'Drag '+t+' onto the page'});
-    tile.append(create('span',{class:'palette-name'},t),create('small',{},description),
-      create('span',{class:'palette-grip','aria-hidden':'true'},'⠿'));
-    sections[category].append(tile);
-    tile.addEventListener('pointerdown',e=>beginPaletteDrag(e,kind));
   }
-  place();
+  toggleElementSidebar(true);
+}
+function openSeo(){
+  if(!baselineReady||switching||mode!=='edit'||StudioPublish.isBusy())return;
+  const current=StudioSeo.fromOperations(list.slice(0,cursor));
+  const baseline=pageAssets[page[0]]?.seo||{};
+  const defaultDescription=baseline.description||'Use the site default';
+  const place=open('SEO settings · '+page[1],'PAGE SEO');
+  para('These settings apply to '+page[1]+' only. Apply them to the draft, then use Publish page to make them live.');
+  const form=create('form',{class:'seo-fields'});
+  const search=create('fieldset'), social=create('details',{class:'look'});
+  search.append(create('legend',{},'Search and indexing'));
+  social.append(create('summary',{},'Social sharing'));
+  const fields={};
+  function field(parent,key,label,placeholder,multi=false){
+    const wrap=create('label',{},label);
+    const control=create(multi?'textarea':'input',{name:key,maxlength:StudioSeo.limits[key],placeholder});
+    control.value=current[key];wrap.append(control);parent.append(wrap);fields[key]=control;
+    if(!multi)control.type=key==='canonical'?'url':'text';
+  }
+  field(search,'title','Page title',baseline.title||page[1]);
+  field(search,'description','Meta description',defaultDescription,true);
+  field(search,'canonical','Canonical URL',baseline.canonical||'Use the site default');
+  const indexLabel=create('label',{},'Search indexing');
+  const indexing=create('select',{name:'robots'});
+  for(const [value,label] of [['','Use the site default'],['index','Allow indexing'],['noindex','Do not index this page']])indexing.append(create('option',{value},label));
+  indexing.value=current.robots;indexLabel.append(indexing);search.append(indexLabel);fields.robots=indexing;
+  field(social,'socialTitle','Social title',baseline.socialTitle||baseline.title||page[1]);
+  field(social,'socialDescription','Social description',baseline.socialDescription||defaultDescription,true);
+  const feedback=create('p',{role:'alert',class:'seo-error'});
+  const actions=create('div',{class:'actions'});
+  const applyButton=create('button',{type:'submit'},'Apply to draft');
+  const reset=button(actions,'Use site defaults',()=>{
+    for(const input of Object.values(fields))input.value='';
+    feedback.textContent='Defaults selected. Apply to keep this change.';
+  });
+  actions.prepend(applyButton);reset.type='button';
+  form.append(search,social,feedback,actions);body.append(form);
+  form.addEventListener('submit',e=>{
+    e.preventDefault();
+    const value=StudioSeo.normalize(Object.fromEntries(Object.entries(fields).map(([key,control])=>[key,control.value])));
+    if(!value){feedback.textContent='Enter a valid HTTPS canonical URL without a fragment or leave it blank. Check the field lengths.';return;}
+    if(JSON.stringify(value)===JSON.stringify(current)){close();$('page-seo').focus();return;}
+    if(record({kind:'seo',id:'page-seo',value})){
+      close();$('page-seo').focus();flash('SEO settings added to the '+page[1]+' draft.');
+    }
+  });
+  place();fields.title.focus({preventScroll:true});
 }
 let paletteDrag=null,paletteTick=0;
 function beginPaletteDrag(e,kind){
@@ -1189,7 +1249,9 @@ function updatePaletteDrag(x,y){
     d.preview=d.kind==='row'?null:makeBlock(d.kind,'drag-preview');
     d.capture=document.documentElement;
     d.capture.setPointerCapture(d.pointer);
-    close();clearGridPick();paint();
+    close();clearGridPick();
+    if(window.matchMedia('(max-width: 1050px)').matches)toggleElementSidebar(false);
+    paint();
     stage.classList.add('bs-dragging');D.documentElement.classList.add('bs-dragging');
     paletteTick=requestAnimationFrame(scrollDuringPaletteDrag);
   }
@@ -1651,7 +1713,8 @@ $('preview').onclick=()=>{
   $('preview').textContent=mode==='preview'?'Back to editing':'Preview';$('preview').setAttribute('aria-pressed',String(mode==='preview'));
   $('hint').textContent=mode==='preview'?'Preview mode. The contact form does not send messages.':defaultHint();
   for(const id of ['add','add-section','section-order'])$(id).disabled=mode==='preview'; $('undo').disabled=mode==='preview'||!cursor;$('redo').disabled=mode==='preview'||cursor===list.length;
-  close();paint();
+  if(mode==='preview')toggleElementSidebar(false);
+  $('page-seo').disabled=mode==='preview';close();paint();
 };
 function switchView(b){
   if(drag)finishDrag(false);
@@ -1665,7 +1728,9 @@ function switchView(b){
   }});
 }
 document.querySelectorAll('button[data-view]').forEach(b=>b.onclick=()=>switchView(b));
-$('add').onclick=()=>startAdd();
+$('add').onclick=()=>{if($('element-sidebar').hidden)startAdd();else toggleElementSidebar(false);};
+$('element-sidebar-close').onclick=()=>toggleElementSidebar(false,true);
+$('page-seo').onclick=()=>{if(!popup.hidden&&$('popup-type').textContent==='PAGE SEO')close();else openSeo();};
 $('undo').onclick=()=>stepHistory(-1);
 $('redo').onclick=()=>stepHistory(1);
 $('save').onclick=save;
@@ -1740,7 +1805,7 @@ function wireBehavior(){
   return ()=>{stopShared?.();stopPage?.();};
 }
 function busyCanvas(value){
-  for(const id of ['add','add-section','section-order','save','more','preview','publish','undo','redo'])$(id).disabled=value;
+  for(const id of ['add','add-section','section-order','save','more','preview','publish','undo','redo','page-seo'])$(id).disabled=value;
 }
 function boot(){
   if(baselineReady)return;
@@ -1796,7 +1861,7 @@ function boot(){
   })().finally(()=>{
     if(!current())return;
     busyCanvas(false);
-    if(mode==='preview')for(const id of ['add','add-section','section-order'])$(id).disabled=true;
+    if(mode==='preview')for(const id of ['add','add-section','section-order','page-seo'])$(id).disabled=true;
     switching=false;if(picker)picker.disabled=false;
     $('hint').textContent=mode==='edit'?defaultHint():$('hint').textContent;showState();
   });
@@ -1814,9 +1879,6 @@ async function openPage(next) {
   const dirty=cursor!==savedOps.length||savedOps.some((op,i)=>list[i]!==op);
   if(baselineReady&&dirty&&!await save({quiet:true})){
     switching=false;busyCanvas(false);showState();if(picker){picker.disabled=false;picker.value=page[0];}return;
-  }
-  if(next[0]==='home'&&new URL(location.href).searchParams.get('editor')!=='classic'){
-    location.assign(new URL('homepage/',location.href).href);return;
   }
   canvasEpoch++;stopBehavior?.();stopSize?.();
   stopBehavior=null;stopSize=null;baselineReady=false;active=null;D=null;
