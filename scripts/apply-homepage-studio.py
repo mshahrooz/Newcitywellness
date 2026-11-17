@@ -174,24 +174,24 @@ def restore_legacy_document_urls(fragment, output, prefix):
     deliberately keep their .bin URLs because Pages has no attachment headers.
     """
     base = prefix.rstrip("/") + "/"
-    tag_pattern = re.compile(r"<a\\b[^>]*>", re.I)
+    tag_pattern = re.compile(r"<a\b[^>]*>", re.I)
     def rewrite(match):
         tag = match.group()
-        href = re.search(r'\\bhref="([^"]+)"', tag, re.I)
-        download = re.search(r'\\bdownload="([^"]+)"', tag, re.I)
+        href = re.search(r'\bhref="([^"]+)"', tag, re.I)
+        download = re.search(r'\bdownload="([^"]+)"', tag, re.I)
         if not href or not download:
             return tag
         url = unescape(href[1])
-        legacy = re.fullmatch(re.escape(base) + r"media/homepage-studio/([a-f0-9]{32})\\.bin", url)
+        legacy = re.fullmatch(re.escape(base) + r"media/homepage-studio/([a-f0-9]{32})\.bin", url)
         if not legacy:
             return tag
         original = unescape(download[1])
-        extension = re.search(r"\\.([A-Za-z0-9]{1,12})$", original)
+        extension = re.search(r"\.([A-Za-z0-9]{1,12})$", original)
         if not extension or extension[1].lower() not in DOCUMENT_EXTENSIONS:
             return tag
         suffix = extension[0]
         stem = re.sub(r"[^A-Za-z0-9 ._()-]", "_", original[:-len(suffix)])
-        stem = re.sub(r"^\\.+", "_", stem).strip()[:80-len(suffix)].rstrip(" .") or "download"
+        stem = re.sub(r"^\.+", "_", stem).strip()[:80-len(suffix)].rstrip(" .") or "download"
         name = stem + suffix
         old = output / "media/homepage-studio" / (legacy[1] + ".bin")
         new = output / "media/homepage-studio" / legacy[1] / name
