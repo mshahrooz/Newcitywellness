@@ -89,6 +89,18 @@ class SeoPublishingTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     validate(f"<main>{item}</main>")
 
+    def test_old_pdf_bin_link_becomes_named_pdf_in_export(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = pathlib.Path(tmp)
+            hashed = "581854b44889305b13ae8183a7d5bbc9"
+            original = output / "media/homepage-studio" / (hashed + ".bin")
+            original.parent.mkdir(parents=True)
+            original.write_bytes(b"%PDF-1.7\\nlegacy-file")
+            markup = f'<main><a href="/Newcitywellness/media/homepage-studio/{hashed}.bin" download="Q17 consignment.pdf">Download</a></main>'
+            updated = publisher.restore_legacy_document_urls(markup, output, "/Newcitywellness")
+            self.assertIn(f'/media/homepage-studio/{hashed}/Q17%20consignment.pdf', updated)
+            self.assertEqual((output / "media/homepage-studio" / hashed / "Q17 consignment.pdf").read_bytes(), original.read_bytes())
+
     def test_pages_export_applies_compressed_seo_only_to_target_publication(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "repo"
