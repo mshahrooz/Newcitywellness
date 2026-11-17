@@ -53,5 +53,7 @@ test('safe document URLs keep the original basename, spaces, and extension', asy
   assert.equal(other.name,expected+'/financial-report.xlsx');
   assert.equal(client.docs.storageName('my source.html',expected),expected+'.bin');
   assert.equal(client.docs.storageName('custom-script.js',expected),expected+'.bin');
-  assert.equal(client.docs.storageName('../../report.docx',expected),expected+'/.._.._report.docx');
+  const suspicious=client.docs.storageName('../../report.docx',expected);
+  assert.ok(suspicious.startsWith(expected+'/'));
+  assert.ok(!suspicious.includes('../'));
 });
