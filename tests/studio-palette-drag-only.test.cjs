@@ -38,23 +38,27 @@ test('the Add element tile is a drag surface with a hover grip and no click acti
   assert.match(css, /\.palette-block:hover \.palette-grip/);
 });
 
-test('the arrow toggles compact mode without hiding or rebuilding the tools',()=>{
+test('the arrow hides the whole drawer and its controls until Add Elements is expanded',()=>{
   const attrs = new Map();
   const panel = {
     hasAttribute: key => attrs.has(key),
     toggleAttribute: (key, value) => value ? attrs.set(key, '') : attrs.delete(key)
   };
-  const button = {setAttribute:(k,v)=>attrs.set(k,v), title:'', focus(){}};
+  let focusCount=0;
+  const button = {setAttribute:(k,v)=>attrs.set(k,v), title:'', focus(){focusCount++;}};
   const toggle = vm.runInNewContext(studio.slice(studio.indexOf('function toggleElementSidebar('),
     studio.indexOf('function buildElementPalette('))+'\ntoggleElementSidebar;',{
       $: id => id==='element-sidebar'?panel:button, requestAnimationFrame(){}
     });
-  toggle(false);
+  toggle(false,true);
   assert.equal(panel.hasAttribute('data-collapsed'),true);
   assert.equal(attrs.get('aria-expanded'),'false');
-  assert.equal(button.title,'Expand Add Elements');
+  assert.equal(panel.hasAttribute('inert'),true);
+  assert.equal(button.title,'Show Add Elements');
+  assert.equal(focusCount,1);
   toggle(true);
   assert.equal(panel.hasAttribute('data-collapsed'),false);
   assert.equal(attrs.get('aria-expanded'),'true');
-  assert.match(css,/#element-sidebar\[data-collapsed\] \.palette-block\{[^}]*min-height/);
+  assert.equal(panel.hasAttribute('inert'),false);
+  assert.match(css,/#element-sidebar\[data-collapsed\]\{[^}]*translateX\([^}]*visibility:hidden/);
 });

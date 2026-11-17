@@ -12,9 +12,10 @@ test('classic is the default for the homepage and the original page selector',()
   vm.runInNewContext(stale,{URL,location:{href:'https://mshahrooz.github.io/Newcitywellness/studio/',replace:url=>attempts.push(url)}});
   assert.deepEqual(attempts,[]);
   assert.match(index,/<select id="page-picker"/);
-  assert.match(index,/aria-controls="element-sidebar-body" aria-expanded="true"/);
-  assert.match(index,/<aside id="element-sidebar" aria-labelledby="element-sidebar-title">/);
+  assert.match(index,/id="add" aria-controls="element-sidebar" aria-expanded="false"/);
+  assert.match(index,/<aside id="element-sidebar" aria-labelledby="element-sidebar-title" data-collapsed inert>/);
   assert.ok(index.indexOf('<aside id="element-sidebar"') < index.indexOf('<main id="stage"'));
   assert.match(classic,/toggleElementSidebar\(false\);\s*if\(n\)\{e.preventDefault\(\);choose\(n\);\}/);
-  assert.match(index,/id="page-seo" aria-label="Edit SEO settings for this page"/);
+  assert.match(index,/<header class="studio-bar">[\s\S]*?id="page-seo" aria-label="Edit SEO settings for this page"[\s\S]*?<\/header>/);
+  assert.match(index,/id="element-sidebar-close" aria-label="Collapse Add Elements"/);
 });

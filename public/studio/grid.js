@@ -517,7 +517,7 @@ function clearGridPick(){
   if(mode==='edit')$('hint').textContent=defaultHint();
 }
 function defaultHint(){
-  return 'Drag tools from the left or grab an existing element. Hold Shift to move without reordering.';
+  return 'Open Add Elements to drag in a new block, or grab an existing element. Hold Shift to move without reordering.';
 }
 function markerFrame(rect){
   const x=Math.max(rect.f.left,rect.left), y=Math.max(rect.f.top,rect.top);

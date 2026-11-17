@@ -52,6 +52,25 @@ class SeoPublishingTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertEqual(draft_overrides(value), {})
 
+    def test_binary_attachment_requires_download_link_and_a_local_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = pathlib.Path(tmp)
+            relative = "media/homepage-studio/" + "d" * 32 + ".bin"
+            file = output / relative
+            file.parent.mkdir(parents=True)
+            file.write_bytes(b"an arbitrary document")
+            url = "/Newcitywellness/" + relative
+            def validate(markup):
+                parser = publisher.StudioPage(output, "/Newcitywellness/", "home")
+                parser.feed(markup)
+            validate(f'<main><a href="{url}" download="clinic.docx">Download</a></main>')
+            for item in (f'<a href="{url}">Link</a>', f'<img src="{url}">', f'<img srcset="{url} 1x">'):
+                with self.assertRaisesRegex(ValueError, "linked as downloads"):
+                    validate(f"<main>{item}</main>")
+            file.unlink()
+            with self.assertRaisesRegex(ValueError, "Missing Studio asset"):
+                validate(f'<main><a href="{url}" download="clinic.docx">Download</a></main>')
+
     def test_pages_export_applies_compressed_seo_only_to_target_publication(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp) / "repo"

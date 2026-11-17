@@ -14,7 +14,7 @@ const StudioPublish = (() => {
   const liveUrl=(target=selected())=>LIVE+(target[2]?target[2]+'/':'');
   const MAIN_REF=REPO_API+'/git/ref/heads/main';
   const SITE_ORIGIN=new URL(LIVE).origin;
-  const MAX_UPLOAD=24*1024*1024;
+  const MAX_UPLOAD=32*1024*1024;
   let publisherSession=null, loadedSource=null;
   const VALID_SHA=/^[0-9a-f]{40}$/;
   const SUPPORT=['scripts/apply-homepage-studio.py','public/homepage-studio/layout-v1.css','public/homepage-studio/homepage-v1.js'];
@@ -25,7 +25,7 @@ const StudioPublish = (() => {
     'src/app/wellness.css','src/app/globals.css','src/app/local-fonts.css','src/app/builder-page.css','src/app/clinic-footer.css',
     'src/app/floating-booking-link.tsx','src/app/floating-booking-link.css',
   ];
-  const mediaMap={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif','image/gif':'gif','application/pdf':'pdf','video/mp4':'mp4','video/webm':'webm'};
+  const mediaMap={'image/png':'png','image/jpeg':'jpg','image/webp':'webp','image/avif':'avif','image/gif':'gif','application/pdf':'pdf','application/octet-stream':'bin','video/mp4':'mp4','video/webm':'webm'};
   const safeMedia=/^(?:images\/|media\/homepage-studio\/)[A-Za-z0-9_./-]+$/;
   const SAMPLE_TAGS=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite'.split(' '));
   const utf8=new TextEncoder(), decode=new TextDecoder();
@@ -37,7 +37,12 @@ const StudioPublish = (() => {
     for(let i=0;i<view.length;i+=16384)chunks.push(String.fromCharCode(...view.subarray(i,i+16384)));
     return btoa(chunks.join(''));
   }
-  const unpack=s=>Uint8Array.from(atob(s.replace(/\s/g,'')),c=>c.charCodeAt(0));
+  function unpack(s){
+    if(typeof Uint8Array.fromBase64==='function')return Uint8Array.fromBase64(s);
+    const binary=atob(s), out=new Uint8Array(binary.length);
+    for(let i=0;i<out.length;i++)out[i]=binary.charCodeAt(i);
+    return out;
+  }
   const sha256=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(b=>b.toString(16).padStart(2,'0')).join('');
   const details={LIVE,REPO_API,GUARDED,SUPPORT,...paths('home')};
   const canvasGuard=()=>selected()[0]==='home'?STUDIO_SOURCE_REVISION:pageAssets[selected()[0]]?.guard;
@@ -98,13 +103,20 @@ const StudioPublish = (() => {
     if(!safeMedia.test(p)||p.split('/').some(n=>!n||n==='..'||n==='.'))throw Error('The draft contains an invalid local media path.');
     return p;
   }
-  async function fromData(value){
-    const m=/^data:([a-z/+-]+);base64,([A-Za-z0-9+/=]+)$/.exec(value);
-    if(!m||!mediaMap[m[1]])throw Error('A file in the draft is not a supported local image, PDF, or video.');
-    const bytes=unpack(m[2]);
-    cap(bytes.byteLength,20*1024*1024);
-    const ext=mediaMap[m[1]],digest=await sha256(bytes);
-    return {bytes,encoded:m[2],name:digest.slice(0,32)+'.'+ext,ext};
+  async function fromData(value,isDoc){
+    let encoded,ext;
+    if(isDoc){
+      const document=StudioDocuments.parse(value);
+      if(!document)throw Error('Choose a valid document no larger than 25 MB.');
+      encoded=document.encoded;ext=document.legacyPdf?'pdf':'bin';
+    }else{
+      const m=/^data:(image\/[a-z]+|video\/[a-z0-9]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value);
+      if(!m||!mediaMap[m[1]])throw Error('A file in the draft is not a supported local image or video.');
+      cap(m[2].length*.75-(m[2].endsWith('==')?2:m[2].endsWith('=')?1:0),20*1024*1024);
+      encoded=m[2];ext=mediaMap[m[1]];
+    }
+    const digest=await sha256(unpack(encoded));
+    return {encoded,name:digest.slice(0,32)+'.'+ext,ext};
   }
   function safeLink(value){
     if(!value||/[\x00-\x20\\]/.test(value)||value.startsWith('//'))throw Error('A button or link has an invalid address.');
@@ -129,16 +141,16 @@ const StudioPublish = (() => {
     top.querySelectorAll('.site-header,.header-nav,.nav-dropdown').forEach(n=>n.classList.remove('is-open','is-pinned','is-scrolled','open'));
     top.querySelectorAll('.mobile-toggle,.nav-dropdown-toggle').forEach(n=>n.setAttribute('aria-expanded','false'));
     top.querySelectorAll('.mobile-toggle').forEach(n=>{n.setAttribute('aria-label','Open menu');n.querySelector('path')?.setAttribute('d','M4 7h16M4 12h16M4 17h16');});
-    const files=new Map(), cache=new Map();
+    const files=new Map(), mediaCache=new Map(), documentsCache=new Map();
     const clonedOperations=revision.operations.map(op=>({...op}));
     async function media(value,isDoc=false){
       if(!value||value==='#')return value;
       if(value.startsWith('data:')){
+        const cache=isDoc?documentsCache:mediaCache;
         if(!cache.has(value))cache.set(value,(async()=>{
-          const f=await fromData(value);
-          if(isDoc&&f.ext!=='pdf')throw Error('Only a PDF can be published as an attached document.');
+          const f=await fromData(value,isDoc);
           const path=(['png','jpg','webp','avif','gif'].includes(f.ext)?'images/homepage-studio/':'media/homepage-studio/')+f.name;
-          files.set('public/'+path,f.encoded);
+          if(!context?.tree?.has('public/'+path))files.set('public/'+path,f.encoded);
           return BASE+path;
         })());
         return cache.get(value);
@@ -148,6 +160,7 @@ const StudioPublish = (() => {
         throw Error('Linked background media must be uploaded before publishing. Download the image or MP4/WebM and upload it using Section settings, then try again.');
       }
       const path=canonicalAsset(url.pathname.startsWith(BASE)?url.pathname.slice(BASE.length):url.pathname);
+      if(!isDoc&&/\.(?:bin|pdf)$/.test(path))throw Error('An uploaded document must be linked as a download.');
       if(!context?.tree?.has('public/'+path))throw Error('The required site asset is missing from GitHub: '+path);
       return BASE+path;
     }
@@ -163,6 +176,7 @@ const StudioPublish = (() => {
       }
       if(node.hasAttribute('href')){
         const href=node.getAttribute('href');
+        if(href.startsWith('data:')&&(tag!=='a'||!node.hasAttribute('download')))throw Error('An uploaded document must be linked as a download.');
         node.setAttribute('href',href.startsWith('data:')?await media(href,true):safeLink(href));
         if(node.getAttribute('target')==='_blank'){
           const link=node.getAttribute('href');
@@ -188,6 +202,7 @@ const StudioPublish = (() => {
     for(const op of clonedOperations){
       if((['image','file','video'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')){
         // Preserve full edit history but upload only media referenced by the final canvas.
+        const cache=op.kind==='file'?documentsCache:mediaCache;
         if(cache.has(op.value)){
           const name=(await cache.get(op.value)).slice(BASE.length);
           op.value={studioAsset:name};
@@ -207,7 +222,7 @@ const StudioPublish = (() => {
     cap(utf8.encode(content).length,850000);cap(utf8.encode(draftText).length,850000);
     let size=0;
     for(const value of files.values())size+=value.length*.75;
-    cap(size,65*1024*1024);
+    cap(size,MAX_UPLOAD);
     return {content,draftText,files,id:JSON.parse(content).id};
   }
   async function decodeDraft(bytes) {
@@ -254,8 +269,8 @@ const StudioPublish = (() => {
       if(!op.value||typeof op.value!=='object'||!op.value.studioAsset)return op;
       const path=canonicalAsset(op.value.studioAsset),ext=path.split('.').pop();
       const type=Object.keys(mediaMap).find(k=>mediaMap[k]===ext);
-      if(!type)throw Error('The published draft contains an unknown media format.');
-      const answer=await fetch(LIVE+path,{cache:'force-cache',signal:AbortSignal.timeout(12000)});
+      if(!type||ext==='bin'&&op.kind!=='file')throw Error('The published draft contains an unknown media format.');
+      const answer=await fetch(LIVE+path,{cache:'force-cache',signal:AbortSignal.timeout(op.kind==='file'?90000:12000)});
       if(!answer?.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
       return {...op,value:'data:'+type+';base64,'+pack(new Uint8Array(await answer.arrayBuffer()))};
     }));
@@ -358,7 +373,7 @@ const StudioPublish = (() => {
     }catch{throw Error(action==='publish'?'Could not confirm publishing. Check the GitHub Pages build before retrying.':'Could not reach the publishing service. Your draft is unchanged. Try again.');}
     const result=await response.json().catch(()=>null);
     if(response.status===401)publisherSession=null;
-    if(response.status===413)throw Error('The publication exceeds the upload limit. Reduce the uploaded media and try again.');
+    if(response.status===413)throw Error(result?.error||'The publication exceeds the upload limit. Reduce the uploaded media and try again.');
     if(!response.ok||!result?.ok)throw Error(result?.error||(response.status===401?'Your session expired. Sign in again.':'The editor could not confirm publishing.'));
     return result;
   }
@@ -432,7 +447,7 @@ const StudioPublish = (() => {
         const target=selected(), snapshot=draftString();
         const {zip,id}=await preparedRevision(progress);
         if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
-        cap(zip.size,MAX_UPLOAD);
+        if(zip.size>MAX_UPLOAD)throw Error('This publish exceeds 32 MB in total. Publish the uploads in smaller batches.');
         progress('Publishing the selected page and its media…');
         const result=await publisher('publish',zip);
         const pendingLive=create('span');

@@ -102,12 +102,14 @@ class StudioPage(HTMLParser):
     def handle_startendtag(self, tag, attrs):
         self.handle_starttag(tag, attrs)
 
-    def asset(self, value):
+    def asset(self, value, as_download=False):
         if not value.startswith(self.base):
             raise ValueError("Studio media must be local")
         path = value[len(self.base):]
         if not ASSET_PATH.fullmatch(path) or any(p in (".", "..", "") for p in path.split("/")):
             raise ValueError("Invalid Studio asset path")
+        if path.endswith(".bin") and (not as_download or not re.fullmatch(r"media/homepage-studio/[a-f0-9]{32}\.bin", path)):
+            raise ValueError("Studio documents must be linked as downloads")
         if not (self.output / path).is_file():
             raise ValueError("Missing Studio asset: " + path)
 
@@ -146,6 +148,8 @@ class StudioPage(HTMLParser):
             if key in {"href", "xlink:href"}:
                 if re.search(r"[\x00-\x20\\]", v) or v.startswith("//") or urlsplit(v).scheme not in ("", "http", "https", "tel", "mailto"):
                     raise ValueError("Unsafe page link")
+                if v.startswith(self.base + "media/homepage-studio/") and urlsplit(v).path.endswith(".bin"):
+                    self.asset(v, tag == "a" and key == "href" and "download" in a)
             if key == "id":
                 if v in self.ids:
                     raise ValueError("Duplicate page element id: " + v)

@@ -7,11 +7,12 @@ import { PAGES, EMBEDS, pageFiles, pageDependencies } from './pages.mjs';
 
 const repo='mshahrooz/Newcitywellness', base='/repos/'+repo;
 const support=['scripts/apply-homepage-studio.py','public/homepage-studio/layout-v1.css','public/homepage-studio/homepage-v1.js'];
-const media=/^public\/(?:images\/homepage-studio\/[a-f0-9]{32}\.(?:png|jpg|webp|avif|gif)|media\/homepage-studio\/[a-f0-9]{32}\.(?:pdf|mp4|webm))$/;
+const media=/^public\/(?:images\/homepage-studio\/[a-f0-9]{32}\.(?:png|jpg|webp|avif|gif)|media\/homepage-studio\/[a-f0-9]{32}\.(?:bin|pdf|mp4|webm))$/;
 const guardPaths=['src/content/editor-content.json','src/content/grapes-designs.json',...['page.tsx','site-header.tsx','site-footer.tsx','layout.tsx','builder-page.tsx','editor-blocks.tsx','testimonial-slider.tsx','wellness.css','globals.css','local-fonts.css','builder-page.css','clinic-footer.css','floating-booking-link.tsx','floating-booking-link.css'].map(n=>'src/app/'+n)];
 const sha=/^[a-f0-9]{40}$/; const id=/^[a-f0-9-]{36}$/;
 const emptyBlob='e69de29bb2d1d6434b8b29ae775ad8c2e48c5391';
-const maxZip=24*1024*1024, maxText=850000;
+const maxZip=32*1024*1024, maxText=850000, maxDocument=25*1024*1024;
+const isDocument=path=>/\.bin$/.test(path);
 const sha256=b=>createHash('sha256').update(b).digest('hex');
 const gitSha=b=>createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex');
 const segments=path=>path.split('/').map(encodeURIComponent).join('/');
@@ -36,7 +37,7 @@ export function unpackPackage(buf,key="home"){
     const name=buf.toString('utf8',off+30,nameEnd), data=buf.subarray(nameEnd,nameEnd+length);
     if(files.has(name)||(![source,draft].includes(name)&&!mediaPath(name)))badZip();
     if(name===source||name===draft){if(length>maxText)badZip();}
-    else if(!length||length>20*1024*1024||name.split('/').at(-1).split('.')[0]!==sha256(data).slice(0,32)||!validMedia(name,data))badZip();
+    else if(length>(isDocument(name)?maxDocument:20*1024*1024)||name.split('/').at(-1).split('.')[0]!==sha256(data).slice(0,32)||!validMedia(name,data))badZip();
     files.set(name,data);
     off=nameEnd+length;
   }
@@ -50,6 +51,7 @@ function validMedia(path,b){
     case 'webp': return b.toString('ascii',0,4)==='RIFF'&&b.toString('ascii',8,12)==='WEBP';
     case 'avif': case 'mp4': return b.toString('ascii',4,8)==='ftyp';
     case 'gif': return /^GIF8[79]a$/.test(b.toString('ascii',0,6));
+    case 'bin': return true; // Arbitrary bytes, served only as a download.
     case 'pdf': return b.toString('ascii',0,5)==='%PDF-';
     case 'webm': return b.subarray(0,4).toString('hex')==='1a45dfa3';
     default: return false;
@@ -60,9 +62,10 @@ const attrAllow=new Set('id class style title href target rel tabindex role for 
 export function verifyHtml(html,files,tree,key){
   if(typeof html!=='string'||html.length>maxText||/<!doctype|<\/?(?:body|html|head)[\s>]/i.test(html))badZip();
   const seen=new Set();let main=0;
-  const resource=v=>{
+  const resource=(v,asDownload=false)=>{
     if(!/^\/Newcitywellness\/(?:images|media\/homepage-studio)\/[A-Za-z0-9_./-]+$/.test(v)||v.split('/').slice(1).some(x=>!x||x==='..'||x==='.'))badZip();
     const file='public'+v.slice('/Newcitywellness'.length);
+    if(isDocument(file)&&(!asDownload||!mediaPath(file)))badZip();
     if(!files.has(file)&&!tree.has(file))fail(422,'A homepage image, document or video is missing from the draft or repository.');
   };
   const walk=node=>{
@@ -83,7 +86,7 @@ export function verifyHtml(html,files,tree,key){
         if(name==='srcset')value.split(',').forEach(v=>resource(v.trim().split(/\s+/)[0]));
         if(name==='href'){
           if(/[\x00-\x20\\]/.test(value)||value.startsWith('//')||/^[a-z][a-z0-9+.-]*:/i.test(value)&&!/^(https?|mailto|tel):/i.test(value))badZip();
-          if(/^\/Newcitywellness\/(?:images\/homepage-studio|media\/homepage-studio)\//.test(value))resource(value);
+          if(/^\/Newcitywellness\/(?:images\/homepage-studio|media\/homepage-studio)\//.test(value))resource(value,node.tagName==='a'&&attr('download')!==undefined);
         }
         if(name==='id') {if(seen.has(value))badZip();seen.add(value);}
       }
@@ -114,7 +117,7 @@ function validateStoredDraft(draftState, files, tree){
     if(!op||typeof op.kind!=='string'||!validId(op.id)||['target','pair','copy'].some(k=>op[k]&&!validId(op[k])))badZip();
     if(op.value && typeof op.value==='object' && 'studioAsset' in op.value){
       const name='public/'+op.value.studioAsset;
-      if(!mediaPath(name)||!files.has(name)&&!tree.has(name))badZip();
+      if(!mediaPath(name)||isDocument(name)&&op.kind!=='file'||!files.has(name)&&!tree.has(name))badZip();
     }
   }
 }
@@ -140,7 +143,7 @@ const b64url = o => Buffer.from(JSON.stringify(o)).toString('base64url');
 const packageType = 'application/zip';
 
 export async function readLimited(req, maximum) {
-  if (+(req.headers.get('content-length') || 0) > maximum) fail(413, 'The publication exceeds 24 MB. Reduce the uploaded media and try again.');
+  if (+(req.headers.get('content-length') || 0) > maximum) fail(413, 'This publish exceeds 32 MB in total. Publish the uploads in smaller batches.');
   if (!req.body) fail(400, 'The page package is missing.');
   const reader = req.body.getReader();
   const chunks = [];
@@ -152,7 +155,7 @@ export async function readLimited(req, maximum) {
       length += value.byteLength;
       if (length > maximum) {
         void reader.cancel().catch(() => {});
-        fail(413, 'The publication exceeds 24 MB. Reduce the uploaded media and try again.');
+        fail(413, 'This publish exceeds 32 MB in total. Publish the uploads in smaller batches.');
       }
       chunks.push(value);
     }

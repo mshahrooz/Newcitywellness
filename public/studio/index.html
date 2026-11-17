@@ -6,21 +6,22 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#152c25">
 <title>New City Wellness · Page Studio</title>
-<link rel="stylesheet" href="studio.css?v=left-tools1">
+<link rel="stylesheet" href="studio.css?v=sticky-elements1">
 <script src="pages.js?v=drag-guides1" defer></script>
 <script src="canvas-behavior.js?v=drag-guides1" defer></script>
 <script src="../homepage-studio/page-runtime.js?v=drag-guides1" data-preview-runtime defer></script>
 <script src="../homepage-studio/responsive-offsets.js?v=2" defer></script>
 <script src="embeds.js?v=drag-guides1" defer></script>
 <script src="columns.js?v=drag-guides1" defer></script>
-<script src="grid.js?v=left-tools1" defer></script>
+<script src="grid.js?v=sticky-elements1" defer></script>
 <script src="flow.js?v=studio-drag2" defer></script>
 <script src="seo.js?v=1" defer></script>
 <script src="element-icons.js?v=1" defer></script>
-<script src="studio.js?v=left-tools1" defer></script>
+<script src="documents.js?v=1" defer></script>
+<script src="studio.js?v=sticky-elements1" defer></script>
 <script src="studio-revision.js?v=publish2" defer></script>
 <script src="publisher-config.js" defer></script>
-<script src="publish.js?v=live-drag1" defer></script>
+<script src="publish.js?v=document-uploads1" defer></script>
 </head>
 <body>
 <header class="studio-bar">
@@ -38,24 +39,25 @@
     <button type="button" data-view="mobile" title="Mobile" aria-label="Mobile" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18h2"/></svg></button>
   </div>
   <div class="tools right">
+    <button type="button" id="page-seo" aria-label="Edit SEO settings for this page" aria-controls="popup" aria-expanded="false"><span aria-hidden="true">✦</span> Page SEO</button>
     <button type="button" id="preview" aria-pressed="false">Preview</button>
     <button type="button" id="more" aria-haspopup="menu" aria-expanded="false" aria-controls="menu">Draft<span class="wide"> tools</span> <span aria-hidden="true">▾</span></button>
     <button type="button" class="accent" id="save"><span class="wide">Save </span>draft</button>
     <button type="button" class="publish-cta" id="publish">Publish<span class="wide"> page</span></button>
   </div>
 </header>
-<div id="subbar" class="subbar"><div><span class="badge"><span>●</span> Editing sandbox</span><span class="hint" id="hint">Drag blocks from the left toolbar or move existing elements on the page.</span></div><span class="status-pair"><span id="publish-status" class="connection">Ready to edit</span><span class="saved" id="saved" role="status">Opening page…</span></span></div>
+<div id="subbar" class="subbar"><div><span class="badge"><span>●</span> Editing sandbox</span><span class="hint" id="hint">Open Add Elements to drag in a new block, or move existing elements on the page.</span></div><span class="status-pair"><span id="publish-status" class="connection">Ready to edit</span><span class="saved" id="saved" role="status">Opening page…</span></span></div>
 <div id="workspace">
-<aside id="element-sidebar" aria-labelledby="element-sidebar-title">
+<button type="button" id="add" aria-controls="element-sidebar" aria-expanded="false" title="Show Add Elements"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8m-4-4h8"/></svg> Add Elements</button>
+<aside id="element-sidebar" aria-labelledby="element-sidebar-title" data-collapsed inert>
   <header class="element-sidebar-head">
     <div class="element-sidebar-heading"><span>BUILD</span><h2 id="element-sidebar-title">Add elements</h2></div>
-    <button type="button" id="add" aria-controls="element-sidebar-body" aria-expanded="true" aria-label="Collapse Add Elements" title="Collapse Add Elements"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg></button>
+    <button type="button" id="element-sidebar-close" aria-label="Collapse Add Elements" title="Collapse Add Elements"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg></button>
   </header>
   <div id="element-sidebar-body" class="element-sidebar-body"></div>
 </aside>
 <main id="stage" aria-label="Page editor canvas"><iframe id="canvas" title="New City Wellness page canvas" sandbox="allow-scripts allow-same-origin allow-presentation allow-downloads allow-popups allow-popups-to-escape-sandbox" allowfullscreen></iframe></main>
 </div>
-<button type="button" id="page-seo" aria-label="Edit SEO settings for this page" aria-controls="popup" aria-expanded="false"><span aria-hidden="true">✦</span> Page SEO</button>
 <div id="outline" hidden></div>
 <div id="column-handles" role="group" aria-label="Resize column widths" hidden></div>
 <div id="free-grid" aria-hidden="true" hidden></div>
