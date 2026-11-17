@@ -123,3 +123,19 @@ test('adjacent layout moves skip hidden anchors and do not move inside nested co
   n.nextElementSibling=null;
   assert.equal(flow.stepTarget(n,1),null);
 });
+
+test('homepage cards move into a peer’s position from the center or nearby gap',()=>{
+  const flow=vm.runInNewContext(code+'\nStudioFlow');
+  const rect=(left,top,width,height)=>({left,top,width,height,right:left+width,bottom:top+height});
+  const group={getBoundingClientRect:()=>rect(20,100,600,260),children:[]};
+  for(const [x,y] of [[20,100],[220,100],[420,100],[20,240]])group.children.push({
+    parentElement:group,matches:s=>s.includes('.condition-grid > .condition-card'),getBoundingClientRect:()=>rect(x,y,180,120)
+  });
+  const [a,b,c,d]=group.children;
+  assert.equal(flow.cardTarget(a,500,165).node,c);
+  assert.equal(flow.cardTarget(a,500,165).side,'after');
+  assert.equal(flow.cardTarget(d,110,160).side,'before');
+  assert.equal(flow.cardTarget(a,215,165).node,b);
+  assert.equal(flow.cardTarget(a,110,160),null);
+  assert.equal(flow.cardTarget(a,110,390),null);
+});

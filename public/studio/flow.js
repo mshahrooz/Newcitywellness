@@ -6,7 +6,7 @@ const StudioFlow = (() => {
   // Keep connected widgets intact during structural moves. Their individual
   // pieces can still be positioned visually in their original container.
   const blocked = 'a,button,form,nav,label,p,ul,ol,dl,li,details,summary,.therapy-card,.testimonial-card,.reviews-card,.condition-card,.clinic-hours,.contact-form-wrap,.page-hero-photo,.bs-pair';
-  const nativeLane = '.therapy-grid,.testimonial-grid,.reviews-grid,.hero-actions';
+  const nativeLane = '.therapy-grid,.condition-grid,.testimonial-grid,.reviews-grid,.hero-actions';
   const strictLane = nativeLane+',.faq-list';
   function unit(n) {
     if(n?.matches('img')&&n.parentElement?.matches('picture'))return n.parentElement;
@@ -157,6 +157,23 @@ const StudioFlow = (() => {
   function distance(r,x,y){
     return Math.hypot(Math.max(r.left-x,0,x-r.right),Math.max(r.top-y,0,y-r.bottom));
   }
+  // Only the two home card collections opt in to center-based reordering.
+  const sortableCard='.therapy-grid > .therapy-card,.condition-grid > .condition-card';
+  const cardOf=hit=>hit?.closest(sortableCard)||null;
+  function cardTarget(n,x,y){
+    const group=n.parentElement, bounds=group.getBoundingClientRect();
+    if(x<bounds.left-10||x>bounds.right+10||y<bounds.top-10||y>bounds.bottom+10)return null;
+    let closest=null, score=Infinity, index=-1;
+    const cards=Array.from(group.children).filter(item=>item.matches(sortableCard));
+    for(const [i,item] of cards.entries()){
+      const r=item.getBoundingClientRect();
+      if(r.width<4||r.height<4||item.hidden)continue;
+      const d=distance(r,x,y);
+      if(d<score){score=d;closest=item;index=i;}
+    }
+    if(!closest||score>30||closest===n)return null;
+    return {node:closest,side:index<cards.indexOf(n)?'before':'after',card:true};
+  }
   function sectionTarget(n,x,y){
     const hit=D.elementFromPoint?.(x,y);
     if(hit&&!main().contains(hit))return null;
@@ -299,5 +316,5 @@ const StudioFlow = (() => {
     if(shell)removeFreeContainer(shell);else cleanupAutoColumn(old);
     return true;
   }
-  return {unit,source,target,move,edges,find,noop,stepTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
+  return {unit,source,target,move,edges,find,noop,stepTarget,cardOf,cardTarget,libraryTarget,sectionTarget,placeNew,isSide,sideAnchor,sideEdges,alongside,cleanupAutoColumn,compactAutoGrid};
 })();

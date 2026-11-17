@@ -6,12 +6,12 @@ const test=require('node:test');
 const studio=fs.readFileSync('public/studio/studio.js','utf8');
 const grid=fs.readFileSync('public/studio/grid.js','utf8');
 
-test('direct canvas pointer handlers work only on the selected element and preserve ordinary clicks',()=>{
+test('direct canvas drag preserves ordinary clicks and opts only cards and dividers into first-press dragging',()=>{
   const listeners={}, calls=[];
-  let eligible=true;
+  let eligible=true, card=null, divider=null;
   const capture={}, doc={documentElement:capture,addEventListener:(name,handler)=>listeners[name]=handler};
   const hit={closest:()=>!eligible}, selected={contains:n=>n===hit};
-  const env={now:()=>selected,beginItemDrag:(...args)=>calls.push(args),
+  const env={now:()=>selected,StudioFlow:{cardOf:()=>card},dividerFrom:()=>divider,beginItemDrag:(...args)=>calls.push(args),
     itemPointerMove:()=>{},itemPointerUp:()=>{},itemPointerCancel:()=>{},
     placement:null,gridPick:null,mode:'edit',canvasDragTarget:selected};
   vm.runInNewContext(studio.slice(studio.indexOf('function bindCanvasDragging('),studio.indexOf("$('drag').addEventListener('click'"))+'\nbindCanvasDragging(doc);',{...env,doc});
@@ -30,8 +30,16 @@ test('direct canvas pointer handlers work only on the selected element and prese
   assert.equal(suppressed,2);
   eligible=false;
   listeners.pointerdown(down);
-  listeners.pointerdown({target:{},isPrimary:true});
+  const elsewhere={closest:()=>null};
+  listeners.pointerdown({target:elsewhere,isPrimary:true});
   assert.equal(calls.length,1);
+  card={};
+  listeners.pointerdown({target:elsewhere,isPrimary:true});
+  assert.equal(calls.at(-1)[1],card);
+  card=null;
+  divider={};
+  listeners.pointerdown({target:elsewhere,isPrimary:true});
+  assert.equal(calls.at(-1)[1],divider);
 });
 
 test('drag grid stays aligned to the active canvas and its scroll offset',()=>{

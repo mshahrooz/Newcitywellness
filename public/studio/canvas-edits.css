@@ -110,6 +110,9 @@
 .bs-editor-mode [data-bs-drag-ready] :not(input,textarea,select,button,[contenteditable]){cursor:inherit}
 .bs-editor-mode.bs-dragging,.bs-editor-mode.bs-dragging *{cursor:grabbing!important}
 
+.bs-editor-mode [data-bs-divider]{cursor:grab;touch-action:none}
+@media(pointer:fine){.bs-editor-mode :is(.therapy-grid > .therapy-card,.condition-grid > .condition-card),.bs-editor-mode .therapy-grid > .therapy-card a{cursor:grab}}
+
 /* Desktop offsets are shared. Smaller screens can add their own adjustments. */
 .ncw .bs-offset-item,.floating-booking-link.bs-offset-item{
   /* Reset inherited custom properties so two nested edited elements don't share offsets. */
