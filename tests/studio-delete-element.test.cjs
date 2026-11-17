@@ -52,3 +52,38 @@ test('the larger text editor targets popup copy fields, not published typography
   assert.match(css,/textarea\.studio-text\{min-height:clamp\(132px/);
   assert.match(css,/\.popup-footer\{[^}]*flex-shrink:0/);
 });
+
+test('native and added divider settings both expose Delete divider and record one undoable removal',()=>{
+  const openSource=studio.slice(studio.indexOf('function open(title,'),studio.indexOf('function para('));
+  const settingsSource=studio.slice(studio.indexOf('function openSettings('),studio.indexOf('  if(n.hasAttribute(\'data-bs-column\')){',studio.indexOf('function openSettings(')));
+  for(const native of [true,false]){
+    const {env,node,calls}=setup();
+    const ids={};
+    const get=id=>ids[id]??=({textContent:'',setAttribute(){},focus(){calls.push('focus '+id);}});
+    const history=[];
+    Object.assign(env,{
+      $:get, body:{replaceChildren(){}}, popup:{hidden:true}, active:'item',
+      flash:copy=>calls.push(copy), close(){env.popup.hidden=true;},
+      paint(){}, adjustPopup(){}, para(){}, dragResetControl(){}, group(){},
+      record(op){
+        if(!env.deleteElement(node))return false;
+        history.push([op.kind,op.id]);return true;
+      }
+    });
+    node.dataset.bsKind='divider';
+    node.hasAttribute=name=>native&&name==='data-bs-divider';
+    vm.runInContext(openSource+settingsSource+'}\n'+(native?'openSettings(subject);':"open('Divider','ELEMENT SETTINGS',subject);"),Object.assign(env,{subject:node}));
+    assert.equal(ids['popup-footer'].hidden,false);
+    assert.equal(ids['delete-element'].textContent,'Delete divider');
+    ids['delete-element'].onclick();
+    assert.deepEqual(history,[['remove','item']]);
+    assert.ok(calls.includes('node'));
+    assert.ok(calls.includes('focus undo'));
+    assert.equal(env.popup.hidden,true);
+  }
+});
+
+test('the sticky Add Elements button and collapse arrow use the requested blue',()=>{
+  const css=fs.readFileSync('public/studio/studio.css','utf8');
+  assert.match(css,/#add,#element-sidebar-close\{background:#3756ff;color:#fff\}/);
+});

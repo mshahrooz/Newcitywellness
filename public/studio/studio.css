@@ -158,16 +158,16 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 #stage{min-width:0}
 #element-sidebar{position:absolute;inset:0 auto 0 0;width:min(246px,85vw);display:flex;flex-direction:column;background:#f9fbfa;border-right:1px solid #d3e1d8;box-shadow:5px 0 24px #152c2530;z-index:6;transform:translateX(0);visibility:visible;transition:transform .22s ease,visibility 0s}
 #element-sidebar[data-collapsed]{transform:translateX(calc(-100% - 30px));visibility:hidden;pointer-events:none;transition:transform .22s ease,visibility 0s .22s}
-#add{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:7;display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:0 12px;border:1px solid #7da88f;border-radius:9px;box-shadow:0 4px 15px #152c2540;background:#235e4b;color:#fff;font-size:13px;font-weight:750}
-#add:not(:disabled):hover,#add[aria-expanded=true]{background:#183f32}
+#add{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));z-index:7;display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:0 12px;border:1px solid transparent;border-radius:9px;box-shadow:0 4px 15px #152c2540;font-size:13px;font-weight:750}
+#add,#element-sidebar-close{background:#3756ff;color:#fff}
+#add:not(:disabled):hover,#element-sidebar-close:not(:disabled):hover{border-color:#2236bb;box-shadow:0 3px 12px #243cad55}
 #add svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 #workspace:has(#stage.bs-dragging) #add{pointer-events:none}
 @media(prefers-reduced-motion:reduce){#element-sidebar,#element-sidebar[data-collapsed]{transition:none}}
 .element-sidebar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 12px;border-bottom:1px solid #e1eae4;background:#f2f7f4;min-height:58px}
 .element-sidebar-heading span{font-size:9px;font-weight:800;letter-spacing:.15em;color:#557163}
 .element-sidebar-heading h2{font-size:17px;line-height:1.25;margin:2px 0 0}
-.element-sidebar-head button{display:grid;place-items:center;flex:0 0 32px;min-height:32px;padding:0;border:1px solid #c7dbd0;border-radius:7px;background:#e7f2eb;color:#22513e}
-.element-sidebar-head button:hover:not(:disabled){background:#d9eddf}
+.element-sidebar-head button{display:grid;place-items:center;flex:0 0 32px;min-height:32px;padding:0;border:1px solid transparent;border-radius:7px}
 .element-sidebar-head button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .element-sidebar-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:12px 11px 60px}
 .element-sidebar-body .palette-instruction{color:#567063;font-size:11px;margin:0 0 10px}

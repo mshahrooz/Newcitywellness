@@ -771,11 +771,11 @@ function open(title,category,anchor=null){
   $('page-seo').setAttribute('aria-expanded',String(category==='PAGE SEO'));
   body.replaceChildren();body.scrollTop=0;popup.hidden=false;gesture=null;
   const footer=$('popup-footer'),remove=$('delete-element');
-  footer.hidden=!canDeleteElement(anchor)||!['ELEMENT SETTINGS','CARD SETTINGS','SECTION SETTINGS','ROW / COLUMN'].includes(category);
+  footer.hidden=!canDeleteElement(anchor)||!['ELEMENT SETTINGS','CARD SETTINGS','DIVIDER SETTINGS','SECTION SETTINGS','ROW / COLUMN'].includes(category);
   remove.onclick=null;
   if(!footer.hidden){
     const label=anchor.matches('.therapy-card')?'card':anchor.hasAttribute('data-bs-row')?'section'
-      :anchor.hasAttribute('data-bs-column')?'column':anchor.dataset.bsKind==='image'?'image':'element';
+      :anchor.hasAttribute('data-bs-column')?'column':anchor.dataset.bsKind==='divider'?'divider':anchor.dataset.bsKind==='image'?'image':'element';
     remove.textContent='Delete '+label;
     remove.onclick=()=>{
       if(record({kind:'remove',id:idOf(anchor)})){
