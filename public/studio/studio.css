@@ -192,3 +192,19 @@ html.bs-resizing,html.bs-resizing *{cursor:var(--resize-cursor,ns-resize)!import
 .seo-fields .look{margin-bottom:10px}.seo-fields .seo-error{color:#922f2c;margin:0 0 8px}
 .seo-fields .seo-error:empty{display:none}
 @media(pointer:coarse){.element-sidebar-body .palette-grip{opacity:1;min-width:19px;min-height:25px}}
+
+
+/* One clear, accessible action in the publishing dialog. */
+.popup-body .publish-actions{margin-top:14px}
+.popup-body .publish-website-button{
+  display:flex;width:100%;min-height:54px;align-items:center;justify-content:center;
+  padding:12px 18px;border:1px solid #0c6d3c;border-radius:11px;
+  background:#16854a;color:#fff;font-size:16px;font-weight:800;line-height:1.3;
+  box-shadow:0 4px 12px rgba(12,109,60,.16);cursor:pointer;
+}
+.popup-body .publish-website-button:not(:disabled):hover{
+  background:#106e3d;border-color:#0a5931;color:#fff;
+  box-shadow:0 5px 16px rgba(12,109,60,.24);
+}
+.popup-body .publish-website-button:focus-visible{outline:3px solid #8ddbb1;outline-offset:3px}
+.popup-body .publish-website-button:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
