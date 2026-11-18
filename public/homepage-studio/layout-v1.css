@@ -156,3 +156,17 @@
 
 /* The decorative tint must not intercept photo selection. */
 .ncw .therapy-image::after{pointer-events:none}
+
+/* Scoped text size. Studio can simulate a device independent of its own window. */
+:root[data-bs-device="desktop"] [style*="--bs-font-desktop:"]{font-size:var(--bs-font-desktop)!important}
+@media (width > 900px) {
+  :root:not([data-bs-device]) [style*="--bs-font-desktop:"]{font-size:var(--bs-font-desktop)!important}
+}
+:root[data-bs-device="tablet"] [style*="--bs-font-tablet:"]{font-size:var(--bs-font-tablet)!important}
+@media (600px < width <= 900px) {
+  :root:not([data-bs-device]) [style*="--bs-font-tablet:"]{font-size:var(--bs-font-tablet)!important}
+}
+:root[data-bs-device="mobile"] [style*="--bs-font-mobile:"]{font-size:var(--bs-font-mobile)!important}
+@media (width <= 600px) {
+  :root:not([data-bs-device]) [style*="--bs-font-mobile:"]{font-size:var(--bs-font-mobile)!important}
+}

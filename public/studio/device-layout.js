@@ -55,10 +55,10 @@ const StudioDeviceLayout=(()=>{
     const d=view;
     if(!devices.includes(d))return;
     const {item,text,row}=nodes(n);
-    const canFont=!row&&!['image','captioned','divider','spacer','video','youtube','embed'].includes(n.dataset.bsKind), canAlign=!row&&!['image','video','youtube','embed','spacer','divider'].includes(n.dataset.bsKind);
+    const canAlign=!row&&!['image','video','youtube','embed','spacer','divider'].includes(n.dataset.bsKind);
     const box=create('details',{class:'look responsive-fields',open:''});
     box.append(create('summary',{},name(d)+' layout overrides'));
-    box.append(create('p',{class:'muted'},'Blank fields follow the shared layout. Text, images and element order are shared on every device.'));
+    box.append(create('p',{class:'muted'},'Blank fields follow the shared layout. Font size is managed separately.'));
     body.append(box);
     const sizing=create('div',{class:'responsive-sizes'});
     const spacing=create('div',{class:'pad'});
@@ -71,6 +71,9 @@ const StudioDeviceLayout=(()=>{
     const measurements={};
     const sync=token=>{
       const v={};
+      // Keep an older device-layout font setting until the font control changes it.
+      const legacyFont=read('font');
+      if(legacyFont)v.font=parseInt(legacyFont,10);
       for(const [k,control] of Object.entries(measurements)){
         if(!control.validity.valid)return;
         if(control.value!=='')v[k]=control.value;
@@ -79,7 +82,7 @@ const StudioDeviceLayout=(()=>{
       record({kind:'device-layout',id:idOf(n),device:d,value:v},token);
     };
     for(const [k,f] of Object.entries(fields)){
-      if(k==='align'||row&&k==='width'||k==='font'&&!canFont)continue;
+      if(k==='align'||k==='font'||row&&k==='width')continue;
       const value=read(k), token=Symbol();
       if(value)previous[k]=value;
       measurements[k]=input(k.startsWith('pad-')?spacing:sizing,f.label,value?parseInt(value,10):'',

@@ -226,17 +226,12 @@ const StudioInline=(()=>{
       button(fields,'Apply color',()=>chooseColor(custom.value));
     });
     option('Text size','size',(panel,range)=>{
+      const device=view;
+      panel.append(create('p',{class:'muted'},'Only applies on '+StudioFontSize.label(device)+'.'));
       const set=size=>{
         const px=Number(size);
         if(!Number.isInteger(px)||px<10||px>96||!restore(range))return;
-        doc.execCommand('styleWithCSS',false,false);
-        doc.execCommand('fontSize',false,'7');
-        // The browser wraps the selected runs without splitting link targets
-        // ourselves. Turn its legacy size token into an exact CSS size.
-        for(const font of node.querySelectorAll('font[size="7"]')){
-          font.style.fontSize=px+'px';font.removeAttribute('size');
-        }
-        dismiss();
+        if(StudioFontSize.applySelection(node,range,device,px))dismiss();
       };
       const sizes=create('div',{class:'inline-sizes'});
       for(const size of [12,14,16,18,20,24,28,32,40])button(sizes,String(size),()=>set(size),{'aria-label':'Set text size to '+size+' pixels'});

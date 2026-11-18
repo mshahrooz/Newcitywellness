@@ -5,7 +5,7 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=verified-studio1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=font-device1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
 const storageKey=()=>{
   const key=page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
   const account=typeof StudioWorkflow==='undefined'?null:StudioWorkflow.account();
@@ -489,6 +489,7 @@ function apply(op){
       else return false;
       return true;
     case 'font-size':
+      if(op.device!==undefined)return StudioFontSize.apply(n,op);
       if(k==='image'||!e)return false;
       if(op.value==='')e.style.removeProperty('font-size');else e.style.fontSize=bounded(op.value,10,96)+'px';
       return true;
@@ -1023,6 +1024,7 @@ function openSettings(n) {
   const place=open(copyOnly?'Edit '+StudioText.getLabel(n).toLowerCase():titleOf(n),copyOnly?'TEXT SETTINGS':'ELEMENT SETTINGS',n);
   const inlineStyles=StudioInline.supports(n);
   if(inlineStyles)button(group('inline-entry'),'Edit text inline',()=>StudioInline.start(n));
+  StudioFontSize.controls(n);
   if(StudioFlow.cardOf(n)===n)para('Drag this card over another card in its group to reorder it.');
   if(nativeCopy){
     const token=Symbol(), label=StudioText.getLabel(n);
@@ -1120,8 +1122,7 @@ function openSettings(n) {
   if(rowOf(n))button(actions,'Section settings',()=>choose(rowOf(n)));
   if(!inlineStyles&&!imageKind(k)&&!['spacer','divider','video','youtube','embed'].includes(k)&&e){
     const details=create('details',{class:'look'});details.append(create('summary',{},'Text appearance'));body.append(details);
-    const font=Symbol(), color=Symbol();
-    input(details,'Font size (px)',e.style.fontSize?Number.parseInt(e.style.fontSize):'',{type:'number',min:10,max:96,placeholder:'Original'},x=>record({kind:'font-size',id:idOf(n),value:x.value},font));
+    const color=Symbol();
     const rgb=D.defaultView.getComputedStyle(e).color.match(/\d+/g)?.slice(0,3);
     const hex=rgb?'#'+rgb.map(x=>Number(x).toString(16).padStart(2,'0')).join(''):'#23392e';
     const colorInput=input(details,'Text color',hex,{type:'color'},x=>record({kind:'text-color',id:idOf(n),value:x.value},color));
@@ -1806,10 +1807,11 @@ $('preview').onclick=()=>{
   $('page-seo').disabled=mode==='preview';close();showState();paint();
 };
 function switchView(b){
+  if(!StudioInline.finish())return;
   if(resizeDrag)stopResize(false);
   if(drag)finishDrag(false);
   if(paletteDrag)finishPaletteDrag();
-  endColumnDrag(false);const devicePanel=body.querySelector('.responsive-fields')||['ELEMENT SETTINGS','CARD SETTINGS','SECTION SETTINGS','DIVIDER SETTINGS'].includes($('popup-type').textContent);view=b.dataset.view;stage.dataset.view=view;syncViewport();
+  endColumnDrag(false);const devicePanel=body.querySelector('.responsive-fields,.device-font-fields')||['ELEMENT SETTINGS','CARD SETTINGS','SECTION SETTINGS','DIVIDER SETTINGS'].includes($('popup-type').textContent);view=b.dataset.view;stage.dataset.view=view;syncViewport();
   document.querySelectorAll('[data-view]').forEach(el=>{if(el.tagName==='BUTTON')el.setAttribute('aria-pressed',String(el===b));});
   requestAnimationFrame(()=>{refreshFreeSizes();paint();if(now()&&!popup.hidden){
     if(devicePanel)openSettings(now());
