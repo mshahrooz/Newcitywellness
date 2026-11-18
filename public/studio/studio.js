@@ -5,8 +5,12 @@ const pages=typeof STUDIO_PAGES==='undefined'?[['home','Home','']]:STUDIO_PAGES;
 const pageAssets=typeof STUDIO_PAGE_ASSETS==='undefined'?{}:STUDIO_PAGE_ASSETS;
 const picker=$('page-picker');
 const pageIdentity=()=>page[0]==='home'?'new-city-wellness-homepage':'new-city-wellness-'+page[0];
-const canvasPath=()=>page[0]==='home'?'canvas.html?v=studio-drag2':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
-const storageKey=()=>page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
+const canvasPath=()=>page[0]==='home'?'canvas.html?v=verified-studio1':'pages/'+page[0]+'.html?v='+pageAssets[page[0]].canvas;
+const storageKey=()=>{
+  const key=page[0]==='home'?'ncw.bakery.home.v1':'ncw.studio.page.v1.'+page[0];
+  const account=typeof StudioWorkflow==='undefined'?null:StudioWorkflow.account();
+  return account?key+'.account.'+account:key;
+};
 let page=pages.find(p=>p[0]===new URL(location.href).searchParams.get('page'))||pages[0], canvasEpoch=0, switching=false, stopSize;
 const MAX_FILE=2*1024*1024, MAX_JSON=100*1024*1024;
 const types={
@@ -59,15 +63,17 @@ function flash(t){$('toast').textContent=t;$('toast').hidden=false;clearTimeout(
 function showState(){
   $('undo').disabled=mode==='preview'||!cursor;
   $('redo').disabled=mode==='preview'||cursor===list.length;
-  $('saved').textContent=operationsMatch(liveOps)?
+  const workflow=typeof StudioWorkflow!=='undefined'&&typeof StudioPublish!=='undefined'?StudioWorkflow:null;
+  if(workflow)workflow.renderStatus();
+  $('saved').textContent=operationsMatch(liveOps)&&(!workflow||StudioPublish.baseOfDraft()===liveSource)?
     (liveRevision?(liveSource?'Live version':'Original layout'):'Live version not yet verified'):
-    operationsMatch(savedOps)?'Draft saved in this browser':'Unsaved draft';
+    workflow?.draftStatus()||(operationsMatch(savedOps)?'Draft saved in this browser':'Unsaved draft');
 }
 function record(op, token){
   if (!apply(op)) return false;
   if (token && gesture===token && cursor>0 && cursor===list.length) list[cursor-1]=op;
   else {list.splice(cursor);list.push(op);cursor=list.length;}
-  gesture=token||null;refreshFreeSizes();showState();paint();return true;
+  gesture=token||null;refreshFreeSizes();if(typeof StudioWorkflow!=='undefined')StudioWorkflow.schedule();showState();paint();return true;
 }
 function resetBody(){
   stopBehavior?.();
@@ -90,7 +96,7 @@ function stepHistory(step){
   endColumnDrag(false);
   const next=cursor+step;
   if(next<0||next>list.length)return;
-  cursor=next;gesture=null;close();replay();
+  cursor=next;gesture=null;close();replay();if(typeof StudioWorkflow!=='undefined')StudioWorkflow.schedule();
 }
 function syncViewport() {
   if(!D)return;
@@ -390,6 +396,7 @@ function apply(op){
       if(!n.hasAttribute('data-bs-row'))return false;n.dataset.bsLabel=asString(op.value,80);return true;
     case 'section-height':return StudioResize.applySection(n,op);
     case 'edge-size':return StudioResize.apply(n,op);
+    case 'device-layout':return StudioDeviceLayout.apply(n,op);
     case 'flow-move':return StudioFlow.isSide(op.side)?StudioFlow.alongside(n,target,op.side,op.pair):StudioFlow.move(n,target,op.side);
     case 'move': {
       if(n.hasAttribute('data-bs-row')){
@@ -569,7 +576,7 @@ async function loadCanvasLive(localRaw){
     let ops;
     try{ops=readDraft(localRaw);}catch{ /* Invalid data must not mask the live page. */ }
     if(ops&&!sameOperations(ops,operations)){
-      if(!state.source&&!JSON.parse(localRaw).publishedBase)useLocal=true;
+      if((JSON.parse(localRaw).publishedBase||null)===state.source)useLocal=true;
       else{
         kept=await recoverLater(localRaw);
         if(!kept)throw Error('Could not keep the previous browser draft.');
@@ -579,6 +586,7 @@ async function loadCanvasLive(localRaw){
   liveOps=operations;liveRevision=state.revision;liveSource=state.source;
   setDraft(useLocal?localRaw:raw,useLocal?undefined:operations);
   if(localRaw&&!useLocal)await clearBrowserDraft(storageKey());
+  if(typeof StudioWorkflow!=='undefined')StudioWorkflow.verified(target,state);
   $('publish-status').textContent=useLocal?'Working on a local draft':'Synced with GitHub Pages';
   if(kept)flash('Live version loaded. Your previous draft is in Draft tools → Recovered drafts.');
   return true;
@@ -596,7 +604,9 @@ async function syncLiveCanvas(){
       const state=await StudioPublish.liveManifest(target);
       if(!state||!current()||state.revision===liveRevision)return false;
       if(liveRevision&&state.source===liveSource){
-        liveRevision=state.revision;return false;
+        await StudioPublish.verifyLivePage(target,state);
+        if(!current())return false;
+        liveRevision=state.revision;StudioWorkflow.verified(target,state);showState();return false;
       }
       const remote=await StudioPublish.loadLiveDraft(target,state);
       if(!current())return false;
@@ -604,20 +614,28 @@ async function syncLiveCanvas(){
       const operations=readDraft(raw), old=draftString();
       const submitted=submittedDrafts.get(target[0]);
       const alreadyPublished=submitted?.id===state.publication&&submitted.raw===old;
-      const dirty=!alreadyPublished&&!operationsMatch(liveOps)&&!sameOperations(JSON.parse(old).operations,operations);
+      const dirty=!alreadyPublished&&(!operationsMatch(liveOps)||StudioPublish.baseOfDraft()!==liveSource)&&!sameOperations(JSON.parse(old).operations,operations);
       if(dirty&&!(await recoverLater(old)))return false;
       if(!current()||old!==draftString())return false;
       // Do not let a save queued before this check recreate a stale cache.
       await saveQueue;
       if(!current()||old!==draftString())return false;
       liveOps=operations;liveRevision=state.revision;liveSource=state.source;
-      if(!popup.hidden&&$('popup-type').textContent!=='GITHUB PAGES')close();
-      setDraft(raw,operations);
+      StudioWorkflow.verified(target,state,alreadyPublished?old:null);
       if(submitted?.id===state.publication)submittedDrafts.delete(target[0]);
+      if(dirty){
+        showState();
+        flash('A newer version is live. Your draft is preserved. Open Draft tools → Review changes.');
+        void StudioWorkflow.sync();
+        return true;
+      }
+      const panel=$('popup-type').textContent;
+      if(!popup.hidden&&!['GITHUB PAGES','PAGE HISTORY','DRAFT TOOLS'].includes(panel))close();
+      setDraft(raw,operations);
       const key=storageKey();
       saveQueue=saveQueue.catch(()=>{}).then(()=>clearBrowserDraft(key));
-      $('publish-status').textContent='Synced with GitHub Pages';
-      flash(dirty?'Live version loaded. Your previous draft is in Draft tools → Recovered drafts.':'The live page is now open in Studio.');
+      StudioWorkflow.pageReady();
+      flash('The live page is now open in Studio.');
       return true;
     }catch{ /* Keep working if Pages is offline or still deploying. */ return false;}
   })();
@@ -684,7 +702,7 @@ function exportStandalone(){
       if(img.hasAttribute('srcset')){const tokens=img.getAttribute('srcset').split(',').map(x=>x.trim().split(/\s+/));img.setAttribute('srcset',(await Promise.all(tokens.map(async ([src,size])=>(await inlined(abs(src)))+(size?' '+size:'')))).join(', '));}
       img.src=await inlined(abs(img.getAttribute('src')));
     }));
-    root.querySelectorAll('[data-bs-id]').forEach(e=>[...e.attributes].filter(a=>a.name.startsWith('data-bs-')&&a.name!=='data-bs-bg'&&a.name!=='data-bs-look').forEach(a=>e.removeAttribute(a.name)));
+    root.querySelectorAll('[data-bs-id]').forEach(e=>[...e.attributes].filter(a=>a.name.startsWith('data-bs-')&&a.name!=='data-bs-bg'&&a.name!=='data-bs-look'&&!StudioDeviceLayout.markers.includes(a.name)).forEach(a=>e.removeAttribute(a.name)));
     root.querySelector('.site-header')?.classList.remove('is-scrolled');
     root.querySelector('.header-nav')?.classList.remove('is-open','is-pinned');
     root.querySelector('.nav-dropdown')?.classList.remove('open');
@@ -909,10 +927,10 @@ function handleSelectionArrow(e){
   return true;
 }
 function sectionOrder(focusId,focusStep){
-  const put=open('Section order','PAGE LAYOUT');
+  const put=open('Jump to section','PAGE LAYOUT');
   const rows=rowList();
   if(!rows.length){para('There are no sections to reorder.');put();return;}
-  para('Use the up and down arrows to reorder the page. Click a name to jump to that section.');
+  para('Choose a section to jump to it, or use the arrows to change its order.');
   const list=create('ol',{class:'section-order-list'});body.append(list);
   let focus;
   for(const [index,row] of rows.entries()){
@@ -979,6 +997,7 @@ function openSettings(n) {
     if(photo)button(actions,'Select card image',()=>choose(photo));
     if(title)button(actions,'Edit card heading',()=>choose(title));
     dragResetControl(actions,n);
+    if(typeof StudioDeviceLayout!=='undefined')StudioDeviceLayout.controls(n);
     place();return;
   }
   if(n.hasAttribute('data-bs-divider')){
@@ -1025,6 +1044,7 @@ function openSettings(n) {
     button(a,'＋ Add section below',()=>rowChoices(n,'after'));
     button(a,'Add element',()=>startAdd(n));
     button(a,'Duplicate section',()=>cloneSelected(n));
+    if(typeof StudioDeviceLayout!=='undefined')StudioDeviceLayout.controls(n);
     place();return;
   }
   const k=n.dataset.bsKind, e=content(n);
@@ -1140,6 +1160,7 @@ function openSettings(n) {
     const colorInput=input(details,'Text color',hex,{type:'color'},x=>record({kind:'text-color',id:idOf(n),value:x.value},color));
     button(details,'Reset color',()=>{record({kind:'text-color',id:idOf(n),value:''});colorInput.value=hex;});
   }
+  if(typeof StudioDeviceLayout!=='undefined')StudioDeviceLayout.controls(n);
   place();
 }
 function columnCountControl(parent,count,action,submit){
@@ -1798,9 +1819,10 @@ function switchView(b){
   if(resizeDrag)stopResize(false);
   if(drag)finishDrag(false);
   if(paletteDrag)finishPaletteDrag();
-  endColumnDrag(false);view=b.dataset.view;stage.dataset.view=view;syncViewport();
+  endColumnDrag(false);const devicePanel=body.querySelector('.responsive-fields')||['ELEMENT SETTINGS','CARD SETTINGS','SECTION SETTINGS','DIVIDER SETTINGS'].includes($('popup-type').textContent);view=b.dataset.view;stage.dataset.view=view;syncViewport();
   document.querySelectorAll('[data-view]').forEach(el=>{if(el.tagName==='BUTTON')el.setAttribute('aria-pressed',String(el===b));});
   requestAnimationFrame(()=>{refreshFreeSizes();paint();if(now()&&!popup.hidden){
+    if(devicePanel)openSettings(now());
     const reset=$('reset-drag-position');
     if(reset)reset.textContent=devicePlacement()==='desktop'?'Reset shared drag position':'Use desktop drag position';
     adjustPopup(now());
@@ -1824,7 +1846,7 @@ $('import-draft').onclick=()=>{toggleMenu(false);$('import-file').value='';$('im
 $('import-file').onchange=async()=>{
   const file=$('import-file').files[0], epoch=canvasEpoch;if(!file)return;
   if(file.size>MAX_JSON){flash('This draft is too large to import.');return;}
-  try{const raw=await file.text();if(epoch!==canvasEpoch)return;list=readDraft(raw);StudioPublish.bindSource(JSON.parse(raw).publishedBase||null);cursor=list.length;active=null;close();replay();flash('Draft imported. Save it to keep it in this browser.');}catch(e){flash(e.message);}
+  try{const raw=await file.text();if(epoch!==canvasEpoch)return;list=readDraft(raw);StudioPublish.bindSource(JSON.parse(raw).publishedBase||null);cursor=list.length;active=null;close();replay();StudioWorkflow.schedule();flash('Draft imported. Nothing was published.');}catch(e){flash(e.message);}
 };
 $('export-html').onclick=()=>{toggleMenu(false);exportStandalone();};
 $('compare').onclick=()=>{toggleMenu(false);window.open(canvasPath(),'_blank','noopener,noreferrer');};
@@ -1868,12 +1890,13 @@ $('recover-drafts').onclick=async()=>{
 };
 $('reset').onclick=()=>{
   toggleMenu(false);const place=open('Reset this draft?','DRAFT TOOLS');
-  para('This discards the local working draft and returns the editor to the current live version. The website will not change.');
+  para('This resets the working draft to the current live page. If signed in, the matching cloud copy is also cleared. The website will not change.');
   button(group(),'Reset to live',()=>{
     const key=storageKey();
     saveQueue=saveQueue.catch(()=>{}).then(()=>clearBrowserDraft(key));
     StudioPublish.bindSource(liveSource);
     list=liveOps.slice();cursor=list.length;savedOps=list.slice();active=null;close();replay();
+    void StudioWorkflow.forgetCloud();
     void syncLiveCanvas();
     flash(liveRevision?'Live version restored.':'Local draft cleared. Waiting for GitHub Pages.');
   },{class:'danger'});place();
@@ -1943,7 +1966,7 @@ function boot(){
     busyCanvas(false);
     if(mode==='preview')for(const id of ['add','add-section','section-order','page-seo'])$(id).disabled=true;
     switching=false;if(picker)picker.disabled=false;paint();
-    $('hint').textContent=mode==='edit'?defaultHint():$('hint').textContent;showState();
+    $('hint').textContent=mode==='edit'?defaultHint():$('hint').textContent;showState();StudioWorkflow.pageReady();
   });
 }
 window.addEventListener('resize',()=>{if(!baselineReady)return;syncViewport();paint();if(!popup.hidden)adjustPopup(now());});
@@ -1997,4 +2020,6 @@ loadCanvas();
 // Check again when returning to the editor and while a tab stays open.
 window.addEventListener('focus',()=>void syncLiveCanvas());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void syncLiveCanvas();});
+if(typeof StudioWorkflow!=='undefined')StudioWorkflow.start();
 setInterval(()=>{if(!document.hidden)void syncLiveCanvas();},12000);
+window.addEventListener('online',()=>{if(baselineReady){void syncLiveCanvas();void StudioWorkflow.sync();}});

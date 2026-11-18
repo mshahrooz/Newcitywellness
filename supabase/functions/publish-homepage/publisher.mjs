@@ -3,6 +3,7 @@ import { createHash, sign } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { parseFragment } from 'npm:parse5@8.1.1';
 import './embeds.js';
+import { draftAction, studioState } from './studio-state.mjs';
 import { PAGES, EMBEDS, pageFiles, pageDependencies } from './pages.mjs';
 
 const repo='mshahrooz/Newcitywellness', base='/repos/'+repo;
@@ -220,7 +221,9 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
       const page = PAGES.find(p=>p[0]===key);
       if (!page) fail(400, 'This page is not editable in Studio.');
       const {source,draft}=pageFiles(key);
-      if (!['check', 'status', 'publish'].includes(action)) fail(400, 'Unknown publishing action.');
+      const tools=studioState({request,env,authUser:actor,page:key,now,fail});
+      if (draftAction(action)) return await tools.handle(action,req,params,headers,json);
+      if (!['check','status','publish','history','history-version'].includes(action)) fail(400, 'Unknown publishing action.');
       let files, pub, state;
       if (action === 'publish') {
         if (req.headers.get('content-type') !== packageType) fail(415, 'The editor must send a ZIP package.');
@@ -261,6 +264,35 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
       }, appJwt);
       if (typeof app.token !== 'string' || app.permissions?.contents !== 'write') fail(503, accessHint);
       const git = (path, description, method, data) => gh(base + path, description, method, data, app.token);
+      if (action === 'history' || action === 'history-version') {
+        const pageNo=Number(params.get('offset')||1);
+        if(!Number.isInteger(pageNo)||pageNo<1||pageNo>100)fail(400,'Unknown history range.');
+        const perPage=15;
+        if(action==='history') {
+          const commits=await git('/commits?sha=main&path='+encodeURIComponent(source)+'&per_page='+perPage+'&page='+pageNo,'read the selected page history');
+          if(!Array.isArray(commits))fail(502,'GitHub did not return the page history.');
+          const found=commits.filter(x=>sha.test(x?.sha));
+          const authors=await tools.authors(found.map(x=>x.sha)).catch(()=>new Map());
+          return json({ok:true,more:commits.length===perPage&&pageNo<100,entries:found.map(x=>({
+            commit:x.sha, date:x.commit?.committer?.date||x.commit?.author?.date||null,
+            publisher:authors.get(x.sha)||x.author?.login||(x.commit?.message?.startsWith('Publish New City Wellness')?'Studio publisher':'GitHub contributor'),
+          }))});
+        }
+        const commit=params.get('commit');
+        if(!sha.test(commit))fail(400,'Choose a valid page version.');
+        const history=await git('/commits?sha=main&path='+encodeURIComponent(source)+'&per_page='+perPage+'&page='+pageNo,'verify the selected history version');
+        if(!Array.isArray(history)||!history.some(x=>x.sha===commit))fail(404,'This version is not in the selected page history. Reopen History and try again.');
+        const historical=async path=>{
+          const file=await git('/contents/'+segments(path)+'?ref='+commit,'read the saved page version');
+          if(file.encoding!=='base64'||typeof file.content!=='string'||!sha.test(file.sha))fail(502,'A saved version file is missing.');
+          const buffer=Buffer.from(file.content,'base64');
+          if(buffer.length>maxText||gitSha(buffer)!==file.sha)fail(502,'A saved version file could not be verified.');
+          return {buffer,sha:file.sha};
+        };
+        const [htmlRecord,draftRecord]=await Promise.all([historical(source),historical(draft)]);
+        const {pub:old,state:oldDraft}=readPublication(new Map([[source,htmlRecord.buffer],[draft,draftRecord.buffer]]),key,guardPaths);
+        return json({ok:true,html:old.html,guard:old.guard,publication:old.id,source:htmlRecord.sha,draft:oldDraft});
+      }
       if (action === 'check') {
         // The empty blob does not change any file, branch, commit or deployment.
         const probe = await git('/git/blobs', 'write to Newcitywellness', 'POST', { encoding: 'base64', content: '' });
@@ -330,6 +362,8 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
       if (await getHead() !== head) fail(409, 'Main changed while the draft was being prepared. Reload the editor.');
       const updated = await git('/git/refs/heads/main', 'advance the live branch', 'PATCH', { sha: made.sha, force: false });
       if (updated.object?.sha !== made.sha) fail(502, 'GitHub did not confirm the commit. Check the Pages build before retrying.');
+      // This is private attribution. A database outage must not misreport a Git commit that succeeded.
+      await tools.recordAuthor(made.sha).catch(()=>null);
       return json({ ok: true, sha: made.sha, id: pub.id, source: gitSha(files.get(source)) });
     } catch (e) {
       if (e instanceof PublishError) return json({ error: e.message }, e.status);

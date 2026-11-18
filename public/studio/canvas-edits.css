@@ -122,6 +122,28 @@
 .bs-editor-mode [data-bs-drag-origin] *{pointer-events:none!important}
 .bs-editor-mode .bs-drag-ghost[data-bs-lifted]{opacity:.94;will-change:transform}
 
+/* Studio device overrides are opt-in. With no override, the shared/native layout wins. */
+@media(min-width:601px) and (max-width:900px){
+  [data-bs-responsive-tablet~="width"]{width:var(--bs-device-tablet-width)!important}
+  [data-bs-responsive-tablet~="height"]{min-height:var(--bs-device-tablet-height)!important}
+  [data-bs-responsive-tablet~="font"]{font-size:var(--bs-device-tablet-font)!important}
+  [data-bs-responsive-tablet~="align"]{text-align:var(--bs-device-tablet-align)!important}
+  [data-bs-responsive-tablet~="pad-top"]{padding-top:var(--bs-device-tablet-pad-top)!important}
+  [data-bs-responsive-tablet~="pad-right"]{padding-right:var(--bs-device-tablet-pad-right)!important}
+  [data-bs-responsive-tablet~="pad-bottom"]{padding-bottom:var(--bs-device-tablet-pad-bottom)!important}
+  [data-bs-responsive-tablet~="pad-left"]{padding-left:var(--bs-device-tablet-pad-left)!important}
+}
+@media(max-width:600px){
+  [data-bs-responsive-mobile~="width"]{width:var(--bs-device-mobile-width)!important}
+  [data-bs-responsive-mobile~="height"]{min-height:var(--bs-device-mobile-height)!important}
+  [data-bs-responsive-mobile~="font"]{font-size:var(--bs-device-mobile-font)!important}
+  [data-bs-responsive-mobile~="align"]{text-align:var(--bs-device-mobile-align)!important}
+  [data-bs-responsive-mobile~="pad-top"]{padding-top:var(--bs-device-mobile-pad-top)!important}
+  [data-bs-responsive-mobile~="pad-right"]{padding-right:var(--bs-device-mobile-pad-right)!important}
+  [data-bs-responsive-mobile~="pad-bottom"]{padding-bottom:var(--bs-device-mobile-pad-bottom)!important}
+  [data-bs-responsive-mobile~="pad-left"]{padding-left:var(--bs-device-mobile-pad-left)!important}
+}
+
 /* Desktop offsets are shared. Smaller screens can add their own adjustments. */
 .ncw .bs-offset-item,.floating-booking-link.bs-offset-item{
   /* Reset inherited custom properties so two nested edited elements don't share offsets. */

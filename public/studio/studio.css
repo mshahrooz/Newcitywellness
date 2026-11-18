@@ -208,3 +208,22 @@ html.bs-resizing,html.bs-resizing *{cursor:var(--resize-cursor,ns-resize)!import
 }
 .popup-body .publish-website-button:focus-visible{outline:3px solid #8ddbb1;outline-offset:3px}
 .popup-body .publish-website-button:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+
+/* Revision tools sit outside the single-action publish window. */
+#publish-status[data-state="live"]{color:#126339}
+#publish-status[data-state="pending"]{color:#3456b0}
+#publish-status[data-state="conflict"]{color:#8c4115}
+@media(max-width:690px){
+  .status-pair #publish-status[data-state]{display:inline}
+  .status-pair{white-space:normal;gap:8px;flex-wrap:wrap}
+}
+.responsive-fields .responsive-sizes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.responsive-spacing-label{font-weight:650;font-size:12px}
+.studio-versions,.studio-changes{padding:0;margin:0;list-style:none;display:grid;gap:8px}
+.studio-versions li,.studio-changes li{padding:9px 10px;border:1px solid #dce8df;border-radius:8px;background:#f6f9f6;overflow-wrap:anywhere}
+.studio-versions li{display:flex;gap:9px;align-items:center;justify-content:space-between}
+.studio-versions strong,.studio-versions small{display:block}
+.studio-versions small,.studio-change-copy{margin:3px 0 0;font-size:12px;color:#50685b}
+.studio-history-preview{width:100%;height:clamp(240px,45dvh,470px);border:1px solid #dce8df;border-radius:8px;background:white}
+.studio-change-copy del{color:#8b342c}
+.studio-change-copy ins{color:#156741;text-decoration:none}

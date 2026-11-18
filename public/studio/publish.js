@@ -174,7 +174,7 @@ const StudioPublish = (() => {
       for(const attr of [...node.attributes]){
         const key=attr.name, value=attr.value;
         if(key.startsWith('on')||['srcdoc','formaction','action','ping','nonce','integrity','contenteditable','autofocus'].includes(key))node.removeAttribute(key);
-        else if(key.startsWith('data-bs-')&&!['data-bs-bg','data-bs-look','data-bs-coord-mobile'].includes(key))node.removeAttribute(key);
+        else if(key.startsWith('data-bs-')&&!['data-bs-bg','data-bs-look','data-bs-coord-mobile','data-bs-responsive-mobile','data-bs-responsive-tablet'].includes(key))node.removeAttribute(key);
         else if(key==='style'&&checkStyle.test(value))throw Error('The draft contains an unsupported design setting.');
       }
       if(node.hasAttribute('href')){
@@ -357,7 +357,7 @@ const StudioPublish = (() => {
     if(!response)throw Error('Could not reach Supabase sign-in. Try again.');
     if(response.status===429)throw Error('Too many sign-in attempts. Try again later.');
     if(!response.ok||!info?.access_token||!info?.user?.email)throw Error('Sign-in did not work. Check the email and password for your publisher account.');
-    publisherSession={token:info.access_token, email:info.user.email, exp:Date.now()+(info.expires_in||3600)*1000-5000};
+    publisherSession={token:info.access_token, user:info.user.id, email:info.user.email, exp:Date.now()+(info.expires_in||3600)*1000-5000};
   }
   async function signOut(){
     const token=publisherSession?.token;
@@ -367,20 +367,28 @@ const StudioPublish = (() => {
       headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+token},
     }).catch(()=>null);
   }
-  async function publisher(action, zip){
+  const canCloud=()=>signedIn()&&!!publisherSession.user&&supabaseReady()&&location.origin===SITE_ORIGIN;
+  const compatible=guard=>!!guard&&!!canvasGuard()&&guardPaths().every(name=>guard[name]===canvasGuard()[name]);
+  async function publisher(action, zip, params={}, target=selected(), raw=false){
     if(!signedIn())throw Error('Your session expired. Sign in again.');
     let response;
+    const query=new URLSearchParams({action,page:target[0]});
+    for(const [key,val] of Object.entries(params))if(val!==undefined&&val!==null)query.set(key,String(val));
     try{
-      response=await fetch(STUDIO_AUTH.url+'/functions/v1/publish-homepage?action='+action+'&page='+encodeURIComponent(selected()[0]),{
+      response=await fetch(STUDIO_AUTH.url+'/functions/v1/publish-homepage?'+query,{
         method:'POST',credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(145000),
-        headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+publisherSession.token,...(zip?{'Content-Type':'application/zip'}:{})},
+        headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+publisherSession.token,...(zip?{'Content-Type':action==='draft-write'?'application/octet-stream':'application/zip'}:{})},
         ...(zip?{body:zip}:{}),
       });
     }catch{throw Error(action==='publish'?'Could not confirm publishing. Check the GitHub Pages build before retrying.':'Could not reach the publishing service. Your draft is unchanged. Try again.');}
+    if(raw&&response.ok)return response;
     const result=await response.json().catch(()=>null);
     if(response.status===401)publisherSession=null;
-    if(response.status===413)throw Error(result?.error||'The publication exceeds the upload limit. Reduce the uploaded media and try again.');
-    if(!response.ok||!result?.ok)throw Error(result?.error||(response.status===401?'Your session expired. Sign in again.':'The editor could not confirm publishing.'));
+    if(!response.ok||!result?.ok){
+      const fallback=response.status===401?'Your session expired. Sign in again.':response.status===413?'This upload exceeds the server limit. Your browser draft is unchanged.':'The Studio service could not confirm this request.';
+      const error=Error(result?.error||fallback);
+      error.status=response.status;throw error;
+    }
     return result;
   }
   function bindSource(source){loadedSource=source;}
@@ -415,6 +423,7 @@ const StudioPublish = (() => {
     const authArea=group('publisher-auth');
     authArea.before(identity);
     const activeDraft=mode==='edit'&&(!!cursor||!!loadedSource);
+    const publishing=()=>typeof StudioWorkflow!=='undefined'&&StudioWorkflow.isPending();
     if(!activeDraft)para(mode==='edit'?'Make a page edit before publishing.':'Use Back to editing before publishing.');
     const feedback=create('p',{role:'status',class:'publish-feedback'});
     body.append(feedback);
@@ -422,13 +431,13 @@ const StudioPublish = (() => {
     const progress=message=>{feedback.textContent=message;};
     const running=value=>{
       busy=value;
-      direct.disabled=value||!signedIn()||!activeDraft;
+      direct.disabled=value||!signedIn()||!activeDraft||publishing();
       $('publish').disabled=value;
       if($('page-picker'))$('page-picker').disabled=value;
       authArea.querySelectorAll('button,input').forEach(el=>{el.disabled=value;});
     };
     const direct=button(controls,'Publish Website',async()=>{
-      if(busy||!signedIn()||!activeDraft)return;
+      if(busy||!signedIn()||!activeDraft||publishing())return;
       running(true);
       try{
         const target=selected(), snapshot=draftString();
@@ -436,12 +445,16 @@ const StudioPublish = (() => {
         if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
         if(zip.size>MAX_UPLOAD)throw Error('This publish exceeds 32 MB in total. Publish the uploads in smaller batches.');
         progress('Publishing the selected page and its media…');
+        if(!await save({quiet:true}))throw Error('Studio could not keep a browser copy of this draft. Download it before publishing.');
+        if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
         const result=await publisher('publish',zip);
         const pendingLive=create('span');
         feedback.replaceChildren(pendingLive);
         pendingLive.textContent='Changes saved to GitHub. Waiting for the updated page to go live…';
-        if(result.id===id&&VALID_SHA.test(result.source)){
+        if(result.id!==id||!VALID_SHA.test(result.source))throw Error('GitHub did not confirm the submitted revision. Your draft is still here.');
+        {
           rememberSubmitted(target[0],id,snapshot);
+          StudioWorkflow.submitted(target,id);
           void save({quiet:true});
           void waitForLivePublication(target,id,pendingLive,pos);
         }
@@ -457,6 +470,7 @@ const StudioPublish = (() => {
         identity.textContent='Signed in as '+publisherSession.email+'.';
         button(authArea,'Sign out',async()=>{
           running(true);
+          if(await StudioWorkflow.disconnect()===false){running(false);return;}
           await signOut();
           running(false);
           showAuth();
@@ -473,7 +487,7 @@ const StudioPublish = (() => {
           if(busy)return;
           const address=email.value.trim(),secret=password.value;
           running(true);progress('Signing in…');
-          try{await signIn(address,secret);progress('');showAuth();}
+          try{await signIn(address,secret);progress('');showAuth();void StudioWorkflow.connect(publisherSession.user);}
           catch(e){progress(e.message);}
           finally{password.value='';running(false);pos();}
         });
@@ -481,13 +495,14 @@ const StudioPublish = (() => {
       running(busy);pos();
     }
     showAuth();
+    if(publishing())progress('Publishing… GitHub Pages is preparing the updated website.');
   }
   const start=()=>{
     if(!$('publish'))return;
     $('publish').onclick=panel;
     $('publish-status').textContent='Ready to edit';
   };
-  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,isBusy:()=>busy};
+  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,canCloud,compatible,fromPublishedDraft:remoteDraft,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
 })();
 
 StudioPublish.start();
