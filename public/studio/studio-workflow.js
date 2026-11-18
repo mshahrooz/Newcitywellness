@@ -132,7 +132,10 @@ const StudioWorkflow=(()=>{
     const target=page, mark=nowKey(), k=key();
     if(!slots.has(k))slots.set(k,{});
     const s=slots.get(k);
-    if(s.task)return;
+    if(s.task){
+      s.again=true;s.allowClear=s.allowClear||allowClear;
+      return s.task;
+    }
     const run=(async()=>{
       try{
         s.error=null;
@@ -169,10 +172,11 @@ const StudioWorkflow=(()=>{
     s.task=run;pendingWrite=run;touchStatus();
     try{await run;}finally{
       s.task=null;if(pendingWrite===run)pendingWrite=null;
-      if(current(mark)){
-        touchStatus();
-        if(!s.remote&&!s.error&&!clean()&&s.current&&s.current!==draftString())schedule();
-      }
+      const again=s.again, clearAfter=s.allowClear;
+      s.again=false;s.allowClear=false;
+      if(current(mark))touchStatus();
+      if(again&&slot()===s)void sync({allowClear:clearAfter});
+      else if(current(mark)&&!s.remote&&!s.error&&!clean()&&s.current&&s.current!==draftString())schedule();
     }
   }
   function pageReady(){

@@ -96,3 +96,38 @@ test('private draft writes use a per-user compare and swap, and keep the winner 
   assert.deepEqual([...new Uint8Array(await download.arrayBuffer())],[8]);
   assert.equal(objects.size,2); // stale attempted upload removed, never the new winner
 });
+
+test('an edit made during a cloud upload gets its own follow-up sync',async()=>{
+  const uploads=[];
+  let draft='one', resume;
+  const raw=()=>JSON.stringify({version:1,page:'new-city-wellness-homepage',publishedBase:null,
+    operations:[{kind:'text',id:'headline',value:draft}]});
+  const workflow=vm.runInNewContext(fs.readFileSync('public/studio/studio-workflow.js','utf8')+'\nStudioWorkflow',{
+    canvasEpoch:1,page:['home'],liveOps:[],liveSource:null,liveRevision:'live',baselineReady:true,switching:false,
+    readBrowserDraft:async()=>null,storageKey:()=>'',saveQueue:Promise.resolve(),operationsMatch:()=>false,
+    showState:()=>{},draftString:raw,sameOperations:(a,b)=>JSON.stringify(a)===JSON.stringify(b),
+    clearTimeout:()=>{},setTimeout:()=>0,Blob,Response,CompressionStream,
+    StudioPublish:{baseOfDraft:()=>null,canCloud:()=>true,action:async(action,query,target,body)=>{
+      if(action==='draft-info')return {draft:null};
+      if(action!=='draft-write')throw Error(action);
+      const data=require('node:zlib').gunzipSync(Buffer.from(await body.arrayBuffer()));
+      uploads.push(JSON.parse(data).operations[0].value);
+      if(uploads.length===1)await new Promise(resolve=>{resume=resolve;});
+      return {draft:{revision:'rev-'+uploads.length}};
+    }}
+  });
+  await workflow.connect('user');
+  const wait=async predicate=>{
+    const end=Date.now()+2000;
+    while(!predicate()&&Date.now()<end)await new Promise(resolve=>setTimeout(resolve,10));
+    assert.ok(predicate());
+  };
+  await wait(()=>!!resume);
+  draft='two';
+  workflow.schedule();
+  const queued=workflow.sync({allowClear:true});
+  resume();
+  await queued;
+  await wait(()=>uploads.length===2);
+  assert.deepEqual(uploads,['one','two']);
+});
