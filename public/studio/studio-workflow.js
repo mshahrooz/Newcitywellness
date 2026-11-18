@@ -235,8 +235,20 @@ const StudioWorkflow=(()=>{
     const status=create('p',{class:'muted',role:'status'});actions.before(status);
     if(!remote){
       if(!stale()){close();return;}
-      status.textContent='This draft was based on an earlier live version. You can keep editing it or open the current live page. Nothing will be published.';
+      status.textContent='This draft was based on an earlier live version. Open the live page, or keep this draft for review. If you later publish this draft, it can replace changes made on the live page since you started.';
       button(actions,'Download this draft',()=>exportFile(draftString(),pageIdentity()+'-draft.json','application/json'));
+      const review=button(actions,'Keep this draft for review',async()=>{
+        if(!current(mark))return;
+        const buttons=[...actions.querySelectorAll('button')], picker=$('page-picker');
+        for(const b of buttons)b.disabled=true;
+        if(picker)picker.disabled=true;
+        try{
+          await StudioPublish.reviewBase();
+          if(current(mark)&&status.isConnected){close();flash('Draft kept. Review the page before using Publish Website. Nothing was published.');}
+        }catch(error){status.textContent=error.message;}
+        finally{for(const b of buttons)b.disabled=false;if(picker&&current(mark))picker.disabled=false;}
+      });
+      review.disabled=!StudioPublish.canCloud();
       button(actions,'Open live page in Studio',async()=>{
         const raw=draftString();
         if(!await recoverLater(raw)){status.textContent='The older draft could not be saved. Download it before opening the live page.';return;}
@@ -272,5 +284,5 @@ const StudioWorkflow=(()=>{
   function start(){
     $('draft-conflict').onclick=resolveDraft;
   }
-  return {start,account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,canRevert};
+  return {start,account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,canRevert,resolveDraft};
 })();

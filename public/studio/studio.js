@@ -82,12 +82,14 @@ function resetBody(){
 function replay(){
   const doc=D, t=doc.defaultView.scrollY;
   resetBody();
-  for(const op of list.slice(0,cursor))apply(op);
+  let complete=true;
+  for(const op of list.slice(0,cursor))if(!apply(op))complete=false;
   refreshFreeSizes();
   stopBehavior=wireBehavior();
   requestAnimationFrame(()=>{if(D===doc){doc.defaultView.scrollTo(0,t);paint();}});
   if(active&&!byId(active)) active=null;
   showState();paint();
+  return complete;
 }
 function stepHistory(step){
   if(!StudioInline.finish())return;

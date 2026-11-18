@@ -282,6 +282,45 @@ const StudioPublish = (() => {
     }));
     return {...revision,operations:ops};
   }
+  function checkCanvas(current){
+    const local=canvasGuard();
+    if(!local||!guardPaths().every(name=>local[name]===current.guard[name])){
+      throw Error('This editor is based on an older version of the original site. Save your draft and reload Studio.');
+    }
+  }
+  async function reconcileBase(current,replace=false){
+    if(current.source===loadedSource)return;
+    const target=selected(), epoch=canvasEpoch, before=draftString(), oldBase=loadedSource;
+    const unchanged=()=>canvasEpoch===epoch&&draftString()===before;
+    const state=await liveManifest(target);
+    if(!state||state.source!==current.source){
+      throw Error('A newer commit is still deploying to GitHub Pages. Your draft is unchanged. Try Publish again after Pages finishes.');
+    }
+    const publicDraft=await loadLiveDraft(target,state);
+    if(!unchanged())throw Error('Your draft changed during the live check. Try again when you finish editing.');
+    const deployed=readDraft(JSON.stringify(publicDraft||{version:1,page:pageIdentity(),operations:[]}));
+    const ours=readDraft(before);
+    const includesLive=deployed.length>0&&sameOperations(ours.slice(0,deployed.length),deployed);
+    liveSource=state.source;liveRevision=state.revision;liveOps=deployed;
+    showState();
+    if(!includesLive&&!replace){
+      const conflict=Error('GitHub Pages is up to date, but this draft started from an older version. Review the draft before publishing.');
+      conflict.code='STUDIO_DRAFT_BASE_CONFLICT';throw conflict;
+    }
+    if(!await recoverLater(before))throw Error('Studio could not back up the older draft. The draft is unchanged.');
+    if(!unchanged())throw Error('Your draft changed during the live check. Try again when you finish editing.');
+    if(!replay())throw Error('Some edits came from an older or unavailable editor feature. The draft has been backed up. Review the latest live page before publishing.');
+    bindSource(state.source);
+    if(!await save({quiet:true})){
+      bindSource(oldBase);showState();throw Error('Studio could not save the updated draft. Your original draft was kept.');
+    }
+    StudioWorkflow.schedule();
+  }
+  async function reviewBase(){
+    const current=await status(true);
+    checkCanvas(current);
+    await reconcileBase(current,true);
+  }
   async function checkedPackage(update){
     if(drag||paletteDrag||resizeDrag)throw Error('Finish dragging or resizing before publishing.');
     const {SOURCE,DRAFT}=paths();
@@ -290,10 +329,8 @@ const StudioPublish = (() => {
     const current=await status(true);
     $('publish-status').textContent='GitHub Pages connected';
     $('publish-status').removeAttribute('title');
-    if(current.source!==loadedSource)throw Error('There is a newer version on GitHub. Studio will update automatically once that version is live on GitHub Pages.');
-    if(!canvasGuard()||!guardPaths().every(name=>canvasGuard()[name]===current.guard[name])){
-      throw Error('This editor is based on an older version of the original site. Its publishing connection needs to be refreshed.');
-    }
+    checkCanvas(current);
+    await reconcileBase(current);
     update('Preparing the selected page and its local media…');
     const snapshot=draftString();
     const ready=await prepare(D.body,JSON.parse(snapshot),{...current,canvas:frame.contentDocument.URL});
@@ -301,7 +338,7 @@ const StudioPublish = (() => {
     const files=new Map(ready.files);
     files.set(DRAFT,pack(utf8.encode(ready.draftText)));
     files.set(SOURCE,pack(utf8.encode(ready.content)));
-    return {current,ready,files};
+    return {current,ready,files,snapshot};
   }
   const crcTable=Uint32Array.from({length:256},(_,n)=>{
     for(let i=0;i<8;i++)n=(n>>>1)^((n&1)?0xedb88320:0);
@@ -335,8 +372,8 @@ const StudioPublish = (() => {
     return new Blob([...entries,...index,end],{type:'application/zip'});
   }
   async function preparedRevision(update=()=>{}){
-    const {files,ready}=await checkedPackage(update);
-    return {zip:uploadZip(files),id:ready.id};
+    const {files,ready,snapshot}=await checkedPackage(update);
+    return {zip:uploadZip(files),id:ready.id,snapshot};
   }
   async function githubPackage(update=()=>{}){
     return (await preparedRevision(update)).zip;
@@ -441,7 +478,7 @@ const StudioPublish = (() => {
       if(busy||!signedIn()||!activeDraft||publishing())return;
       running(true);
       try{
-        const target=selected(), snapshot=draftString();
+        const target=selected();
         if(reverting){
           if(!StudioWorkflow.canRevert())throw Error('Wait for Studio to verify this published page.');
           const previousRevision=liveRevision, expectedSource=liveSource;
@@ -459,7 +496,7 @@ const StudioPublish = (() => {
           void waitForLivePublication(target,result.id,feedbackLine,pos,previousRevision);
           return;
         }
-        const {zip,id}=await preparedRevision(progress);
+        const {zip,id,snapshot}=await preparedRevision(progress);
         if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
         if(zip.size>MAX_UPLOAD)throw Error('This publish exceeds 32 MB in total. Publish the uploads in smaller batches.');
         progress('Publishing the selected page and its media…');
@@ -476,7 +513,12 @@ const StudioPublish = (() => {
           void save({quiet:true});
           void waitForLivePublication(target,id,pendingLive,pos);
         }
-      }catch(e){progress(e.message);}
+      }catch(e){
+        progress(e.message);
+        if(e.code==='STUDIO_DRAFT_BASE_CONFLICT'){
+          button(feedback,'Review saved draft',StudioWorkflow.resolveDraft);
+        }
+      }
       finally{running(false);if(!signedIn())showAuth();pos();}
     },{class:reverting?'revert-live-button':'publish-website-button'});
     function showAuth(){
@@ -521,7 +563,7 @@ const StudioPublish = (() => {
     if($('revert'))$('revert').onclick=()=>panel(true);
     $('publish-status').textContent='Ready to edit';
   };
-  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,canCloud,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
+  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,reviewBase,canCloud,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
 })();
 
 StudioPublish.start();
