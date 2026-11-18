@@ -63,7 +63,8 @@ const StudioWorkflow=(()=>{
       if(!revert.hidden)revert.disabled=StudioPublish.isBusy();
     }
   }
-  const isPending=(target=page)=>{const state=pending(target[0]);return !!state&&Date.now()-state.at<180000;};
+  const pendingRelease=(target=page)=>{const state=pending(target[0]);return state&&Date.now()-state.at<180000?state:null;};
+  const isPending=(target=page)=>!!pendingRelease(target);
   const canRevert=()=>mode==='edit'&&!!liveRevision&&!!liveSource&&!switching&&!isPending();
   function draftStatus(){
     if(clean())return null;
@@ -279,5 +280,5 @@ const StudioWorkflow=(()=>{
     if(remote.raw)button(actions,'Open cloud copy',()=>exchange(true));
     button(actions,'Keep browser copy',()=>exchange(false));place();
   }
-  return {account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,canRevert,resolveDraft};
+  return {account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,pendingRelease,canRevert,resolveDraft};
 })();

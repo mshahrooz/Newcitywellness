@@ -593,20 +593,20 @@ function safeToSync(){
   const input=(!popup.hidden&&$('popup-type').textContent==='PAGE SEO')||$('popup-body').contains(document.activeElement)&&document.activeElement?.matches('input,textarea,select,[contenteditable]');
   return baselineReady&&!switching&&!StudioInline.running()&&!drag&&!paletteDrag&&!resizeDrag&&!columnDrag&&!gridPick&&!input&&!StudioPublish.isBusy();
 }
-async function syncLiveCanvas(){
+async function syncLiveCanvas(verified=null){
   if(liveSync||!safeToSync())return false;
   const epoch=canvasEpoch, target=page;
   const current=()=>epoch===canvasEpoch&&safeToSync();
   const sync=(async()=>{
     try{
-      const state=await StudioPublish.liveManifest(target);
+      const state=verified||await StudioPublish.liveManifest(target);
       if(!state||!current()||state.revision===liveRevision)return false;
       if(liveRevision&&state.source===liveSource){
-        await StudioPublish.verifyLivePage(target,state);
+        if(!verified)await StudioPublish.verifyLivePage(target,state);
         if(!current())return false;
         liveRevision=state.revision;StudioWorkflow.verified(target,state);showState();return false;
       }
-      const remote=await StudioPublish.loadLiveDraft(target,state);
+      const remote=await StudioPublish.loadLiveDraft(target,state,!!verified);
       if(!current())return false;
       const raw=JSON.stringify(remote?{...remote,publishedBase:state.source}:{version:1,page:pageIdentity(),operations:[],publishedBase:null});
       const operations=readDraft(raw), old=draftString();
@@ -628,7 +628,7 @@ async function syncLiveCanvas(){
         return true;
       }
       const panel=$('popup-type').textContent;
-      if(!popup.hidden&&!['GITHUB PAGES','DRAFT CONFLICT'].includes(panel))close();
+      if(!popup.hidden&&!['PUBLISHING','DRAFT CONFLICT'].includes(panel))close();
       setDraft(raw,operations);
       const key=storageKey();
       saveQueue=saveQueue.catch(()=>{}).then(()=>clearBrowserDraft(key));
@@ -672,6 +672,11 @@ function anchorRect(n){
 function now(){return active&&D?byId(active):null;}
 function adjustPopup(n, stable=false){
   if(popup.hidden||stable)return;
+  if(popup.dataset.panel==='publish'){
+    popup.style.left=Math.max(8,(window.innerWidth-popup.offsetWidth)/2)+'px';
+    popup.style.top=Math.max(8,(window.innerHeight-popup.offsetHeight)/2)+'px';
+    return;
+  }
   const r=n?anchorRect(n):null, ww=window.innerWidth, wh=window.innerHeight, w=popup.offsetWidth,h=popup.offsetHeight;
   let left=ww-w-12, top=($('subbar').getBoundingClientRect().bottom||90)+8;
   if(r){
@@ -734,7 +739,8 @@ function paint(){
 }
 function close(){popup.hidden=true;gesture=null;$('page-seo').setAttribute('aria-expanded','false');}
 function open(title,category,anchor=null){
-  $('popup-title').textContent=title;$('popup-type').textContent=category;
+  popup.dataset.panel=category==='GITHUB PAGES'?'publish':'settings';
+  $('popup-title').textContent=title;$('popup-type').textContent=category==='GITHUB PAGES'?'PUBLISHING':category;
   $('page-seo').setAttribute('aria-expanded',String(category==='PAGE SEO'));
   body.replaceChildren();body.scrollTop=0;popup.hidden=false;gesture=null;
   const footer=$('popup-footer'),remove=$('delete-element');

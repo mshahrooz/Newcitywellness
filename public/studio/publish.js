@@ -258,10 +258,10 @@ const StudioPublish = (() => {
     }
     return url.href;
   }
-  async function loadLiveDraft(target,state){
-    if(!state.source){await verifyLivePage(target,state);return null;}
+  async function loadLiveDraft(target,state,verified=false){
+    if(!state.source){if(!verified)await verifyLivePage(target,state);return null;}
     const {DRAFT}=paths(target[0]);
-    const [,draft]=await Promise.all([verifyLivePage(target,state),fetchLive(LIVE+DRAFT.slice('public/'.length)+'?ncw_rev='+state.revision)]);
+    const [,draft]=await Promise.all([verified?null:verifyLivePage(target,state),fetchLive(LIVE+DRAFT.slice('public/'.length)+'?ncw_rev='+state.revision)]);
     if(!draft.ok)throw Error('The deployed draft is not ready.');
     const bytes=new Uint8Array(await draft.arrayBuffer());
     if(await sha256(bytes)!==state.draftSha256)throw Error('The deployed draft is not ready.');
@@ -321,7 +321,7 @@ const StudioPublish = (() => {
     checkCanvas(current);
     await reconcileBase(current,true);
   }
-  async function checkedPackage(update){
+  async function checkedPackage(update,persist=false){
     if(drag||paletteDrag||resizeDrag)throw Error('Finish dragging or resizing before publishing.');
     const {SOURCE,DRAFT}=paths();
     if(!cursor&&!loadedSource)throw Error('Make a page edit first.');
@@ -333,7 +333,11 @@ const StudioPublish = (() => {
     await reconcileBase(current);
     update('Preparing the selected page and its local media…');
     const snapshot=draftString();
-    const ready=await prepare(D.body,JSON.parse(snapshot),{...current,canvas:frame.contentDocument.URL});
+    const [ready,saved]=await Promise.all([
+      prepare(D.body,JSON.parse(snapshot),{...current,canvas:frame.contentDocument.URL}),
+      persist?save({quiet:true}):true,
+    ]);
+    if(!saved)throw Error('Studio could not keep a browser copy of this draft. Download it before publishing.');
     if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
     const files=new Map(ready.files);
     files.set(DRAFT,pack(utf8.encode(ready.draftText)));
@@ -371,8 +375,8 @@ const StudioPublish = (() => {
     e.setUint32(12,totalIndex,true);e.setUint32(16,offset,true);
     return new Blob([...entries,...index,end],{type:'application/zip'});
   }
-  async function preparedRevision(update=()=>{}){
-    const {files,ready,snapshot}=await checkedPackage(update);
+  async function preparedRevision(update=()=>{},persist=false){
+    const {files,ready,snapshot}=await checkedPackage(update,persist);
     return {zip:uploadZip(files),id:ready.id,snapshot};
   }
   async function githubPackage(update=()=>{}){
@@ -429,33 +433,39 @@ const StudioPublish = (() => {
   }
   function bindSource(source){loadedSource=source;}
   function baseOfDraft(){return loadedSource;}
-  async function waitForLivePublication(target,id,feedback,pos,previousRevision){
+  const watching=new Set();
+  async function waitForLivePublication(target,id,previousRevision){
     if(id===null?!/^[a-f0-9]{24}$/.test(previousRevision):!/^[a-f0-9-]{36}$/.test(id))return;
-    const deadline=Date.now()+180000;
-    let interval=1200;
-    while(Date.now()<deadline){
-      try{
-        const live=await liveManifest(target);
-        if(live&&live.publication===id&&live.revision!==previousRevision){
-          await verifyLivePage(target,live);
-          if(feedback.isConnected){
-            feedback.textContent=previousRevision?'The previous version is live.':'Your changes are live on GitHub Pages.';
-            if(!popup.hidden)pos();
+    const key=target[0], token=key+':'+id+':'+(previousRevision||'');
+    if(watching.has(token))return;
+    watching.add(token);
+    const start=Date.now(), deadline=start+180000;
+    try{
+      while(Date.now()<deadline){
+        try{
+          const live=await liveManifest(target);
+          if(live&&live.publication===id&&live.revision!==previousRevision){
+            StudioRelease.set(key,'verify','GitHub has announced the release. Checking the public page…');
+            const url=await verifyLivePage(target,live);
+            StudioRelease.set(key,'live',previousRevision?'The previous version is back online.':'The published page is verified and ready for visitors.',url);
+            if(selected()[0]===key)void syncLiveCanvas(live);
+            return;
           }
-          if(selected()[0]===target[0])void syncLiveCanvas();
-          return;
-        }
-      }catch{ /* Pages may still be deploying. */ }
-      await new Promise(resolve=>setTimeout(resolve,interval));
-      interval=Math.min(interval*2,8000);
-    }
-    if(feedback.isConnected)feedback.textContent='Still waiting for GitHub Pages. Studio will pick up the deployed version automatically.';
+        }catch{ /* Pages may still be deploying. */ }
+        const elapsed=Date.now()-start;
+        await new Promise(resolve=>setTimeout(resolve,document.hidden?6000:elapsed<45000?1700:elapsed<90000?4500:8000));
+      }
+      StudioRelease.set(key,'deploy','GitHub Pages is taking longer than usual. You can close this box. Studio will keep checking in the background.');
+    }finally{watching.delete(token);}
   }
   function panel(reverting=false){
     if(busy||reverting&&!StudioWorkflow.canRevert())return;
     const pos=open(reverting?'Revert '+selected()[1]+'?':'Publish '+selected()[1],'GITHUB PAGES');
-    para(reverting?'This will put the previous published version of this page back on the live website. Other pages and your unpublished edits stay unchanged.'
-      :'Publish your changes to the selected page. Sign in with your approved publisher account.');
+    const target=selected(), key=target[0];
+    para(reverting?'Restore the previous published version. Other pages and your unpublished edits stay unchanged.'
+      :'Send your latest edits to the public site. You can close this panel once the changes are sent.');
+    if(!StudioWorkflow.isPending(target)&&(reverting||!operationsMatch(liveOps)))StudioRelease.clearFinished(key);
+    StudioRelease.mount(target,body);
     const identity=create('p',{class:'muted',role:'status'});
     const authArea=group('publisher-auth');
     authArea.before(identity);
@@ -478,43 +488,39 @@ const StudioPublish = (() => {
       if(busy||!signedIn()||!activeDraft||publishing())return;
       running(true);
       try{
-        const target=selected();
+        progress('');
+        StudioRelease.set(key,'prepare',reverting?'Checking the saved website version…':'Checking your draft and the live version…');
         if(reverting){
           if(!StudioWorkflow.canRevert())throw Error('Wait for Studio to verify this published page.');
           const previousRevision=liveRevision, expectedSource=liveSource;
           if((!operationsMatch(liveOps)||loadedSource!==liveSource)&&!await save({quiet:true})){
             throw Error('Studio could not save the current draft. This page was not reverted.');
           }
-          progress('Restoring the previous version…');
+          StudioRelease.set(key,'commit','Sending the previous version to GitHub…');
           const result=await publisher('revert',null,{source:expectedSource,revision:previousRevision},target);
           if(!VALID_SHA.test(result.sha)||!(result.id===null?result.source===null:/^[a-f0-9-]{36}$/.test(result.id)&&VALID_SHA.test(result.source))){
             throw Error('GitHub did not confirm the revert. Check the live page before trying again.');
           }
           StudioWorkflow.submitted(target,result.id,previousRevision);
-          const feedbackLine=create('span',{},'Revert saved to GitHub. Waiting for the previous version to go live…');
-          feedback.replaceChildren(feedbackLine);
-          void waitForLivePublication(target,result.id,feedbackLine,pos,previousRevision);
+          StudioRelease.set(key,'deploy','The previous version is saved to GitHub. GitHub Pages is deploying it.');
+          void waitForLivePublication(target,result.id,previousRevision);
           return;
         }
-        const {zip,id,snapshot}=await preparedRevision(progress);
+        const {zip,id,snapshot}=await preparedRevision(message=>StudioRelease.set(key,'prepare',message),true);
         if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
         if(zip.size>MAX_UPLOAD)throw Error('This publish exceeds 32 MB in total. Publish the uploads in smaller batches.');
-        progress('Publishing the selected page and its media…');
-        if(!await save({quiet:true}))throw Error('Studio could not keep a browser copy of this draft. Download it before publishing.');
-        if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
+        StudioRelease.set(key,'commit','Sending the selected page and media to GitHub…');
         const result=await publisher('publish',zip);
-        const pendingLive=create('span');
-        feedback.replaceChildren(pendingLive);
-        pendingLive.textContent='Changes saved to GitHub. Waiting for the updated page to go live…';
         if(result.id!==id||!VALID_SHA.test(result.source))throw Error('GitHub did not confirm the submitted revision. Your draft is still here.');
         {
           rememberSubmitted(target[0],id,snapshot);
           StudioWorkflow.submitted(target,id);
           void save({quiet:true});
-          void waitForLivePublication(target,id,pendingLive,pos);
+          StudioRelease.set(key,'deploy','GitHub has saved your changes. GitHub Pages is putting the new version online.');
+          void waitForLivePublication(target,id);
         }
       }catch(e){
-        progress(e.message);
+        StudioRelease.set(key,'error',e.message);
         if(e.code==='STUDIO_DRAFT_BASE_CONFLICT'){
           button(feedback,'Review saved draft',StudioWorkflow.resolveDraft);
         }
@@ -555,7 +561,11 @@ const StudioPublish = (() => {
       running(busy);pos();
     }
     showAuth();
-    if(publishing())progress('Publishing… GitHub Pages is preparing the updated website.');
+    const pending=StudioWorkflow.pendingRelease(target);
+    if(pending){
+      StudioRelease.set(key,'deploy','GitHub Pages is putting this version online.');
+      void waitForLivePublication(target,pending.id,pending.previousRevision);
+    }
   }
   const start=()=>{
     if(!$('publish'))return;
