@@ -126,6 +126,7 @@ function markCanvas() {
     });
   });
   registerExtraNodes();markMoreDraggables();markCardAndDividerTargets();markDirectDragSurfaces();
+  StudioText.mark(D,zoneOf);
 }
 function markMoreDraggables(){
   // Mark after legacy IDs so previously saved drafts retain their anchors.
@@ -426,6 +427,7 @@ function apply(op){
       return true;
     case 'row-gap':if(n.dataset.bsRow!=='custom')return false;n.querySelector(':scope > .bs-row-inner').style.setProperty('--bs-gap',bounded(op.value,0,80)+'px');return true;
     case 'row-color':if(n.dataset.bsRow!=='custom'||!/^#[0-9a-f]{6}$/i.test(op.value))return false;n.style.setProperty('--bs-row-color',op.value);return true;
+    case 'copy-text':return StudioText.apply(n,op);
     case 'text':
       if(!e||!['title','text','button','document','link','detail','subheading','quote','callout','accordion','bullets','numbered'].includes(k))return false;
       if(listKind(k))setList(e,op.value);
@@ -657,7 +659,7 @@ function fileRead(file,kind,done){
 }
 function anchorRect(n){
   if(!n?.isConnected)return null;
-  const f=frame.getBoundingClientRect(), r=StudioResize.box(n).getBoundingClientRect();
+  const f=frame.getBoundingClientRect(), r=StudioText.rect(n,StudioResize.box(n));
   const line=n.hasAttribute('data-bs-divider'), px=line&&r.width>0&&r.width<6?4:0,py=line&&r.height>0&&r.height<6?4:0;
   return {left:f.left+r.left-px,right:f.left+r.right+px,top:f.top+r.top-py,bottom:f.top+r.bottom+py,
     width:r.width+2*px,height:r.height+2*py,f};
@@ -681,7 +683,7 @@ function adjustPopup(n, stable=false){
 }
 let canvasDragTarget=null;
 function canDragCanvas(n){
-  return canDragIndependently(n)||!!(n?.isConnected&&n.hasAttribute('data-bs-row')&&n.parentElement===main());
+  return !n?.hasAttribute('data-bs-copy-only')&&(canDragIndependently(n)||!!(n?.isConnected&&n.hasAttribute('data-bs-row')&&n.parentElement===main()));
 }
 function syncCanvasDragTarget(n){
   const next=mode==='edit'&&canDragCanvas(n)?n:null;
@@ -705,7 +707,7 @@ function paint(){
   outline.hidden=false;
   $('selection-label').textContent=titleOf(n);
   $('drag').hidden=!canDragCanvas(n);
-  $('selection-add').hidden=false;
+  $('selection-add').hidden=n.hasAttribute('data-bs-copy-only');
   $('selection-section').hidden=row||!rowOf(n);
   for(const [id,step] of [['selection-up',-1],['selection-down',1]]){
     const control=$(id), direction=step<0?'up':'down';
@@ -715,8 +717,8 @@ function paint(){
     control.setAttribute('aria-label',label);
     control.title=control.disabled?'No movable item '+(step<0?'above':'below'):label;
   }
-  $('selection-duplicate').hidden=false;
-  paintResizeHandles(n,r);
+  $('selection-duplicate').hidden=n.hasAttribute('data-bs-copy-only');
+  if(n.hasAttribute('data-bs-copy-only'))hideResizeHandles();else paintResizeHandles(n,r);
   selection.hidden=false;
   const y=top-35>=r.f.top?top-35:top+2;
   selection.style.top=y+'px';
@@ -796,7 +798,8 @@ function targetFrom(el,wholeCard=false){
   if(divider)return divider;
   const card=therapyCard(el);
   if(wholeCard&&(card||StudioFlow.cardOf(el)))return card||StudioFlow.cardOf(el);
-  const exact=el.closest('[data-bs-kind]');
+  let exact=el.closest('[data-bs-kind]');
+  if(exact?.hasAttribute?.('data-bs-copy-only'))exact=exact.parentElement?.closest('[data-bs-kind]:not([data-bs-copy-only])');
   const interactive=el.closest('a[href][data-bs-kind],button[data-bs-kind],label[data-bs-kind],summary[data-bs-kind]');
   if(!wholeCard&&interactive&&exact?.dataset.bsId?.startsWith('detail-new-'))return interactive;
   if(card){
@@ -987,8 +990,8 @@ function openSettings(n) {
     if(typeof StudioDeviceLayout!=='undefined')StudioDeviceLayout.controls(n);
     place();return;
   }
-  const k=n.dataset.bsKind, e=content(n);
-  if(n.hasAttribute('data-bs-zone')||!['title','text','button','document','link','image','detail',...richKinds].includes(k)){
+  const k=n.dataset.bsKind, e=content(n), nativeCopy=StudioText.available(n);
+  if(n.hasAttribute('data-bs-zone')||!nativeCopy&&!['title','text','button','document','link','image','detail',...richKinds].includes(k)){
     const put=open(titleOf(n),'ELEMENT SETTINGS',n);
     const a=group();
     if(n.hasAttribute('data-bs-zone')){
@@ -1002,9 +1005,15 @@ function openSettings(n) {
     }
     put();return;
   }
-  const place=open(titleOf(n),'ELEMENT SETTINGS',n);
+  const copyOnly=nativeCopy&&(n.hasAttribute('data-bs-copy-only')||n.matches('input,textarea,select,label,summary,builder-copy'));
+  const place=open(copyOnly?'Edit '+StudioText.getLabel(n).toLowerCase():titleOf(n),copyOnly?'TEXT SETTINGS':'ELEMENT SETTINGS',n);
   if(StudioFlow.cardOf(n)===n)para('Drag this card over another card in its group to reorder it.');
-  if(imageKind(k)){
+  if(nativeCopy){
+    const token=Symbol(), label=StudioText.getLabel(n);
+    input(body,label,StudioText.value(n),{tag:label==='Placeholder'?'input':'textarea',class:'studio-text',maxlength:3000},el=>
+      record({kind:'copy-text',id:idOf(n),value:el.value},token));
+    if(copyOnly){place();return;}
+  }else if(imageKind(k)){
     replaceImageControl(body,n);
     if(therapyPhoto(n))para('Drag the image grip to adjust the crop. Select the whole card to move it with its image.');
     const token=Symbol();input(body,'Alternative text',n.dataset.bsAlt??e?.alt??'',{maxlength:250},el=>record({kind:'alt',id:idOf(n),value:el.value},token));
@@ -1803,12 +1812,13 @@ function boot(){
     const anchor=e.target.closest('a');
     if(anchor)e.preventDefault();
     if(gridPick){e.preventDefault();toggleElementSidebar(false);commitPick(e);return;}
+    const text=!e.altKey?StudioText.target(e.target):null;
     const summary=e.target.closest('summary');
-    if(summary&&!summary.closest('[data-bs-new]')&&!e.altKey&&!anchor){
+    if(!text&&summary&&!summary.closest('[data-bs-new]')&&!e.altKey&&!anchor){
       e.preventDefault();toggleElementSidebar(false);summary.parentElement.open=!summary.parentElement.open;choose(summary.parentElement,false);return;
     }
     if(e.target.closest('input,textarea,select,button'))e.preventDefault();
-    const n=dividerFrom(e.target,e.clientX,e.clientY)||
+    const n=text||dividerFrom(e.target,e.clientX,e.clientY)||
       (StudioFlow.cardOf(e.target)&&e.altKey?StudioFlow.cardOf(e.target):
         therapyCard(e.target)?targetFrom(e.target,e.altKey):e.altKey
           ?e.target.closest('[data-bs-kind]')?.parentElement?.closest('[data-bs-kind],[data-bs-column],[data-bs-row]')||targetFrom(e.target):targetFrom(e.target));
