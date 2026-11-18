@@ -1451,9 +1451,26 @@ function updateDrag(x,y,free=drag?.free){
   if(!drag.moved)return;
   const f=frame.getBoundingClientRect();
   if(!drag.node.isConnected||drag.layout.device!==devicePlacement()||x<f.left||x>=f.right||y<f.top||y>=f.bottom){
-    guide=null;releaseDragItem(drag);clearFlowPreview();hideGridVisual();return;
+    drag.centered=false;guide=null;releaseDragItem(drag);clearFlowPreview();hideGridVisual();return;
   }
   showDragGrid(f);
+  const dx=x-drag.startX,dy=y-drag.startY;
+  const findCenter=()=>centerDragTarget(drag.node,drag.layout,dx,dy,y-f.top,{snapped:drag.centered,free});
+  let center=drag.section?null:findCenter();
+  if(center&&(flowPreview||drag.cardChoice)){
+    clearFlowPreview();
+    if(drag.cardChoice)moveLiveCard(drag,null,false);
+    center=findCenter();
+  }
+  drag.centered=!!center;
+  if(center){
+    guide=center;
+    showCenterGuide(f,center);
+    drawGhost(drag.node,f.left+center.left,f.top+center.top,center.width,center.height,true);
+    drag.node.setAttribute('data-bs-drag-origin','');
+    return;
+  }
+  hideCenterGuide();
   if(drag.card&&!free){
     const choice=StudioFlow.cardTarget(drag.node,x-f.left,y-f.top,drag.cardSlots);
     if(choice?.node!==drag.cardChoice?.node){
@@ -1479,7 +1496,7 @@ function updateDrag(x,y,free=drag?.free){
     }
   } else clearFlowPreview();
   if(drag.section){guide=null;liftDragItem(drag,x,y);return;}
-  guide=offsetDragTarget(drag.node,drag.layout,x-drag.startX,y-drag.startY,!!free&&!drag.layout.crop);
+  guide=offsetDragTarget(drag.node,drag.layout,dx,dy,!!free&&!drag.layout.crop);
   const {left,top,width,height}=guide;
   drawGhost(drag.node,f.left+left,f.top+top,width,height,true);
   drag.node.setAttribute('data-bs-drag-origin','');

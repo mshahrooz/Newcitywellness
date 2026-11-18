@@ -461,7 +461,7 @@ function offsetDragStart(n){
   }
   return {device,r,base,scrollX:win.scrollX,scrollY:win.scrollY};
 }
-function offsetDragTarget(n,start,dx,dy,snap=snapGrid){
+function offsetDragTarget(n,start,dx,dy,snap=snapGrid,centerX){
   const win=D.defaultView, root=D.documentElement;
   const width=win.innerWidth||1200;
   const px=start.r.left+start.scrollX-win.scrollX;
@@ -486,10 +486,30 @@ function offsetDragTarget(n,start,dx,dy,snap=snapGrid){
   const round=(v,step)=>Math.round(v/step)*step;
   const lpx=px+dx+win.scrollX-start.scrollX,tpx=py+dy+win.scrollY-start.scrollY;
   const keep=(v,lo,hi,original)=>bounded(v,Math.min(lo,original),Math.max(hi,original));
-  const x=keep(snap?round(lpx-left,width/GRID_COLS)+left:lpx,left,right-start.r.width,px);
+  const centeredLeft=centerX-start.r.width/2;
+  const centered=Number.isFinite(centeredLeft)&&start.r.width<=right-left&&
+    centeredLeft>=left-.01&&centeredLeft+start.r.width<=right+.01;
+  const x=centered?centeredLeft:keep(snap?round(lpx-left,width/GRID_COLS)+left:lpx,left,right-start.r.width,px);
   const y=keep(snap?round(tpx-top,GRID_STEP)+top:tpx,top,bottom-start.r.height,py);
-  return {left:x,top:y,width:start.r.width,height:start.r.height,device:start.device,
+  return {left:x,top:y,width:start.r.width,height:start.r.height,device:start.device,...(centered?{centered:true}:{}),
     p:{x:Math.round((start.base.x+100*(x-px)/width)*10000)/10000,y:Math.round((start.base.y+y-py)*100)/100}};
+}
+// Test the unsnapped block center, not the pointer or the rounded grid cell.
+// Keep the magnet engaged through small jitters without stealing vertical sorting.
+function centerDragTarget(n,start,dx,dy,pointerY,{snapped=false,free=false}={}){
+  const horizontalIntent=Math.max(6,Math.min(24,Math.abs(dy)*.25));
+  if(start.crop||start.r.width<1||(!free&&!snapped&&Math.abs(dx)<horizontalIntent))return null;
+  const surface=surfaceOf(zoneOf(n));
+  if(!surface)return null;
+  const r=surface.getBoundingClientRect();
+  if(r.width<start.r.width-.01||pointerY<r.top||pointerY>=r.bottom)return null;
+  const centerX=r.left+r.width/2;
+  const distance=Math.abs(start.r.left+dx+start.r.width/2-centerX);
+  const gridUnit=(D.defaultView.innerWidth||r.width)/GRID_COLS;
+  const tolerance=Math.min(16,Math.max(8,gridUnit*.55));
+  if(distance>tolerance+(snapped?6:0))return null;
+  const target=offsetDragTarget(n,start,dx,dy,free,centerX);
+  return target.centered?{...target,centerX,bounds:r}:null;
 }
 function gridOperation(n,zone,device,p){
   const oldZone=zoneOf(n)||zone;
@@ -517,7 +537,7 @@ function clearGridPick(){
   if(mode==='edit')$('hint').textContent=defaultHint();
 }
 function defaultHint(){
-  return 'Open Add Elements to drag in a new block, or grab an existing element. Hold Shift to move without reordering.';
+  return 'Drag blocks toward the middle to snap to the section center. Hold Shift to move without reordering.';
 }
 function markerFrame(rect){
   const x=Math.max(rect.f.left,rect.left), y=Math.max(rect.f.top,rect.top);
@@ -529,6 +549,17 @@ function showDragGrid(f){
   Object.assign(grid.style,{left:f.left+'px',top:f.top+'px',width:f.width+'px',height:f.height+'px',
     backgroundSize:unit+'px '+GRID_STEP+'px',backgroundPosition:(-(scrollX||0))+'px '+(-(scrollY||0))+'px'});
   grid.hidden=false;
+}
+function showCenterGuide(f,target){
+  const line=$('center-guide');
+  const {centerX,bounds}=target;
+  const top=Math.max(0,bounds.top),bottom=Math.min(f.height,bounds.bottom);
+  line.hidden=bottom-top<4||centerX<=0||centerX>=f.width;
+  if(!line.hidden)Object.assign(line.style,{left:(f.left+centerX)+'px',top:(f.top+top)+'px',height:(bottom-top)+'px'});
+}
+function hideCenterGuide(){
+  const line=$('center-guide');
+  if(line)line.hidden=true;
 }
 function showGridVisual(z, p, n, pointOut){
   const rect=anchorRect(surfaceOf(z));if(!rect)return;
@@ -574,7 +605,7 @@ function drawGhost(n,left,top,w,h,lifted=false){
 }
 function freeGhostHide(){liveGhost?.remove();liveGhost=null;liveGhostSource=null;}
 function hideGridVisual(){
-  $('free-grid').hidden=true;$('free-ghost').hidden=true;freeGhostHide();
+  $('free-grid').hidden=true;$('free-ghost').hidden=true;hideCenterGuide();freeGhostHide();
 }
 function updatePick(e){
   if(!gridPick)return;
