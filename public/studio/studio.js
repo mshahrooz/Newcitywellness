@@ -571,24 +571,15 @@ async function loadCanvasLive(localRaw){
   const remote=await StudioPublish.loadLiveDraft(target,state);
   const raw=JSON.stringify(remote?{...remote,publishedBase:state.source}:{version:1,page:pageIdentity(),operations:[],publishedBase:null});
   const operations=readDraft(raw);
-  let useLocal=false, kept=false;
+  let useLocal=false;
   if(localRaw){
-    let ops;
-    try{ops=readDraft(localRaw);}catch{ /* Invalid data must not mask the live page. */ }
-    if(ops&&!sameOperations(ops,operations)){
-      if((JSON.parse(localRaw).publishedBase||null)===state.source)useLocal=true;
-      else{
-        kept=await recoverLater(localRaw);
-        if(!kept)throw Error('Could not keep the previous browser draft.');
-      }
-    }
+    try{useLocal=!sameOperations(readDraft(localRaw),operations);}catch{/* Invalid data must not mask the live page. */}
   }
   liveOps=operations;liveRevision=state.revision;liveSource=state.source;
   setDraft(useLocal?localRaw:raw,useLocal?undefined:operations);
   if(localRaw&&!useLocal)await clearBrowserDraft(storageKey());
   if(typeof StudioWorkflow!=='undefined')StudioWorkflow.verified(target,state);
-  $('publish-status').textContent=useLocal?'Working on a local draft':'Synced with GitHub Pages';
-  if(kept)flash('Live version loaded. Your previous draft is in Draft tools → Recovered drafts.');
+  showState();
   return true;
 }
 function safeToSync(){
@@ -615,7 +606,6 @@ async function syncLiveCanvas(){
       const submitted=submittedDrafts.get(target[0]);
       const alreadyPublished=submitted?.id===state.publication&&submitted.raw===old;
       const dirty=!alreadyPublished&&(!operationsMatch(liveOps)||StudioPublish.baseOfDraft()!==liveSource)&&!sameOperations(JSON.parse(old).operations,operations);
-      if(dirty&&!(await recoverLater(old)))return false;
       if(!current()||old!==draftString())return false;
       // Do not let a save queued before this check recreate a stale cache.
       await saveQueue;
@@ -625,12 +615,13 @@ async function syncLiveCanvas(){
       if(submitted?.id===state.publication)submittedDrafts.delete(target[0]);
       if(dirty){
         showState();
-        flash('A newer version is live. Your draft is preserved. Open Draft tools → Review changes.');
+        void save({quiet:true});
+        flash('The live page changed. Your draft is still here.');
         void StudioWorkflow.sync();
         return true;
       }
       const panel=$('popup-type').textContent;
-      if(!popup.hidden&&!['GITHUB PAGES','PAGE HISTORY','DRAFT TOOLS'].includes(panel))close();
+      if(!popup.hidden&&!['GITHUB PAGES','DRAFT CONFLICT'].includes(panel))close();
       setDraft(raw,operations);
       const key=storageKey();
       saveQueue=saveQueue.catch(()=>{}).then(()=>clearBrowserDraft(key));
@@ -663,56 +654,6 @@ function fileRead(file,kind,done){
   const reader=new FileReader();reader.onload=()=>{const uri=String(reader.result).replace(/^data:[^;]*;/,'data:'+map[ext]+';');
     const check=new Image();check.onload=()=>done(uri,file.name);check.onerror=()=>flash('This file could not be opened as an image.');check.src=uri;
   };reader.onerror=()=>flash('This file could not be opened.');reader.readAsDataURL(file);
-}
-function exportStandalone(){
-  if(drag||paletteDrag||resizeDrag){flash('Finish dragging or resizing before exporting.');return;}
-  const url=new URL(canvasPath(),location.href), name=pageIdentity();
-  const abs=(x,base=url)=>new URL(x,base).href;
-  const cache=new Map();
-  const inlined=async href=>{
-    if(href.startsWith('data:')||href.startsWith('#'))return href;
-    if(!cache.has(href))cache.set(href,(async()=>{
-      const result=await fetch(href);if(!result.ok)throw Error('An asset could not be downloaded');
-      const blob=await result.blob();
-      return new Promise((ok,no)=>{const reader=new FileReader();reader.onload=()=>ok(reader.result);reader.onerror=no;reader.readAsDataURL(blob);});
-    })());
-    return cache.get(href);
-  };
-  (async()=>{
-    flash('Preparing standalone HTML with local photos and fonts…');
-    const root=D.documentElement.cloneNode(true);
-    root.querySelectorAll("script,.bs-drag-ghost,template[data-bs-flow-origin],[data-bs-drop-slot]").forEach(s=>s.remove());
-    root.removeAttribute('data-bs-device');
-    root.classList.remove('bs-editor-mode');
-    for(const key of ['--bs-hero-vh88','--bs-hero-vh80','--bs-hero-vh10'])root.style.removeProperty(key);
-    const sheets=[...root.querySelectorAll('link[rel=stylesheet]')];
-    await Promise.all(sheets.map(async link=>{
-      const href=abs(link.getAttribute('href'));
-      const result=await fetch(href);if(!result.ok)throw Error('Cannot read homepage styles');
-      let css=await result.text();
-      const refs=[...new Set([...css.matchAll(/url\(\s*(['"]?)([^)'"]+)\1\s*\)/g)].map(m=>m[2]).filter(r=>!r.startsWith('data:')&&!r.startsWith('#')))];
-      const mapped=await Promise.all(refs.map(async ref=>[ref,await inlined(abs(ref,href))]));
-      const replacements=new Map(mapped);
-      css=css.replace(/url\(\s*(['"]?)([^)'"]+)\1\s*\)/g,(match,q,ref)=>replacements.has(ref)?'url("'+replacements.get(ref)+'")':match);
-      const style=document.createElement('style');style.textContent=css;link.replaceWith(style);
-    }));
-    await Promise.all([...root.querySelectorAll('img[src]')].map(async img=>{
-      const source=img.getAttribute('src');
-      if(new URL(source,url).origin!==url.origin&&!source.startsWith('data:'))return;
-      if(img.hasAttribute('srcset')){const tokens=img.getAttribute('srcset').split(',').map(x=>x.trim().split(/\s+/));img.setAttribute('srcset',(await Promise.all(tokens.map(async ([src,size])=>(await inlined(abs(src)))+(size?' '+size:'')))).join(', '));}
-      img.src=await inlined(abs(img.getAttribute('src')));
-    }));
-    root.querySelectorAll('[data-bs-id]').forEach(e=>[...e.attributes].filter(a=>a.name.startsWith('data-bs-')&&a.name!=='data-bs-bg'&&a.name!=='data-bs-look'&&!StudioDeviceLayout.markers.includes(a.name)).forEach(a=>e.removeAttribute(a.name)));
-    root.querySelector('.site-header')?.classList.remove('is-scrolled');
-    root.querySelector('.header-nav')?.classList.remove('is-open','is-pinned');
-    root.querySelector('.nav-dropdown')?.classList.remove('open');
-    const behavior=await fetch('canvas-behavior.js').then(r=>{if(!r.ok)throw Error('Cannot read preview behavior');return r.text();});
-    const script=document.createElement('script');
-    script.textContent=behavior+'\nenableHomepageBehavior(document,()=>false,notice=>window.alert(notice));';
-    root.querySelector('body').append(script);
-    exportFile('<!doctype html>\n'+root.outerHTML,name+'-preview.html','text/html;charset=utf-8');
-    flash('Standalone preview downloaded.');
-  })().catch(()=>flash('The HTML export did not finish. Please retry, or download the draft JSON.'));
 }
 function anchorRect(n){
   if(!n?.isConnected)return null;
@@ -834,7 +775,6 @@ function useKeys(){
       if(gridPick){clearGridPick();return;}
       if(!popup.hidden){const seo=$('popup-type').textContent==='PAGE SEO';close();$(seo?'page-seo':'selection-settings').focus();return;}
       if(!$('element-sidebar').hasAttribute('data-collapsed')){toggleElementSidebar(false,true);return;}
-      if(!$('menu').hidden){toggleMenu(false);$('more').focus();return;}
       active=null;paint();return;
     }
     if(e.target?.closest?.('input,textarea,select,[contenteditable],[role="textbox"],[role="slider"]'))return;
@@ -1813,7 +1753,7 @@ $('preview').onclick=()=>{
   for(const id of ['add','add-section','section-order'])$(id).disabled=mode==='preview'; $('undo').disabled=mode==='preview'||!cursor;$('redo').disabled=mode==='preview'||cursor===list.length;
   if(mode==='preview')toggleElementSidebar(false);
   $('add').hidden=mode==='preview';
-  $('page-seo').disabled=mode==='preview';close();paint();
+  $('page-seo').disabled=mode==='preview';close();showState();paint();
 };
 function switchView(b){
   if(resizeDrag)stopResize(false);
@@ -1835,79 +1775,13 @@ $('page-seo').onclick=()=>{if(!popup.hidden&&$('popup-type').textContent==='PAGE
 $('undo').onclick=()=>stepHistory(-1);
 $('redo').onclick=()=>stepHistory(1);
 $('save').onclick=save;
-function toggleMenu(val){
-  $('menu').hidden=!val;$('more').setAttribute('aria-expanded',String(val));
-  if(val)$('menu').style.top=($('more').getBoundingClientRect().bottom+8)+'px';
-}
-$('more').onclick=()=>toggleMenu($('menu').hidden);
-document.addEventListener('pointerdown',e=>{if(!e.target.closest('#menu,#more'))toggleMenu(false);});
-$('export-draft').onclick=()=>{toggleMenu(false);exportFile(draftString(),pageIdentity()+'-draft.json','application/json');};
-$('import-draft').onclick=()=>{toggleMenu(false);$('import-file').value='';$('import-file').click();};
-$('import-file').onchange=async()=>{
-  const file=$('import-file').files[0], epoch=canvasEpoch;if(!file)return;
-  if(file.size>MAX_JSON){flash('This draft is too large to import.');return;}
-  try{const raw=await file.text();if(epoch!==canvasEpoch)return;list=readDraft(raw);StudioPublish.bindSource(JSON.parse(raw).publishedBase||null);cursor=list.length;active=null;close();replay();StudioWorkflow.schedule();flash('Draft imported. Nothing was published.');}catch(e){flash(e.message);}
-};
-$('export-html').onclick=()=>{toggleMenu(false);exportStandalone();};
-$('compare').onclick=()=>{toggleMenu(false);window.open(canvasPath(),'_blank','noopener,noreferrer');};
-$('help').onclick=()=>{
-  toggleMenu(false);const place=open('How to edit this page','QUICK GUIDE');
-  para('Click text or a photo to open its settings. Align and adjust spacing while watching the canvas.');
-  para('Drag a block into the space beside another block. Release when the side guide appears. Use the green divider to adjust widths. Columns stack on phones.');
-  para('Use the up/down buttons on a selected block to move it directly above or below its neighbour. The arrow keys also move the selection. Hold Alt with an arrow key to nudge without reordering.');
-  para('Select an element, then press and drag it directly on the canvas or use its grip. The grid shows while dragging. Drop at an Insert above or Insert below marker to make room for it.');
-  para('For independent movement without reordering, hold Shift while dragging. Layout moves apply on every device.');
-  para('Cards follow the pointer and the surrounding cards shift as you drag. Release to keep the new order. Press Escape to cancel. Click a specific part first to move it on its own.');
-  para('Use Delete in the item settings to remove it from your draft. Undo restores deleted content.');
-  para('Choose Columns in Add element, enter the count, then drag the green dividers to resize on desktop or tablet. Columns stack on mobile.');
-  para('Save keeps edits in this browser. Download an editable draft to move it to another browser. Approved publisher accounts can publish the selected page from this editor.');
-  place();
-};
-$('recover-drafts').onclick=async()=>{
-  toggleMenu(false);const key=recoveryKey(), epoch=canvasEpoch;
-  const entries=await recoveredDrafts(key).catch(()=>null);
-  if(epoch!==canvasEpoch)return;
-  const place=open('Recovered drafts','DRAFT TOOLS');
-  if(!entries)para('Recovered drafts could not be read in this browser.');
-  else if(!entries.length)para('There are no recovered drafts for this page.');
-  else{
-    para('These drafts were kept before opening the live version. You can resume a draft based on the current page version, or download it for reference.');
-    for(const item of entries.slice().reverse()){
-      const actions=group(), date=new Date(item.savedAt).toLocaleString();
-      let matchingBase=false;
-      try{matchingBase=(JSON.parse(item.raw).publishedBase||null)===liveSource;}catch{}
-      if(matchingBase&&liveRevision&&operationsMatch(liveOps)){
-        button(actions,'Resume · '+date,()=>{
-          if(epoch!==canvasEpoch||!operationsMatch(liveOps))return;
-          try{setDraft(item.raw);close();void save({quiet:true});flash('Recovered draft opened. Nothing was published.');}
-          catch(e){flash(e.message);}
-        });
-      }
-      button(actions,'Download · '+date,()=>exportFile(item.raw,pageIdentity()+'-recovered-'+item.savedAt+'.json','application/json'));
-    }
-  }
-  place();
-};
-$('reset').onclick=()=>{
-  toggleMenu(false);const place=open('Reset this draft?','DRAFT TOOLS');
-  para('This resets the working draft to the current live page. If signed in, the matching cloud copy is also cleared. The website will not change.');
-  button(group(),'Reset to live',()=>{
-    const key=storageKey();
-    saveQueue=saveQueue.catch(()=>{}).then(()=>clearBrowserDraft(key));
-    StudioPublish.bindSource(liveSource);
-    list=liveOps.slice();cursor=list.length;savedOps=list.slice();active=null;close();replay();
-    void StudioWorkflow.forgetCloud();
-    void syncLiveCanvas();
-    flash(liveRevision?'Live version restored.':'Local draft cleared. Waiting for GitHub Pages.');
-  },{class:'danger'});place();
-};
 function wireBehavior(){
   const stopShared=enableHomepageBehavior(D,()=>mode==='edit',flash);
   const stopPage=page[0]!=='home'&&typeof enableStudioPageBehavior==='function'?enableStudioPageBehavior(D,()=>mode==='edit',true):null;
   return ()=>{stopShared?.();stopPage?.();};
 }
 function busyCanvas(value){
-  for(const id of ['add','add-section','section-order','save','more','preview','publish','undo','redo','page-seo'])$(id).disabled=value;
+  for(const id of ['add','add-section','section-order','save','revert','preview','publish','undo','redo','page-seo'])$(id).disabled=value;
 }
 function boot(){
   if(baselineReady)return;
@@ -1976,7 +1850,7 @@ async function openPage(next) {
   if(drag)finishDrag(false);
   if(paletteDrag)finishPaletteDrag();
   if(resizeDrag)stopResize(false);
-  endColumnDrag(false);clearGridPick();close();toggleMenu(false);
+  endColumnDrag(false);clearGridPick();close();
   busyCanvas(true);
   await saveQueue;
   const dirty=cursor!==savedOps.length||savedOps.some((op,i)=>list[i]!==op);
@@ -1994,6 +1868,7 @@ async function openPage(next) {
   loadCanvas();
 }
 function loadCanvas(){
+  $('revert').hidden=true;$('draft-conflict').hidden=true;
   switching=true;busyCanvas(true);if(picker){picker.value=page[0];picker.disabled=true;}
   $('saved').textContent='Opening '+page[1]+'…';
   $('publish-status').textContent='Ready to edit';

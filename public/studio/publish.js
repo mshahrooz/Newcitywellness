@@ -368,7 +368,6 @@ const StudioPublish = (() => {
     }).catch(()=>null);
   }
   const canCloud=()=>signedIn()&&!!publisherSession.user&&supabaseReady()&&location.origin===SITE_ORIGIN;
-  const compatible=guard=>!!guard&&!!canvasGuard()&&guardPaths().every(name=>guard[name]===canvasGuard()[name]);
   async function publisher(action, zip, params={}, target=selected(), raw=false){
     if(!signedIn())throw Error('Your session expired. Sign in again.');
     let response;
@@ -393,17 +392,17 @@ const StudioPublish = (() => {
   }
   function bindSource(source){loadedSource=source;}
   function baseOfDraft(){return loadedSource;}
-  async function waitForLivePublication(target,id,feedback,pos){
-    if(!/^[a-f0-9-]{36}$/.test(id))return;
+  async function waitForLivePublication(target,id,feedback,pos,previousRevision){
+    if(id===null?!/^[a-f0-9]{24}$/.test(previousRevision):!/^[a-f0-9-]{36}$/.test(id))return;
     const deadline=Date.now()+180000;
     let interval=1200;
     while(Date.now()<deadline){
       try{
         const live=await liveManifest(target);
-        if(live?.publication===id){
+        if(live&&live.publication===id&&live.revision!==previousRevision){
           await verifyLivePage(target,live);
           if(feedback.isConnected){
-            feedback.textContent='Your changes are live on GitHub Pages.';
+            feedback.textContent=previousRevision?'The previous version is live.':'Your changes are live on GitHub Pages.';
             if(!popup.hidden)pos();
           }
           if(selected()[0]===target[0])void syncLiveCanvas();
@@ -415,32 +414,51 @@ const StudioPublish = (() => {
     }
     if(feedback.isConnected)feedback.textContent='Still waiting for GitHub Pages. Studio will pick up the deployed version automatically.';
   }
-  function panel(){
-    if(busy)return;
-    const pos=open('Publish '+selected()[1],'GITHUB PAGES');
-    para('Publish your changes to the selected page. Sign in with your approved publisher account.');
+  function panel(reverting=false){
+    if(busy||reverting&&!StudioWorkflow.canRevert())return;
+    const pos=open(reverting?'Revert '+selected()[1]+'?':'Publish '+selected()[1],'GITHUB PAGES');
+    para(reverting?'This will put the previous published version of this page back on the live website. Other pages and your unpublished edits stay unchanged.'
+      :'Publish your changes to the selected page. Sign in with your approved publisher account.');
     const identity=create('p',{class:'muted',role:'status'});
     const authArea=group('publisher-auth');
     authArea.before(identity);
-    const activeDraft=mode==='edit'&&(!!cursor||!!loadedSource);
+    const activeDraft=reverting?StudioWorkflow.canRevert():mode==='edit'&&(!!cursor||!!loadedSource);
     const publishing=()=>typeof StudioWorkflow!=='undefined'&&StudioWorkflow.isPending();
     if(!activeDraft)para(mode==='edit'?'Make a page edit before publishing.':'Use Back to editing before publishing.');
     const feedback=create('p',{role:'status',class:'publish-feedback'});
     body.append(feedback);
-    const controls=group('publish-actions');
+    const controls=group(reverting?'revert-actions':'publish-actions');
     const progress=message=>{feedback.textContent=message;};
     const running=value=>{
       busy=value;
       direct.disabled=value||!signedIn()||!activeDraft||publishing();
       $('publish').disabled=value;
+      if($('revert'))$('revert').disabled=value;
       if($('page-picker'))$('page-picker').disabled=value;
       authArea.querySelectorAll('button,input').forEach(el=>{el.disabled=value;});
     };
-    const direct=button(controls,'Publish Website',async()=>{
+    const direct=button(controls,reverting?'Revert Live Page':'Publish Website',async()=>{
       if(busy||!signedIn()||!activeDraft||publishing())return;
       running(true);
       try{
         const target=selected(), snapshot=draftString();
+        if(reverting){
+          if(!StudioWorkflow.canRevert())throw Error('Wait for Studio to verify this published page.');
+          const previousRevision=liveRevision, expectedSource=liveSource;
+          if((!operationsMatch(liveOps)||loadedSource!==liveSource)&&!await save({quiet:true})){
+            throw Error('Studio could not save the current draft. This page was not reverted.');
+          }
+          progress('Restoring the previous version…');
+          const result=await publisher('revert',null,{source:expectedSource,revision:previousRevision},target);
+          if(!VALID_SHA.test(result.sha)||!(result.id===null?result.source===null:/^[a-f0-9-]{36}$/.test(result.id)&&VALID_SHA.test(result.source))){
+            throw Error('GitHub did not confirm the revert. Check the live page before trying again.');
+          }
+          StudioWorkflow.submitted(target,result.id,previousRevision);
+          const feedbackLine=create('span',{},'Revert saved to GitHub. Waiting for the previous version to go live…');
+          feedback.replaceChildren(feedbackLine);
+          void waitForLivePublication(target,result.id,feedbackLine,pos,previousRevision);
+          return;
+        }
         const {zip,id}=await preparedRevision(progress);
         if(snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
         if(zip.size>MAX_UPLOAD)throw Error('This publish exceeds 32 MB in total. Publish the uploads in smaller batches.');
@@ -460,7 +478,7 @@ const StudioPublish = (() => {
         }
       }catch(e){progress(e.message);}
       finally{running(false);if(!signedIn())showAuth();pos();}
-    },{class:'publish-website-button'});
+    },{class:reverting?'revert-live-button':'publish-website-button'});
     function showAuth(){
       authArea.replaceChildren();
       const ready=supabaseReady()&&location.origin===SITE_ORIGIN;
@@ -499,10 +517,11 @@ const StudioPublish = (() => {
   }
   const start=()=>{
     if(!$('publish'))return;
-    $('publish').onclick=panel;
+    $('publish').onclick=()=>panel();
+    if($('revert'))$('revert').onclick=()=>panel(true);
     $('publish-status').textContent='Ready to edit';
   };
-  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,canCloud,compatible,fromPublishedDraft:remoteDraft,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
+  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,canCloud,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
 })();
 
 StudioPublish.start();

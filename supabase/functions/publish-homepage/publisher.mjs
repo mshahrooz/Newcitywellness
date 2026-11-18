@@ -4,6 +4,7 @@ import { gunzipSync } from 'node:zlib';
 import { parseFragment } from 'npm:parse5@8.1.1';
 import './embeds.js';
 import { draftAction, studioState } from './studio-state.mjs';
+import { assertLiveForRevert, previousPage } from './revert.mjs';
 import { PAGES, EMBEDS, pageFiles, pageDependencies } from './pages.mjs';
 
 const repo='mshahrooz/Newcitywellness', base='/repos/'+repo;
@@ -223,8 +224,11 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
       const {source,draft}=pageFiles(key);
       const tools=studioState({request,env,authUser:actor,page:key,now,fail});
       if (draftAction(action)) return await tools.handle(action,req,params,headers,json);
-      if (!['check','status','publish','history','history-version'].includes(action)) fail(400, 'Unknown publishing action.');
+      if (!['check','status','publish','history','history-version','revert'].includes(action)) fail(400, 'Unknown publishing action.');
       let files, pub, state;
+      const reverting=action==='revert';
+      const expectedSource=params.get('source'), expectedRevision=params.get('revision');
+      if(reverting&&(!sha.test(expectedSource)||!/^[a-f0-9]{24}$/.test(expectedRevision)))fail(400,'Choose a verified published page before reverting.');
       if (action === 'publish') {
         if (req.headers.get('content-type') !== packageType) fail(415, 'The editor must send a ZIP package.');
         files = unpackPackage(await readLimited(req, maxZip),key);
@@ -338,12 +342,23 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
         return json({ ok: true, parent: head, source: sourceSha, guard, publication,
           assets: [...tree.keys()].filter(path => path.startsWith('public/images/') || path.startsWith('public/media/homepage-studio/')) });
       }
-      if (Object.keys(pub.guard).length!==currentPaths.length||!currentPaths.every(n => guard[n] === pub.guard[n])) {
-        fail(409, 'The page source changed. Refresh the editor before publishing.');
+      let publicationId=pub?.id, direct=[];
+      if(reverting){
+        const expectedId=await assertLiveForRevert({request,page,expectedSource,expectedRevision,fail});
+        const old=await previousPage({
+          key,source,draft,head,tree,guard,read,git,gitSha,segments,
+          readPublication:(value,k)=>readPublication(value,k,guardPaths),
+          validateStoredDraft,verifyHtml,expectedSource,expectedId,fail,
+        });
+        files=old.files;direct=old.direct;publicationId=old.id;
+      } else {
+        if (Object.keys(pub.guard).length!==currentPaths.length||!currentPaths.every(n => guard[n] === pub.guard[n])) {
+          fail(409, 'The page source changed. Refresh the editor before publishing.');
+        }
+        validateStoredDraft(state, files, tree);
+        verifyHtml(pub.html, files, tree,key);
       }
-      validateStoredDraft(state, files, tree);
-      verifyHtml(pub.html, files, tree,key);
-      const entries = [];
+      const entries = [...direct];
       for (const [path, buf] of files) {
         const expected = gitSha(buf);
         if (tree.get(path) === expected) continue;
@@ -351,11 +366,12 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
         if (blob.sha !== expected) fail(502, 'GitHub did not confirm a homepage file.');
         entries.push({ path, mode: '100644', type: 'blob', sha: expected });
       }
-      if (!entries.length) return json({ ok: true, sha: head, id: pub.id, source: gitSha(files.get(source)) });
+      const nextSource=publicationId===null?null:gitSha(files.get(source));
+      if (!entries.length) return json({ ok: true, sha: head, id: publicationId, source: nextSource });
       const next = await git('/git/trees', 'assemble the homepage files', 'POST', { base_tree: treeSha, tree: entries });
       if (!sha.test(next.sha)) fail(502, 'GitHub did not confirm the homepage file tree.');
       const made = await git('/git/commits', 'create the homepage commit', 'POST', {
-        message: 'Publish New City Wellness · '+page[1]+' from Page Studio',
+        message: (reverting?'Revert ':'Publish ')+'New City Wellness · '+page[1]+' from Page Studio',
         tree: next.sha, parents: [head],
       });
       if (!sha.test(made.sha)) fail(502, 'GitHub did not confirm the homepage commit.');
@@ -364,7 +380,7 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
       if (updated.object?.sha !== made.sha) fail(502, 'GitHub did not confirm the commit. Check the Pages build before retrying.');
       // This is private attribution. A database outage must not misreport a Git commit that succeeded.
       await tools.recordAuthor(made.sha).catch(()=>null);
-      return json({ ok: true, sha: made.sha, id: pub.id, source: gitSha(files.get(source)) });
+      return json({ ok: true, sha: made.sha, id: publicationId, source: nextSource });
     } catch (e) {
       if (e instanceof PublishError) return json({ error: e.message }, e.status);
       console.error('Homepage publisher failed', e?.name || 'Error');

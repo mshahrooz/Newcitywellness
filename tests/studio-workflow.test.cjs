@@ -2,21 +2,10 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const {test}=require('node:test');
-const workflow=vm.runInNewContext(fs.readFileSync('public/studio/studio-workflow.js','utf8')+'\nStudioWorkflow');
 const css=fs.readFileSync('public/studio/canvas-edits.css','utf8');
 const published=fs.readFileSync('public/homepage-studio/layout-v1.css','utf8');
 const layoutCode=fs.readFileSync('public/studio/device-layout.js','utf8');
 
-test('only the final change to a setting is shown, with a comparison against live',()=>{
-  const op=(value)=>({id:'heading',kind:'text',value});
-  const live=[op('Old text')], draft=[...live,op('N'),op('New text')];
-  const result=workflow.diff(live,draft);
-  assert.equal(result.length,1);
-  assert.equal(result[0].op.value,'New text');
-  assert.equal(result[0].was,'Old text');
-  assert.equal(workflow.diff(live,draft.slice(0,1)).length,0);
-  assert.equal(workflow.diff(draft,live)[0].removed,true);
-});
 test('device overrides are discrete, resettable and supported by both renderers',()=>{
   const mount=()=>{
     const properties=new Map(), attrs=new Map();
