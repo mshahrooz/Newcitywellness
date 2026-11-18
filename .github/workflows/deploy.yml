@@ -32,14 +32,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
       - name: Compute base path
         run: |
           REPO="${GITHUB_REPOSITORY#*/}"
@@ -52,14 +44,66 @@ jobs:
             echo "BASE_PATH=/$REPO" >> "$GITHUB_ENV"
           fi
 
-      - name: Install dependencies
-        run: bun install
+      - name: Fingerprint the original site
+        id: inputs
+        run: echo "key=pages-static-v1-${{ runner.os }}-${{ runner.arch }}-$(python3 scripts/pages-base-cache.py fingerprint)" >> "$GITHUB_OUTPUT"
 
-      - name: Build static site
-        run: bun run build:pages
+      - name: Restore original site export
+        id: base-cache
+        uses: actions/cache/restore@v4
+        continue-on-error: true
+        with:
+          path: out
+          key: ${{ steps.inputs.outputs.key }}
+
+      - name: Check the cached export
+        id: cached
+        env:
+          CACHE_HIT: ${{ steps.base-cache.outputs.cache-hit }}
+          CACHE_KEY: ${{ steps.inputs.outputs.key }}
+        run: |
+          if [[ "$CACHE_HIT" == "true" && -s out/index.html && -d out/_next/static && -f out/.ncw-static-base ]] &&
+             [[ "$(cat out/.ncw-static-base)" == "${CACHE_KEY##*-}" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "Using the cached base site"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: steps.cached.outputs.ready != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Bun
+        if: steps.cached.outputs.ready != 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        if: steps.cached.outputs.ready != 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Build the original static site
+        if: steps.cached.outputs.ready != 'true'
+        run: python3 scripts/pages-base-cache.py build
         env:
           BUILD_TARGET: pages
           BASE_PATH: ${{ env.BASE_PATH }}
+
+      - name: Cache the original static export
+        if: steps.cached.outputs.ready != 'true'
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: out
+          key: ${{ steps.inputs.outputs.key }}
+
+      - name: Apply the latest Studio publications
+        run: |
+          rm -f out/.ncw-static-base
+          cp -a public/. out/
+          python3 scripts/apply-homepage-studio.py out --base-path "$BASE_PATH"
 
       - name: Check for external image URLs
         run: python3 scripts/check_local_images.py out
