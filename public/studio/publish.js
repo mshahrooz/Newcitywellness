@@ -288,148 +288,25 @@ const StudioPublish = (() => {
       throw Error('This editor is based on an older version of the original site. Save your draft and reload Studio.');
     }
   }
-  const mergeable=new Set(['text','copy-text','rich-text','part','link','alt','text-color','font-size','seo']);
-  const blockSelector='p,h1,h2,h3,h4,h5,h6,li,summary,figcaption,blockquote';
-  function independentEdits(draft,live){
-    if(!draft.every(op=>mergeable.has(op.kind))||!live.every(op=>mergeable.has(op.kind)))return false;
-    function target(op){
-      if(op.kind==='seo')return 'seo';
-      const n=byId(op.id);
-      return n?.closest(blockSelector)||n;
-    }
-    for(const a of draft){
-      const left=target(a);
-      if(!left)return false;
-      for(const b of live){
-        const right=target(b);
-        if(!right||a.id===b.id||left===right)return false;
-        if(left!=='seo'&&right!=='seo'&&(left.contains(right)||right.contains(left)))return false;
-      }
-    }
-    return true;
-  }
-  const knownDrafts=new Map();
-  async function originalOperations(target,source,current){
-    if(source===null)return [];
-    if(!VALID_SHA.test(source))return null;
-    const key=target[0]+':'+source;
-    if(knownDrafts.has(key))return knownDrafts.get(key);
-    try{
-      const blob=await gh(REPO_API+'/git/blobs/'+source);
-      if(blob.sha!==source||blob.encoding!=='base64'||typeof blob.content!=='string')return null;
-      const published=JSON.parse(decode.decode(unpack(blob.content)));
-      const {DRAFT}=paths(target[0]);
-      if(published.version!==1||(published.page||'home')!==target[0]||!/^[a-f0-9]{64}$/.test(published.draftSha256)||
-        !guardPaths().every(name=>published.guard?.[name]===current.guard[name]))return null;
-      const commits=await gh(REPO_API+'/commits?sha=main&path='+encodeURIComponent(DRAFT)+'&per_page=9');
-      if(!Array.isArray(commits))return null;
-      for(let i=0;i<commits.length;i+=3){
-        const batch=await Promise.all(commits.slice(i,i+3).map(async entry=>{
-          try{
-            if(!VALID_SHA.test(entry.sha))return null;
-            const f=await fileAt(DRAFT,entry.sha);
-            if(f.encoding!=='base64'||typeof f.content!=='string')return null;
-            const bytes=unpack(f.content);
-            return await sha256(bytes)===published.draftSha256?bytes:null;
-          }catch{return null;}
-        }));
-        const match=batch.find(Boolean);
-        if(!match)continue;
-        const hydrated=await remoteDraft(await decodeDraft(match));
-        const ops=readDraft(JSON.stringify(hydrated));
-        if(knownDrafts.size>=6)knownDrafts.delete(knownDrafts.keys().next().value);
-        knownDrafts.set(key,ops);
-        return ops;
-      }
-    }catch{ /* Missing history must not authorize replacing a live edit. */ }
-    return null;
-  }
-  async function combineDrafts(target,oldBase,current,ours,deployed){
-    const baseline=await originalOperations(target,oldBase,current);
-    if(!baseline||!sameOperations(ours.slice(0,baseline.length),baseline)||!sameOperations(deployed.slice(0,baseline.length),baseline))return null;
-    let shared=baseline.length;
-    while(shared<Math.min(ours.length,deployed.length)&&sameOperations([ours[shared]],[deployed[shared]]))shared++;
-    const mine=ours.slice(shared), theirs=deployed.slice(shared);
-    if(mine.length===0)return deployed;
-    if(theirs.length===0)return ours;
-    if(deployed.length+mine.length>800||!independentEdits(mine,theirs))return null;
-    return [...deployed,...mine];
-  }
-  async function reconcileBase(current,replace=false){
-    if(current.source===loadedSource)return;
-    const target=selected(), epoch=canvasEpoch, before=draftString(), oldBase=loadedSource;
-    const unchanged=()=>canvasEpoch===epoch&&draftString()===before;
-    const state=await liveManifest(target);
-    if(!state||state.source!==current.source){
-      const delay=Error('GitHub Pages is still applying another release.');
-      delay.code='STUDIO_PAGES_SYNCING';throw delay;
-    }
-    const publicDraft=await loadLiveDraft(target,state);
-    if(!unchanged())throw Error('Your draft changed during the live check. Try again when you finish editing.');
-    const deployed=readDraft(JSON.stringify(publicDraft||{version:1,page:pageIdentity(),operations:[]}));
-    const ours=readDraft(before);
-    const includesLive=deployed.length>0&&sameOperations(ours.slice(0,deployed.length),deployed);
-    liveSource=state.source;liveRevision=state.revision;liveOps=deployed;
-    showState();
-    const combined=includesLive||replace?ours:await combineDrafts(target,oldBase,current,ours,deployed);
-    if(!unchanged())throw Error('Your draft changed during the live check. Try again when you finish editing.');
-    if(!combined){
-      throw pickConflict(current.source);
-    }
-    if(!await recoverLater(before))throw Error('Studio could not back up the older draft. The draft is unchanged.');
-    if(!unchanged())throw Error('Your draft changed during the live check. Try again when you finish editing.');
-    const prior={list,cursor,savedOps,active};
-    if(!sameOperations(ours,combined)){list=combined.slice();cursor=list.length;}
-    const restore=()=>{({list,cursor,savedOps,active}=prior);bindSource(oldBase);replay();};
-    if(!replay()){
-      restore();
-      throw Error('Some edits came from an older or unavailable editor feature. The original draft was kept and backed up. Review the live page before publishing.');
-    }
-    bindSource(state.source);
-    if(!await save()){
-      restore();throw Error('Studio could not save the updated draft. Your original draft was kept.');
-    }
-    StudioWorkflow.schedule();
-  }
-  async function reviewBase(){
-    const current=await status(true);
-    checkCanvas(current);
-    await reconcileBase(current,true);
-  }
-  function pickConflict(source){
-    const error=Error('This draft and the live page differ. You can review them, or publish your draft as it is. Publishing your draft may replace newer live edits.');
-    error.code='STUDIO_DRAFT_BASE_CONFLICT';error.source=source;
-    return error;
-  }
-  async function verifiedPublishBase(update,persist,replaceSource){
-    const target=selected(), epoch=canvasEpoch, snapshot=draftString(), deadline=Date.now()+60000;
-    let current=await status(true), checked=Date.now();
-    while(true){
-      if(target[0]!==selected()[0]||epoch!==canvasEpoch||snapshot!==draftString())throw Error('Your draft changed while Studio was checking the live page. Try again when you finish editing.');
-      checkCanvas(current);
-      if(replaceSource!==undefined&&current.source!==replaceSource)throw pickConflict(current.source);
-      try{
-        await reconcileBase(current,replaceSource!==undefined);
-        return current;
-      }catch(error){
-        if(error.code!=='STUDIO_PAGES_SYNCING'||!persist)throw error;
-        if(Date.now()>=deadline)throw Error('GitHub Pages is still applying another release. Your draft is safe. Try publishing again once that release is live.');
-        update('Another release is going live. Studio will try again automatically, and your draft stays saved.','waiting');
-        await new Promise(resolve=>setTimeout(resolve,2000));
-        if(Date.now()-checked>10000){current=await status(true);checked=Date.now();}
-      }
-    }
-  }
-  async function checkedPackage(update,persist=false,replaceSource){
+  async function checkedPackage(update,persist=false){
     if(drag||paletteDrag||resizeDrag)throw Error('Finish dragging or resizing before publishing.');
     const {SOURCE,DRAFT}=paths();
     if(!cursor&&!loadedSource)throw Error('Make a page edit first.');
-    update('Checking the latest page revision…','checking');
-    const current=await verifiedPublishBase(update,persist,replaceSource);
+    const target=selected(), epoch=canvasEpoch, snapshot=draftString();
+    update('Checking the publishing connection…','checking');
+    const current=await status(true);
+    if(target[0]!==selected()[0]||epoch!==canvasEpoch||snapshot!==draftString()){
+      throw Error('Your draft changed while Studio was preparing it. Try again when you finish editing.');
+    }
+    checkCanvas(current);
+    // The active draft is authoritative. The new package still uses GitHub’s
+    // current branch head, and the server rejects it if that head moves.
+    if(current.source!==loadedSource&&!replay()){
+      throw Error('Studio could not apply every edit in this draft. Your draft is still in the editor.');
+    }
     $('publish-status').textContent='GitHub Pages connected';
     $('publish-status').removeAttribute('title');
     update('Preparing the selected page and its local media…','package');
-    const snapshot=draftString();
     const [ready,saved]=await Promise.all([
       prepare(D.body,JSON.parse(snapshot),{...current,canvas:frame.contentDocument.URL}),
       persist?save():true,
@@ -472,8 +349,8 @@ const StudioPublish = (() => {
     e.setUint32(12,totalIndex,true);e.setUint32(16,offset,true);
     return new Blob([...entries,...index,end],{type:'application/zip'});
   }
-  async function preparedRevision(update=()=>{},persist=false,replaceSource){
-    const {files,ready,snapshot}=await checkedPackage(update,persist,replaceSource);
+  async function preparedRevision(update=()=>{},persist=false){
+    const {files,ready,snapshot}=await checkedPackage(update,persist);
     return {zip:uploadZip(files),id:ready.id,snapshot};
   }
   async function githubPackage(update=()=>{}){
@@ -560,7 +437,7 @@ const StudioPublish = (() => {
     const pos=open(reverting?'Revert '+selected()[1]+'?':'Publish '+selected()[1],'GITHUB PAGES');
     const target=selected(), key=target[0];
     para(reverting?'Restore the previous published version. Other pages and your unpublished edits stay unchanged.'
-      :'Send your latest edits to the public site. You can close this panel once the changes are sent.');
+      :'Publish the draft currently open in Studio. You can close this panel once the changes are sent.');
     if(!StudioWorkflow.isPending(target)&&(reverting||!operationsMatch(liveOps)))StudioRelease.clearFinished(key);
     StudioRelease.mount(target,body);
     const identity=create('p',{class:'muted',role:'status'});
@@ -582,12 +459,12 @@ const StudioPublish = (() => {
       authArea.querySelectorAll('button,input').forEach(el=>{el.disabled=value;});
     };
     const direct=button(controls,reverting?'Revert Live Page':'Publish Website',()=>void submit(),{class:reverting?'revert-live-button':'publish-website-button'});
-    async function submit(replaceSource){
+    async function submit(){
       if(busy||!signedIn()||!activeDraft||publishing())return;
       running(true);
       try{
         progress('');
-        StudioRelease.set(key,'prepare',reverting?'Checking the saved website version…':'Checking your draft and the live version…');
+        StudioRelease.set(key,'prepare',reverting?'Checking the saved website version…':'Checking your draft and the publishing connection…');
         if(reverting){
           if(!StudioWorkflow.canRevert())throw Error('Wait for Studio to verify this published page.');
           const previousRevision=liveRevision, expectedSource=liveSource;
@@ -607,7 +484,7 @@ const StudioPublish = (() => {
         const update=(message,stage)=>StudioRelease.set(key,stage||'checking',message);
         let packed,result;
         for(let attempt=0;attempt<2;attempt++){
-          packed=await preparedRevision(update,true,replaceSource);
+          packed=await preparedRevision(update,true);
           if(packed.snapshot!==draftString())throw Error('The draft changed while publishing was prepared. Try again when you finish editing.');
           if(packed.zip.size>MAX_UPLOAD)throw Error('This publish exceeds 32 MB in total. Publish the uploads in smaller batches.');
           StudioRelease.set(key,'commit','Sending the selected page and media to GitHub…');
@@ -627,13 +504,7 @@ const StudioPublish = (() => {
           void waitForLivePublication(target,id);
         }
       }catch(e){
-        StudioRelease.set(key,e.code==='STUDIO_DRAFT_BASE_CONFLICT'?'conflict':'error',e.message);
-        if(e.code==='STUDIO_DRAFT_BASE_CONFLICT'){
-          const options=create('div',{class:'release-conflict-actions'});
-          button(options,'Publish my draft instead',()=>void submit(e.source));
-          button(options,'Review draft options',()=>StudioWorkflow.resolveDraft({publication:true}));
-          feedback.append(options);
-        }
+        StudioRelease.set(key,'error',e.message);
       }
       finally{running(false);if(!signedIn())showAuth();pos();}
     }
@@ -683,7 +554,7 @@ const StudioPublish = (() => {
     if($('revert'))$('revert').onclick=()=>panel(true);
     $('publish-status').textContent='Ready to edit';
   };
-  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,reviewBase,canCloud,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
+  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,canCloud,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
 })();
 
 StudioPublish.start();

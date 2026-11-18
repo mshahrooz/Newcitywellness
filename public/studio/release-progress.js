@@ -3,11 +3,11 @@
 // A release advances only when Studio gets a real result from that stage.
 const StudioRelease=(()=>{
   const steps=['Prepare','Save to GitHub','Deploy','Verify live'];
-  const phase={idle:-1,prepare:0,checking:0,package:0,waiting:0,commit:1,deploy:2,verify:3,live:4};
-  const percent={idle:0,prepare:5,checking:14,package:24,waiting:14,commit:40,deploy:65,verify:92,live:100};
+  const phase={idle:-1,prepare:0,checking:0,package:0,commit:1,deploy:2,verify:3,live:4};
+  const percent={idle:0,prepare:5,checking:14,package:24,commit:40,deploy:65,verify:92,live:100};
   const titles={idle:'Ready to publish',prepare:'Preparing your page',checking:'Checking the live version',package:'Packaging your edits',
-    waiting:'Waiting for the current deployment',commit:'Saving the release',deploy:'Putting your page live',verify:'Verifying the live page',
-    live:'Your page is live',conflict:'Choose which edits to publish',error:'Couldn’t publish'};
+    commit:'Saving the release',deploy:'Putting your page live',verify:'Verifying the live page',
+    live:'Your page is live',error:'Couldn’t publish'};
   const states=new Map(), views=new Map();
   function render(key){
     const view=views.get(key);
@@ -17,7 +17,7 @@ const StudioRelease=(()=>{
     view.title.textContent=titles[state.step];
     view.note.textContent=state.message;
     view.steps.forEach((item,i)=>{
-      const status=i<state.index?'done':i===state.index?(['error','conflict'].includes(state.step)?'error':'current'):'next';
+      const status=i<state.index?'done':i===state.index?(state.step==='error'?'error':'current'):'next';
       item.dataset.state=status;
       item.querySelector('span').textContent=status==='done'?'✓':String(i+1).padStart(2,'0');
       if(status==='current'||status==='error')item.setAttribute('aria-current','step');else item.removeAttribute('aria-current');

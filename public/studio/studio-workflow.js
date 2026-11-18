@@ -70,7 +70,7 @@ const StudioWorkflow=(()=>{
     if(clean())return null;
     if(!StudioPublish.canCloud())return null;
     const s=slot();
-    if(s?.remote)return 'Draft needs review';
+    if(s?.remote)return null;
     if(s?.error)return 'Cloud unavailable · browser copy kept';
     if(s?.raw&&s.raw===s.current)return 'Draft saved to your account';
     if(s?.task)return 'Syncing draft…';
@@ -232,57 +232,5 @@ const StudioWorkflow=(()=>{
       return true;
     }finally{paused=false;}
   }
-  function resolveDraft({publication=false}={}){
-    const place=open('Keep your unpublished edits','DRAFT CONFLICT');
-    const s=slot(), remote=s?.remote, mark=nowKey(), actions=group();
-    const status=create('p',{class:'muted',role:'status'});actions.before(status);
-    if(!remote||publication&&stale()){
-      if(!stale()){close();return;}
-      status.textContent='Choose which version to edit. Keeping your draft lets you publish it later, but it may replace newer edits on the live page. Opening the live page keeps a backup of your draft.';
-      button(actions,'Download this draft',()=>exportFile(draftString(),pageIdentity()+'-draft.json','application/json'));
-      const review=button(actions,'Keep editing my draft',async()=>{
-        if(!current(mark))return;
-        const buttons=[...actions.querySelectorAll('button')], picker=$('page-picker');
-        for(const b of buttons)b.disabled=true;
-        if(picker)picker.disabled=true;
-        try{
-          await StudioPublish.reviewBase();
-          if(current(mark)&&status.isConnected){close();flash('Draft kept. Check the page, then choose Publish Website.');}
-        }catch(error){status.textContent=error.message;}
-        finally{for(const b of buttons)b.disabled=false;if(picker&&current(mark))picker.disabled=false;}
-      });
-      review.disabled=!StudioPublish.canCloud();
-      button(actions,'Open live page in Studio',async()=>{
-        const raw=draftString();
-        if(!await recoverLater(raw)){status.textContent='The older draft could not be saved. Download it before opening the live page.';return;}
-        if(!current(mark)||!status.isConnected||raw!==draftString())return;
-        setDraft(JSON.stringify({version:1,page:pageIdentity(),operations:liveOps,publishedBase:liveSource}),liveOps);
-        await save();close();flash('Live page opened. Your earlier draft was backed up.');
-      });
-      place();return;
-    }
-    status.textContent=remote.raw?'A separate draft was saved to your account. Choose which copy to edit. Nothing will be published.':'The cloud copy changed on another device.';
-    async function exchange(useCloud){
-      for(const b of actions.querySelectorAll('button'))b.disabled=true;
-      try{
-        if(!current(mark)||slot()!==s||s.remote!==remote)return;
-        if(useCloud){
-          const ops=readDraft(remote.raw);
-          if(!clean()&&!await recoverLater(draftString()))throw Error('The current draft could not be backed up.');
-          if(!current(mark))return;
-          setDraft(remote.raw,ops);s.raw=remote.raw;s.current=remote.raw;
-          await save();
-        }else{
-          if(remote.raw&&!await recoverLater(remote.raw))throw Error('The other draft could not be backed up.');
-          s.raw=null;
-        }
-        s.revision=remote.revision;s.remote=null;s.error=null;
-        if(current(mark)){schedule();close();showState();flash(useCloud?'Cloud copy opened.':'Browser copy kept.');}
-      }catch(error){status.textContent=error.message;}
-      finally{for(const b of actions.querySelectorAll('button'))b.disabled=false;}
-    }
-    if(remote.raw)button(actions,'Open cloud copy',()=>exchange(true));
-    button(actions,'Keep browser copy',()=>exchange(false));place();
-  }
-  return {account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,pendingRelease,canRevert,resolveDraft};
+  return {account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,pendingRelease,canRevert};
 })();
