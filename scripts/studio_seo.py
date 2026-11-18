@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 
 MAX_DRAFT = 4 * 1024 * 1024
 LIMITS = {"title": 160, "description": 360, "canonical": 1200,
-          "socialTitle": 160, "socialDescription": 360, "robots": 20}
+          "socialTitle": 160, "socialDescription": 360, "socialImage": 600, "business": 20, "robots": 20}
 HEAD = re.compile(r"(<head\b[^>]*>)(.*?)(</head\s*>)", re.I | re.S)
 TAG = re.compile(r"<!--.*?-->|<script\b[^>]*>.*?</script\s*>|<title\b[^>]*>.*?</title\s*>"
                  r"""|<(?:meta|link)\b(?:"[^"]*"|'[^']*'|[^'">])*>""", re.I | re.S)
@@ -41,6 +41,12 @@ def valid_seo(value):
             _port = url.port
         except ValueError:
             return None
+    image = result["socialImage"]
+    if image and (not re.fullmatch(r"(?:/Newcitywellness)?/images/[a-zA-Z0-9_/%.-]+\.(?:png|jpg|jpeg|webp|avif)", image, re.I)
+                  or ".." in image or re.search(r"%(?:2f|5c|00)", image, re.I)):
+        return None
+    if result["business"] not in ("", "medical", "local"):
+        return None
     if result["robots"] not in ("", "index", "noindex"):
         return None
     return result
@@ -87,7 +93,7 @@ class HeadTag(HTMLParser):
             self.key, self.value = "canonical", attrs.get("href") or ""
         elif name == "meta":
             prop = (attrs.get("property") or attrs.get("name") or "").lower()
-            if prop in {"description", "robots", "og:title", "og:description", "twitter:title", "twitter:description"}:
+            if prop in {"description", "robots", "og:title", "og:description", "og:image", "twitter:title", "twitter:description", "twitter:image"}:
                 self.key, self.value = prop, attrs.get("content") or ""
 
 
@@ -106,7 +112,7 @@ def baseline_seo(html):
     if not head:
         return {}
     keys = {"title": "title", "description": "description", "canonical": "canonical",
-            "og:title": "socialTitle", "og:description": "socialDescription"}
+            "og:title": "socialTitle", "og:description": "socialDescription", "og:image": "socialImage"}
     baseline = {}
     for part in TAG.finditer(head[2]):
         key, value = tag_identity(part[0])
@@ -115,7 +121,7 @@ def baseline_seo(html):
     return baseline
 
 
-def apply_seo(html, overrides):
+def apply_seo(html, overrides, prefix='', page='home', output=None):
     if not overrides:
         return html
     safe = {key: escape(value, quote=True) for key, value in overrides.items()}
@@ -132,6 +138,27 @@ def apply_seo(html, overrides):
         if field in safe:
             tags["og:" + label] = f'<meta property="og:{label}" content="{safe[field]}">'
             tags["twitter:" + label] = f'<meta name="twitter:{label}" content="{safe[field]}">'
+
+    if "socialImage" in safe:
+        from urllib.parse import unquote
+        raw = overrides["socialImage"].removeprefix("/Newcitywellness").lstrip("/")
+        if output is not None and not (output / unquote(raw)).is_file():
+            raise ValueError("Social share image does not exist: " + raw)
+        image = escape(prefix.rstrip("/") + "/" + raw, quote=True)
+        tags["og:image"] = f'<meta property="og:image" content="{image}">'
+        tags["twitter:image"] = f'<meta name="twitter:image" content="{image}">'
+    if overrides.get("business") in ("local", "medical"):
+        info = {
+            "@context": "https://schema.org",
+            "@type": "MedicalBusiness" if overrides["business"] == "medical" else "LocalBusiness",
+            "@id": "https://mshahrooz.github.io/Newcitywellness/#clinic",
+            "name": "New City Acupuncture & Wellness Center",
+            "url": "https://mshahrooz.github.io/Newcitywellness/",
+            "telephone": "+1-845-579-2428",
+            "address": {"@type":"PostalAddress", "streetAddress":"125 South Main Street",
+                        "addressLocality":"New City", "addressRegion":"NY", "postalCode":"10956", "addressCountry":"US"},
+        }
+        tags["clinic"] = '<script type="application/ld+json">' + json.dumps(info).replace("<", "\\u003c") + '</script>'
 
     def update(match):
         pending = dict(tags)

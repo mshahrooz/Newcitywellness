@@ -1,9 +1,10 @@
+import { createHash } from 'node:crypto';
 // The caller has already checked the verified Auth user and the publisher allowlist.
 const uuid=/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
 const limit=32*1024*1024;
-export const draftAction=action=>['draft-info','draft-read','draft-write','draft-clear'].includes(action);
+export const draftAction=action=>['draft-info','draft-read','draft-write','draft-clear','draft-asset-read','draft-asset-write'].includes(action);
 
-export function studioState({request, env, authUser, page, now, fail}){
+export function studioState({request, env, authUser, page, now, fail, bodyReader}){
   let secret=env('SUPABASE_SERVICE_ROLE_KEY');
   if(!secret)try{secret=JSON.parse(env('SUPABASE_SECRET_KEYS')||'{}').default;}catch{}
   const base=(env('SUPABASE_URL')||'').replace(/\/$/,'');
@@ -31,6 +32,31 @@ export function studioState({request, env, authUser, page, now, fail}){
   }
   function conflict(){fail(409,'This draft changed on another device. Both copies are preserved.');}
   async function handle(action,req,params,headers,json){
+    if(action.startsWith('draft-asset-')){
+      if(!secret||!base||!valid(user))fail(503,'Private Studio storage is not available.');
+      const hash=params.get('hash');
+      if(!/^[a-f0-9]{64}$/.test(hash))fail(400,'Invalid private media identifier.');
+      const file=user+'/attachments/'+hash;
+      const readPath='/storage/v1/object/authenticated/'+bucket+'/'+file;
+      if(action==='draft-asset-read'){
+        const asset=await service(readPath);
+        return new Response(asset.body,{headers:{...headers,'Content-Type':'application/octet-stream'}});
+      }
+      const bytes=Number(params.get('bytes')), max=25*1024*1024;
+      if(!Number.isInteger(bytes)||bytes<1||bytes>max||req.headers.get('content-type')!=='application/octet-stream')fail(415,'Invalid private media upload.');
+      const data=await bodyReader(req,max);
+      if(data.length!==bytes||createHash('sha256').update(data).digest('hex')!==hash)fail(422,'Private media integrity check failed.');
+      const write=await request(base+'/storage/v1/object/'+bucket+'/'+file,{
+        method:'POST',headers:{...flags,'Content-Type':'application/octet-stream','x-upsert':'false'},
+        body:data,signal:AbortSignal.timeout(55000),redirect:'error',
+      });
+      if(!write.ok){
+        // A duplicate immutable upload already exists. Do not overwrite it.
+        const problem=await write.json().catch(()=>null);
+        if(![400,409].includes(write.status)||!['Duplicate','ResourceAlreadyExists','The resource already exists'].includes(problem?.code||problem?.error))fail(503,'Private media could not be saved.');
+      }
+      return json({ok:true});
+    }
     const current=await info();
     if(action==='draft-info')return json({ok:true,draft:current});
     const revision=params.get('revision'), previous=current?.revision||null;
