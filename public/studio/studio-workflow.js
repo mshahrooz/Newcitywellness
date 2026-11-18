@@ -228,22 +228,22 @@ const StudioWorkflow=(()=>{
       return true;
     }finally{paused=false;}
   }
-  function resolveDraft(){
+  function resolveDraft({publication=false}={}){
     const place=open('Keep your unpublished edits','DRAFT CONFLICT');
     const s=slot(), remote=s?.remote, mark=nowKey(), actions=group();
     const status=create('p',{class:'muted',role:'status'});actions.before(status);
-    if(!remote){
+    if(!remote||publication&&stale()){
       if(!stale()){close();return;}
-      status.textContent='This draft was based on an earlier live version. Open the live page, or keep this draft for review. If you later publish this draft, it can replace changes made on the live page since you started.';
+      status.textContent='Choose which version to edit. Keeping your draft lets you publish it later, but it may replace newer edits on the live page. Opening the live page keeps a backup of your draft.';
       button(actions,'Download this draft',()=>exportFile(draftString(),pageIdentity()+'-draft.json','application/json'));
-      const review=button(actions,'Keep this draft for review',async()=>{
+      const review=button(actions,'Keep editing my draft',async()=>{
         if(!current(mark))return;
         const buttons=[...actions.querySelectorAll('button')], picker=$('page-picker');
         for(const b of buttons)b.disabled=true;
         if(picker)picker.disabled=true;
         try{
           await StudioPublish.reviewBase();
-          if(current(mark)&&status.isConnected){close();flash('Draft kept. Review the page before using Publish Website. Nothing was published.');}
+          if(current(mark)&&status.isConnected){close();flash('Draft kept. Check the page, then choose Publish Website.');}
         }catch(error){status.textContent=error.message;}
         finally{for(const b of buttons)b.disabled=false;if(picker&&current(mark))picker.disabled=false;}
       });

@@ -288,6 +288,73 @@ const StudioPublish = (() => {
       throw Error('This editor is based on an older version of the original site. Save your draft and reload Studio.');
     }
   }
+  const mergeable=new Set(['text','copy-text','rich-text','part','link','alt','text-color','font-size','seo']);
+  const blockSelector='p,h1,h2,h3,h4,h5,h6,li,summary,figcaption,blockquote';
+  function independentEdits(draft,live){
+    if(!draft.every(op=>mergeable.has(op.kind))||!live.every(op=>mergeable.has(op.kind)))return false;
+    function target(op){
+      if(op.kind==='seo')return 'seo';
+      const n=byId(op.id);
+      return n?.closest(blockSelector)||n;
+    }
+    for(const a of draft){
+      const left=target(a);
+      if(!left)return false;
+      for(const b of live){
+        const right=target(b);
+        if(!right||a.id===b.id||left===right)return false;
+        if(left!=='seo'&&right!=='seo'&&(left.contains(right)||right.contains(left)))return false;
+      }
+    }
+    return true;
+  }
+  const knownDrafts=new Map();
+  async function originalOperations(target,source,current){
+    if(source===null)return [];
+    if(!VALID_SHA.test(source))return null;
+    const key=target[0]+':'+source;
+    if(knownDrafts.has(key))return knownDrafts.get(key);
+    try{
+      const blob=await gh(REPO_API+'/git/blobs/'+source);
+      if(blob.sha!==source||blob.encoding!=='base64'||typeof blob.content!=='string')return null;
+      const published=JSON.parse(decode.decode(unpack(blob.content)));
+      const {DRAFT}=paths(target[0]);
+      if(published.version!==1||(published.page||'home')!==target[0]||!/^[a-f0-9]{64}$/.test(published.draftSha256)||
+        !guardPaths().every(name=>published.guard?.[name]===current.guard[name]))return null;
+      const commits=await gh(REPO_API+'/commits?sha=main&path='+encodeURIComponent(DRAFT)+'&per_page=9');
+      if(!Array.isArray(commits))return null;
+      for(let i=0;i<commits.length;i+=3){
+        const batch=await Promise.all(commits.slice(i,i+3).map(async entry=>{
+          try{
+            if(!VALID_SHA.test(entry.sha))return null;
+            const f=await fileAt(DRAFT,entry.sha);
+            if(f.encoding!=='base64'||typeof f.content!=='string')return null;
+            const bytes=unpack(f.content);
+            return await sha256(bytes)===published.draftSha256?bytes:null;
+          }catch{return null;}
+        }));
+        const match=batch.find(Boolean);
+        if(!match)continue;
+        const hydrated=await remoteDraft(await decodeDraft(match));
+        const ops=readDraft(JSON.stringify(hydrated));
+        if(knownDrafts.size>=6)knownDrafts.delete(knownDrafts.keys().next().value);
+        knownDrafts.set(key,ops);
+        return ops;
+      }
+    }catch{ /* Missing history must not authorize replacing a live edit. */ }
+    return null;
+  }
+  async function combineDrafts(target,oldBase,current,ours,deployed){
+    const baseline=await originalOperations(target,oldBase,current);
+    if(!baseline||!sameOperations(ours.slice(0,baseline.length),baseline)||!sameOperations(deployed.slice(0,baseline.length),baseline))return null;
+    let shared=baseline.length;
+    while(shared<Math.min(ours.length,deployed.length)&&sameOperations([ours[shared]],[deployed[shared]]))shared++;
+    const mine=ours.slice(shared), theirs=deployed.slice(shared);
+    if(mine.length===0)return deployed;
+    if(theirs.length===0)return ours;
+    if(deployed.length+mine.length>800||!independentEdits(mine,theirs))return null;
+    return [...deployed,...mine];
+  }
   async function reconcileBase(current,replace=false){
     if(current.source===loadedSource)return;
     const target=selected(), epoch=canvasEpoch, before=draftString(), oldBase=loadedSource;
@@ -303,16 +370,24 @@ const StudioPublish = (() => {
     const includesLive=deployed.length>0&&sameOperations(ours.slice(0,deployed.length),deployed);
     liveSource=state.source;liveRevision=state.revision;liveOps=deployed;
     showState();
-    if(!includesLive&&!replace){
-      const conflict=Error('GitHub Pages is up to date, but this draft started from an older version. Review the draft before publishing.');
+    const combined=includesLive||replace?ours:await combineDrafts(target,oldBase,current,ours,deployed);
+    if(!unchanged())throw Error('Your draft changed during the live check. Try again when you finish editing.');
+    if(!combined){
+      const conflict=Error('This draft differs from the current live page. Nothing was published. Review your options below.');
       conflict.code='STUDIO_DRAFT_BASE_CONFLICT';throw conflict;
     }
     if(!await recoverLater(before))throw Error('Studio could not back up the older draft. The draft is unchanged.');
     if(!unchanged())throw Error('Your draft changed during the live check. Try again when you finish editing.');
-    if(!replay())throw Error('Some edits came from an older or unavailable editor feature. The draft has been backed up. Review the latest live page before publishing.');
+    const prior={list,cursor,savedOps,active};
+    if(!sameOperations(ours,combined)){list=combined.slice();cursor=list.length;}
+    const restore=()=>{({list,cursor,savedOps,active}=prior);bindSource(oldBase);replay();};
+    if(!replay()){
+      restore();
+      throw Error('Some edits came from an older or unavailable editor feature. The original draft was kept and backed up. Review the live page before publishing.');
+    }
     bindSource(state.source);
     if(!await save({quiet:true})){
-      bindSource(oldBase);showState();throw Error('Studio could not save the updated draft. Your original draft was kept.');
+      restore();throw Error('Studio could not save the updated draft. Your original draft was kept.');
     }
     StudioWorkflow.schedule();
   }
@@ -522,7 +597,7 @@ const StudioPublish = (() => {
       }catch(e){
         StudioRelease.set(key,'error',e.message);
         if(e.code==='STUDIO_DRAFT_BASE_CONFLICT'){
-          button(feedback,'Review saved draft',StudioWorkflow.resolveDraft);
+          button(feedback,'Review draft options',()=>StudioWorkflow.resolveDraft({publication:true}));
         }
       }
       finally{running(false);if(!signedIn())showAuth();pos();}
