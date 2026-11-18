@@ -127,3 +127,19 @@ body:has(#popup[data-panel=publish]:not([hidden]))::before{content:"";position:f
 .inline-sizes button{height:28px;min-height:28px;padding:0 6px}
 .popup-body .inline-entry button{border-color:#cfdaf8;background:#edf2ff;color:#263a98;font-weight:730}
 @media(pointer:coarse){.inline-tools .inline-icon{width:39px;height:39px}.inline-swatches button{width:34px;height:34px}}
+
+.release-meter{padding:12px 13px 2px}
+.release-meter-caption{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:#40516f;font-size:11px;font-weight:730}
+.release-meter-caption strong{font-size:15px;font-variant-numeric:tabular-nums;color:#2842c2}
+.release-track{height:8px;background:#e8edfa;border-radius:999px;overflow:hidden}
+.release-fill{height:100%;width:0;display:block;position:relative;overflow:hidden;background:linear-gradient(90deg,#3756ff,#6486fb);border-radius:999px;transition:width .42s cubic-bezier(.17,.59,.38,1)}
+.release-card:is([data-phase=prepare],[data-phase=checking],[data-phase=package],[data-phase=waiting],[data-phase=commit],[data-phase=deploy],[data-phase=verify]) .release-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 20%,#fff8 50%,transparent 80%);transform:translateX(-100%);animation:release-shine 1.7s linear infinite}
+.release-card[data-phase=live] .release-fill{background:#117043}
+.release-card[data-phase=live] .release-meter-caption strong{color:#117043}
+.release-card:is([data-phase=error],[data-phase=conflict]) .release-fill{background:#9b4159}
+.release-card[data-phase=conflict] .release-hero{background:linear-gradient(120deg,#fff0f4,#fff9fa)}
+.release-conflict-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.release-conflict-actions button{min-height:38px;border:1px solid #d5def5;border-radius:8px;padding:6px 10px;background:#f4f7ff;color:#273c89;font-weight:720;text-align:left}
+.release-conflict-actions button:first-child{border-color:#efd1d3;background:#fff4f3;color:#8b364f}
+@keyframes release-shine{to{transform:translateX(100%)}}
+@media(prefers-reduced-motion:reduce){.release-fill{transition:none}.release-fill::after{animation:none!important}}

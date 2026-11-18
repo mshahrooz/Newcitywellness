@@ -4,7 +4,7 @@ const StudioWorkflow=(()=>{
   const nowKey=()=>canvasEpoch+':'+page[0]+':'+(browserAccount||'');
   const clean=()=>operationsMatch(liveOps)&&StudioPublish.baseOfDraft()===liveSource;
   const stale=()=>!!liveRevision&&StudioPublish.baseOfDraft()!==liveSource;
-  let browserAccount=null, timer, pendingWrite=null, hydratedEpoch='', paused=false;
+  let browserAccount=null, timer, browserTimer, pendingWrite=null, hydratedEpoch='', paused=false;
   const key=()=>browserAccount+':'+page[0];
   const slot=()=>slots.get(key());
   const account=()=>browserAccount;
@@ -112,12 +112,15 @@ const StudioWorkflow=(()=>{
   }
   function schedule(){
     clearTimeout(timer);
+    clearTimeout(browserTimer);
     if(paused||!baselineReady||switching)return;
     if(slot())slot().current=null;
     const mark=nowKey();
-    timer=setTimeout(async()=>{
+    browserTimer=setTimeout(()=>{
       if(!current(mark))return;
-      await save({quiet:true});
+      void save();
+    },140);
+    timer=setTimeout(()=>{
       if(current(mark))void sync({allowClear:true});
     },750);
   }
@@ -131,7 +134,7 @@ const StudioWorkflow=(()=>{
       }else if(clean()&&liveRevision&&anchor===liveSource&&safeToSync()&&mode==='edit'){
         s.revision=remote.revision;s.raw=remote.raw;s.current=remote.raw;
         setDraft(remote.raw,ops);
-        await save({quiet:true});
+        await save();
         if(current(mark))flash('Draft opened from your account.');
       }else s.remote=remote;
     }
@@ -197,6 +200,7 @@ const StudioWorkflow=(()=>{
   async function connect(user){
     if(!user||!baselineReady)return;
     clearTimeout(timer);
+    clearTimeout(browserTimer);
     await saveQueue;
     if(browserAccount&&browserAccount!==user){
       list=liveOps.slice();cursor=list.length;savedOps=list.slice();active=null;StudioPublish.bindSource(liveSource);replay();
@@ -217,7 +221,7 @@ const StudioWorkflow=(()=>{
     if(!browserAccount)return;
     paused=true;clearTimeout(timer);
     try{
-      if(!clean()&&!await save({quiet:true})){flash('Save or download this draft before signing out.');return false;}
+      if(!clean()&&!await save()){flash('Autosave is unavailable. Keep this tab open or download your draft before signing out.');return false;}
       if(pendingWrite)await pendingWrite;
       browserAccount=null;slots.clear();
       const mark=nowKey();
@@ -253,7 +257,7 @@ const StudioWorkflow=(()=>{
         if(!await recoverLater(raw)){status.textContent='The older draft could not be saved. Download it before opening the live page.';return;}
         if(!current(mark)||!status.isConnected||raw!==draftString())return;
         setDraft(JSON.stringify({version:1,page:pageIdentity(),operations:liveOps,publishedBase:liveSource}),liveOps);
-        await save({quiet:true});close();flash('Live page opened. Your earlier draft was backed up.');
+        await save();close();flash('Live page opened. Your earlier draft was backed up.');
       });
       place();return;
     }
@@ -267,7 +271,7 @@ const StudioWorkflow=(()=>{
           if(!clean()&&!await recoverLater(draftString()))throw Error('The current draft could not be backed up.');
           if(!current(mark))return;
           setDraft(remote.raw,ops);s.raw=remote.raw;s.current=remote.raw;
-          await save({quiet:true});
+          await save();
         }else{
           if(remote.raw&&!await recoverLater(remote.raw))throw Error('The other draft could not be backed up.');
           s.raw=null;

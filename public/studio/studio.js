@@ -67,7 +67,7 @@ function showState(){
   if(workflow)workflow.renderStatus();
   $('saved').textContent=operationsMatch(liveOps)&&(!workflow||StudioPublish.baseOfDraft()===liveSource)?
     (liveRevision?(liveSource?'Live version':'Original layout'):'Live version not yet verified'):
-    workflow?.draftStatus()||(operationsMatch(savedOps)?'':'Unsaved draft');
+    workflow?.draftStatus()||(operationsMatch(savedOps)?'':'Autosaving…');
 }
 function record(op, token){
   if (!apply(op)) return false;
@@ -558,16 +558,17 @@ async function recoverLater(raw){
   entries.push({savedAt:Date.now(),raw});
   return storeBrowserDraft(key,JSON.stringify(entries));
 }
-function save({quiet=false}={}){
-  if(!quiet&&!StudioInline.finish())return Promise.resolve(false);
+function save(){
   const key=storageKey(), data=draftString(), stamp=list.slice(0,cursor), epoch=canvasEpoch;
   saveQueue=saveQueue.catch(()=>{}).then(async()=>{
     const saved=await storeBrowserDraft(key,data);
     if(epoch!==canvasEpoch)return saved;
     if(saved){
       savedOps=stamp;showState();
-      if(!quiet)flash('Draft saved.');
-    }else flash('Browser storage is full or unavailable. Download an editable draft to keep it.');
+    }else {
+      showState();$('saved').textContent='Autosave unavailable';
+      flash('Browser storage is full or unavailable. Keep this tab open to preserve your edits.');
+    }
     return saved;
   });
   return saveQueue;
@@ -622,7 +623,7 @@ async function syncLiveCanvas(verified=null){
       if(submitted?.id===state.publication)submittedDrafts.delete(target[0]);
       if(dirty){
         showState();
-        void save({quiet:true});
+        void save();
         flash('The live page changed. Your draft is still here.');
         void StudioWorkflow.sync();
         return true;
@@ -798,7 +799,6 @@ function useKeys(){
       &&!e.ctrlKey&&!e.metaKey&&handleSelectionArrow(e))return;
     if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'&&now()){e.preventDefault();cloneSelected(now());return;}
     if(mode==='edit'&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();stepHistory(e.shiftKey?1:-1);}
-    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault();save();}
   }
   const release=e=>{
     if(e.key==='Shift'&&drag?.moved)updateDrag(drag.x,drag.y,false);
@@ -1807,14 +1807,13 @@ $('element-sidebar-close').onclick=()=>toggleElementSidebar(false,true);
 $('page-seo').onclick=()=>{if(!popup.hidden&&$('popup-type').textContent==='PAGE SEO')close();else openSeo();};
 $('undo').onclick=()=>stepHistory(-1);
 $('redo').onclick=()=>stepHistory(1);
-$('save').onclick=save;
 function wireBehavior(){
   const stopShared=enableHomepageBehavior(D,()=>mode==='edit',flash);
   const stopPage=page[0]!=='home'&&typeof enableStudioPageBehavior==='function'?enableStudioPageBehavior(D,()=>mode==='edit',true):null;
   return ()=>{stopShared?.();stopPage?.();};
 }
 function busyCanvas(value){
-  for(const id of ['add','add-section','section-order','save','revert','preview','publish','undo','redo','page-seo'])$(id).disabled=value;
+  for(const id of ['add','add-section','section-order','revert','preview','publish','undo','redo','page-seo'])$(id).disabled=value;
 }
 function boot(){
   if(baselineReady)return;
@@ -1896,7 +1895,7 @@ async function openPage(next) {
   busyCanvas(true);
   await saveQueue;
   const dirty=cursor!==savedOps.length||savedOps.some((op,i)=>list[i]!==op);
-  if(baselineReady&&dirty&&!await save({quiet:true})){
+  if(baselineReady&&dirty&&!await save()){
     switching=false;busyCanvas(false);showState();if(picker){picker.disabled=false;picker.value=page[0];}return;
   }
   canvasEpoch++;stopBehavior?.();stopSize?.();
@@ -1937,5 +1936,17 @@ loadCanvas();
 // Check again when returning to the editor and while a tab stays open.
 window.addEventListener('focus',()=>void syncLiveCanvas());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void syncLiveCanvas();});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&baselineReady&&!switching&&!operationsMatch(savedOps))void save();
+});
+window.addEventListener('pagehide',()=>{
+  if(!baselineReady||switching||!StudioInline.finish()||operationsMatch(savedOps))return;
+  const key=storageKey(), data=draftString();
+  // A small draft can still be saved synchronously during a reload or tab close.
+  if(data.length<3500000){
+    try{localStorage.setItem(key,data);return;}catch{}
+  }
+  void save();
+});
 setInterval(()=>{if(!document.hidden)void syncLiveCanvas();},12000);
 window.addEventListener('online',()=>{if(baselineReady){void syncLiveCanvas();void StudioWorkflow.sync();}});
