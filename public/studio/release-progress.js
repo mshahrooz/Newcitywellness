@@ -32,7 +32,11 @@ const StudioRelease=(()=>{
     const key=target[0];
     const card=create('section',{class:'release-card','aria-label':'Publishing progress'});
     const head=create('div',{class:'release-hero'});
-    head.append(create('span',{class:'release-mark','aria-hidden':'true'},'↗'));
+    const mark=create('span',{class:'release-mark','aria-hidden':'true'});
+    const svg=mark.ownerDocument.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('focusable','false');
+    const arrow=mark.ownerDocument.createElementNS(svg.namespaceURI,'path');
+    arrow.setAttribute('d','M6 18 18 6M8 6h10v10');svg.append(arrow);mark.append(svg);head.append(mark);
     const copy=create('div',{class:'release-copy'});
     copy.append(create('span',{class:'release-label'},'RELEASE TRACKER'));
     const title=create('h3'), note=create('p'), live=create('div',{role:'status','aria-live':'polite','aria-atomic':'true'});
