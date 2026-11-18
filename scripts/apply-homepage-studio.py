@@ -9,9 +9,8 @@ from pathlib import Path
 from html import escape, unescape
 from urllib.parse import urlsplit, unquote, quote
 from studio_seo import apply_seo, baseline_seo, draft_overrides
-from studio_ids import stamp
 
-TAGS = set("a article body br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite code".split())
+TAGS = set("a article body br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite".split())
 BLOCKED_ATTRS = {"srcdoc", "action", "formaction", "ping", "nonce", "integrity", "contenteditable", "autofocus"}
 STYLE_BLOCKED = re.compile(r"url\s*\(|expression\s*\(|@import|javascript\s*:|\\|[<>]", re.I)
 ASSET_PATH = re.compile(r"(?:images/|media/homepage-studio/)[a-zA-Z0-9_ .()/-]+$")
@@ -29,7 +28,7 @@ EMBED_SANDBOX = {
 def studio_embed(attrs):
     kind, src = attrs.get("data-ncw-embed"), attrs.get("src", "")
     title = attrs.get("title", "")
-    if (kind not in EMBED_SANDBOX or attrs.get("sandbox") not in (EMBED_SANDBOX[kind], "allow-scripts allow-presentation" if kind == "youtube" else "" if kind == "html" else None)
+    if (kind not in EMBED_SANDBOX or attrs.get("sandbox") != EMBED_SANDBOX[kind]
             or not title or not title.strip() or len(title) > 160
             or attrs.get("referrerpolicy") != "strict-origin-when-cross-origin"
             or attrs.get("allow") != "encrypted-media; fullscreen; picture-in-picture"):
@@ -157,8 +156,6 @@ class StudioPage(HTMLParser):
             if key in {"href", "xlink:href"}:
                 if re.search(r"[\x00-\x20\\]", v) or v.startswith("//") or urlsplit(v).scheme not in ("", "http", "https", "tel", "mailto"):
                     raise ValueError("Unsafe page link")
-                if v.startswith(self.base + "media/homepage-studio/") and re.search(r"%(?:2f|5c|00)", v, re.I):
-                    raise ValueError("Invalid Studio asset path")
                 if v.startswith(self.base + "media/homepage-studio/") and (urlsplit(v).path.endswith(".bin") or named_document(unquote(urlsplit(v).path[len(self.base):]))):
                     self.asset(v, tag == "a" and key == "href" and "download" in a)
             if key == "id":
@@ -263,7 +260,7 @@ def apply(root, output, prefix, key="home", route="", embed=None):
     # Retain the native head and styles except for explicit Studio SEO overrides.
     # The edited DOM is no longer the Next React tree, so no hydration scripts run on this page.
     changed = BODY.sub(lambda m: m[1] + fragment + m[2], current, count=1)
-    changed = apply_seo(strip_scripts(changed), draft_overrides(raw_draft), prefix=prefix, page=key, output=output)
+    changed = apply_seo(strip_scripts(changed), draft_overrides(raw_draft))
     base = prefix.rstrip("/") + "/"
     def versioned(file):
         asset = output / file
@@ -296,15 +293,12 @@ def emit_studio(root, output, prefix):
     asset_hash = hashlib.sha256((output / asset_name).read_bytes()).hexdigest()[:16]
     assets = {}
     routes = escape(json.dumps([p[2] for p in pages]), quote=True)
-    home_canvas = output / "studio/canvas.html"
-    if home_canvas.is_file():
-        home_canvas.write_text(stamp(home_canvas.read_text(), "home"))
     for key, _label, route in pages:
         html_file = output / route / "index.html"
         native_html = html_file.read_text()
         assets[key] = {"seo": baseline_seo(native_html)}
         if route:
-            canvas = stamp(strip_scripts(native_html), key)
+            canvas = strip_scripts(native_html)
             canvas = HEAD_END.sub(lambda m: f'<meta name="robots" content="noindex,nofollow"><link rel="stylesheet" href="{base}studio/canvas-edits.css?v={suffix}">' + m[0], canvas, count=1)
             target = output / f"studio/pages/{key}.html"
             target.parent.mkdir(exist_ok=True)

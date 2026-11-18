@@ -11,7 +11,7 @@ const StudioText=(()=>{
   const supported=new Set(['placeholder','title','aria-label']);
   const hasWords=t=>/[\p{L}\p{N}]/u.test(t||'');
   const normal=t=>t.replace(/[^\S\n]+/g,' ').trim();
-  const decorative=n=>n.matches?.('span')&&/^[→←↑↓›»]+$/.test(n.textContent.trim());
+  const decorative=n=>n.matches?.('span')&&/^[\s→←↑↓›»]+$/.test(n.textContent);
   function parts(n){
     const list=[];
     function visit(el){
@@ -102,8 +102,8 @@ const StudioText=(()=>{
     }
   }
   function apply(n,op){
-    if(!available(n)||(typeof op.value!=='string'||op.value.length>40000))return false;
-    const next=op.value.replace(/\r\n?/g,'\n');
+    if(!available(n)||typeof op.value!=='string')return false;
+    const next=op.value.slice(0,3000).replace(/\r\n?/g,'\n');
     const current=value(n);
     if(next===current)return true;
     const attr=attribute(n);

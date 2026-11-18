@@ -208,7 +208,6 @@ function safeDuplicate(n,id){
   let j=0, b=0;
   for(const node of nodes){
     if(node.id){const next=id+'-dom'+(++j);htmlIds.set(node.id,next);node.id=next;}
-    node.removeAttribute('data-bs-legacy-id');
     if(idOf(node)){
       const column=n.dataset.bsRow==='custom'&&node.hasAttribute('data-bs-column')&&node.parentElement?.classList.contains('bs-row-inner')&&node.parentElement.parentElement===dup;
       node.dataset.bsId=node===dup?id:column?id+'-c'+Array.from(node.parentElement.children).indexOf(node):id+'-el'+(++b);
@@ -303,7 +302,19 @@ function sectionBackground(zone,op){
   if(video&&video.autoplay)video.play?.()?.catch(()=>{});
   return true;
 }
-function fileReadBg(f,kind,done){StudioMedia.load(f,kind,done);}
+function fileReadBg(f,kind,done){
+  if(!f)return;
+  const limit=kind==='video'?VIDEO_LIMIT:MAX_FILE;
+  const mime=MEDIA_TYPES[kind][f.name.split('.').at(-1).toLowerCase()];
+  if(!mime||!f.size||f.size>limit){flash(kind==='video'?'Choose an MP4 or WebM up to 20 MB.':'Choose a JPG, PNG, AVIF, WebP or GIF up to 2 MB.');return;}
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const value=String(rd.result).replace(/^data:[^;]*;/,'data:'+mime+';');
+    if(kind==='image'){const im=new Image();im.onload=()=>done(value);im.onerror=()=>flash('This image could not be opened.');im.src=value;}
+    else done(value,f.name);
+  };
+  rd.onerror=()=>flash('This file could not be opened.');rd.readAsDataURL(f);
+}
 function gridPanel(n){
   const z=zoneOf(n)||rowList()[0];if(!z)return;
   const begin=knownPosition(n,z,devicePlacement());
@@ -330,10 +341,6 @@ function gridPanel(n){
   input(inputs,'Layer',initial.z,{type:'number',min:-90,max:250},e=>{if(e.value!=='')update('z',e.value);});
   selector.addEventListener('change',()=>{update();scrollToSelection(n);});
   const actions=group();
-  for(const [label,f] of [['Align left',0],['Align center',.5],['Align right',1]])button(actions,label,()=>{update('x',(100-initial.w)*f);gridPanel(n);});
-  if(freeShell(n)?.parentElement.childElementCount>=3){
-    for(const direction of ['horizontal','vertical'])button(actions,'Distribute '+direction+'ly',()=>StudioDesign.alignFree(n,devicePlacement(),direction));
-  }
   button(actions,'Apply position',()=>{update();scrollToSelection(n);});
   button(actions,'Pick a spot',()=>startGridPick({node:n}));
   button(actions,'Nudge left',()=>{update('x',initial.x-100/GRID_COLS);gridPanel(n);});
@@ -479,15 +486,9 @@ function offsetDragTarget(n,start,dx,dy,snap=snapGrid){
   const round=(v,step)=>Math.round(v/step)*step;
   const lpx=px+dx+win.scrollX-start.scrollX,tpx=py+dy+win.scrollY-start.scrollY;
   const keep=(v,lo,hi,original)=>bounded(v,Math.min(lo,original),Math.max(hi,original));
-  let x=keep(snap?round(lpx-left,width/GRID_COLS)+left:lpx,left,right-start.r.width,px);
-  let y=keep(snap?round(tpx-top,GRID_STEP)+top:tpx,top,bottom-start.r.height,py);
-  let guides={};
-  if(snap&&typeof StudioDesign!=='undefined'){
-    guides=StudioDesign.snap(n,{left:lpx,top:tpx,width:start.r.width,height:start.r.height});
-    if(Number.isFinite(guides.xGuide))x=keep(guides.left,left,right-start.r.width,px);
-    if(Number.isFinite(guides.yGuide))y=keep(guides.top,top,bottom-start.r.height,py);
-  }
-  return {left:x,top:y,width:start.r.width,height:start.r.height,device:start.device,xGuide:guides.xGuide,yGuide:guides.yGuide,
+  const x=keep(snap?round(lpx-left,width/GRID_COLS)+left:lpx,left,right-start.r.width,px);
+  const y=keep(snap?round(tpx-top,GRID_STEP)+top:tpx,top,bottom-start.r.height,py);
+  return {left:x,top:y,width:start.r.width,height:start.r.height,device:start.device,
     p:{x:Math.round((start.base.x+100*(x-px)/width)*10000)/10000,y:Math.round((start.base.y+y-py)*100)/100}};
 }
 function gridOperation(n,zone,device,p){
@@ -573,7 +574,6 @@ function drawGhost(n,left,top,w,h,lifted=false){
 }
 function freeGhostHide(){liveGhost?.remove();liveGhost=null;liveGhostSource=null;}
 function hideGridVisual(){
-  if(typeof StudioDesign!=='undefined')StudioDesign.guides(null);
   $('free-grid').hidden=true;$('free-ghost').hidden=true;freeGhostHide();
 }
 function updatePick(e){

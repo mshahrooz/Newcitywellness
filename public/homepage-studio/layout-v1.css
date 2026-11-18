@@ -97,17 +97,6 @@
 }
 @media(max-width:767px){.ncw .bs-embed-frame{max-height:75vh}}
 
-
-/* Page Studio section presets. Scoped to explicitly inserted blocks. */
-.ncw .bs-preset{padding:clamp(18px,4vw,48px);border:1px solid #d5e0d7;border-radius:12px;background:#f7faf7;color:#173b2f}
-.ncw .bs-preset-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.ncw .bs-preset-grid article{padding:17px;border-radius:8px;background:#fff;border:1px solid #e2e8df}
-.ncw .bs-preset-faq details{padding:11px 0;border-bottom:1px solid #d5e0d7}
-.ncw .bs-preset-hours dl{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.ncw .bs-preset-hours dd{margin:0}
-.ncw .bs-preset-cta{text-align:center}
-@media(max-width:740px){.ncw .bs-preset-grid{grid-template-columns:1fr}}
-
 /* Studio device overrides are opt-in. With no override, the shared/native layout wins. */
 @media(min-width:601px) and (max-width:900px){
   [data-bs-responsive-tablet~="width"]{width:var(--bs-device-tablet-width)!important}

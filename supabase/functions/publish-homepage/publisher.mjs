@@ -54,29 +54,22 @@ export function unpackPackage(buf,key="home"){
 }
 function validMedia(path,b){
   const doc=documentName(path);
-  if(doc){
-    const hex=b.subarray(0,8).toString('hex'), start=b.toString('ascii',0,5);
-    if(doc.ext==='pdf')return start==='%PDF-';
-    if(/^(doc|xls|ppt)$/.test(doc.ext))return hex==='d0cf11e0a1b11ae1';
-    if(/^(docx|xlsx|pptx|odt|ods|odp)$/.test(doc.ext))return hex.startsWith('504b0304');
-    if(doc.ext==='rtf')return start==='{\\rtf';
-    return /^(txt|csv)$/.test(doc.ext)&&b.length>0&&!b.includes(0);
-  }
+  if(doc)return doc.ext!=='pdf'||b.toString('ascii',0,5)==='%PDF-';
   switch(path.split('.').at(-1)){
     case 'png': return b.subarray(0,8).toString('hex')==='89504e470d0a1a0a';
     case 'jpg': return b.subarray(0,3).toString('hex')==='ffd8ff';
     case 'webp': return b.toString('ascii',0,4)==='RIFF'&&b.toString('ascii',8,12)==='WEBP';
     case 'avif': case 'mp4': return b.toString('ascii',4,8)==='ftyp';
     case 'gif': return /^GIF8[79]a$/.test(b.toString('ascii',0,6));
-    case 'bin': return false; // Historical opaque files remain readable but cannot be newly uploaded.
+    case 'bin': return true; // Arbitrary bytes, served only as a download.
     case 'pdf': return b.toString('ascii',0,5)==='%PDF-';
     case 'webm': return b.subarray(0,4).toString('hex')==='1a45dfa3';
     default: return false;
   }
 }
-const tags=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite code'.split(' '));
+const tags=new Set('a article br builder-copy button circle div footer form h1 h2 h3 h4 h5 h6 header img input li main nav p path rect section span strong svg textarea ul label select option video source figure figcaption template ol em small aside blockquote details summary dl dt dd picture hr iframe noscript cite'.split(' '));
 const attrAllow=new Set('id class style title href target rel tabindex role for type name value required disabled selected placeholder referrerpolicy autocomplete inputmode minlength maxlength pattern rows cols checked alt src srcset sizes width height loading decoding fetchpriority viewBox viewbox fill stroke d x y rx ry cx cy r x1 x2 y1 y2 stroke-width stroke-linecap stroke-linejoin fill-rule clip-rule preserveAspectRatio preserveaspectratio focusable xmlns viewbox media poster preload autoplay loop muted playsinline controls download lang dir hidden open method enterkeyhint allowfullscreen sandbox allow'.split(' '));
-export function verifyHtml(html,files,tree,key,legacy=false){
+export function verifyHtml(html,files,tree,key){
   if(typeof html!=='string'||html.length>maxText||/<!doctype|<\/?(?:body|html|head)[\s>]/i.test(html))badZip();
   const seen=new Set();let main=0;
   const resource=(v,asDownload=false)=>{
@@ -100,7 +93,7 @@ export function verifyHtml(html,files,tree,key,legacy=false){
       if(node.tagName==='form'&&!(formClass&&attr('class')?.split(/\s+/).includes(formClass)||key==='conditions-treated'&&attr('role')==='search'))badZip();
       if(node.tagName==='iframe'){
         const original=Object.hasOwn(EMBEDS,key)&&attr('src')===EMBEDS[key]&&!attr('data-ncw-embed');
-        if(!original&&!globalThis.StudioEmbeds.safeFrame(attr,legacy))fail(422,'The page contains an unsupported embed.');
+        if(!original&&!globalThis.StudioEmbeds.safeFrame(attr))fail(422,'The page contains an unsupported embed.');
       }
       for(const {name,value,prefix} of node.attrs){
         if(prefix||!(attrAllow.has(name)||/^(aria|data)-[a-z0-9_-]+$/.test(name)))badZip();
@@ -135,13 +128,9 @@ function readPublication(files,key,required){
 }
 const validId = s => typeof s === 'string' && /^[a-z0-9-]{1,96}$/i.test(s);
 function validateStoredDraft(draftState, files, tree){
-  if (draftState.operations.length > 4000) badZip();
+  if (draftState.operations.length > 800) badZip();
   for(const op of draftState.operations){
     if(!op||typeof op.kind!=='string'||!validId(op.id)||['target','pair','copy'].some(k=>op[k]&&!validId(op[k])))badZip();
-    if(op.variants&&(!Array.isArray(op.variants)||op.kind!=='image'||op.variants.length>5||op.variants.some(v=>{
-      const name='public/'+v?.value?.studioAsset;
-      return !Number.isInteger(v?.width)||v.width<1||v.width>2200||!name.startsWith('public/images/')||!mediaPath(name)||!files.has(name)&&!tree.has(name);
-    })))badZip();
     if(op.value && typeof op.value==='object' && 'studioAsset' in op.value){
       const name='public/'+op.value.studioAsset;
       if(!mediaPath(name)||isDocument(name)&&op.kind!=='file'||!files.has(name)&&!tree.has(name))badZip();
@@ -233,7 +222,7 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
       const page = PAGES.find(p=>p[0]===key);
       if (!page) fail(400, 'This page is not editable in Studio.');
       const {source,draft}=pageFiles(key);
-      const tools=studioState({request,env,authUser:actor,page:key,now,fail,bodyReader:readLimited});
+      const tools=studioState({request,env,authUser:actor,page:key,now,fail});
       if (draftAction(action)) return await tools.handle(action,req,params,headers,json);
       if (!['check','status','publish','history','history-version','revert'].includes(action)) fail(400, 'Unknown publishing action.');
       let files, pub, state;
@@ -359,7 +348,7 @@ export function createPublisher({ request = fetch, env, now = Date.now } = {}) {
         const old=await previousPage({
           key,source,draft,head,tree,guard,read,git,gitSha,segments,
           readPublication:(value,k)=>readPublication(value,k,guardPaths),
-          validateStoredDraft,verifyHtml:(html,files,tree,key)=>verifyHtml(html,files,tree,key,true),expectedSource,expectedId,fail,
+          validateStoredDraft,verifyHtml,expectedSource,expectedId,fail,
         });
         files=old.files;direct=old.direct;publicationId=old.id;
       } else {

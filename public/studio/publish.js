@@ -191,16 +191,14 @@ const StudioPublish = (() => {
       }
       if(tag==='iframe'){
         const original=typeof STUDIO_EMBEDS!=='undefined'&&Object.hasOwn(STUDIO_EMBEDS,key)&&node.getAttribute('src')===STUDIO_EMBEDS[key]&&!node.hasAttribute('data-ncw-embed');
-        if(node.dataset.ncwEmbed==='youtube'&&StudioEmbeds.youtube(node.getAttribute('src')))node.setAttribute('sandbox',StudioEmbeds.YOUTUBE_SANDBOX);
-        if(node.dataset.ncwEmbed==='html')node.setAttribute('sandbox',StudioEmbeds.HTML_SANDBOX);
         if(!original&&!StudioEmbeds.safeFrame(name=>node.getAttribute(name)))throw Error('This page has an unsupported embed.');
       }else for(const attr of ['src','poster']){
         if(node.hasAttribute(attr))node.setAttribute(attr,await media(node.getAttribute(attr)));
       }
       if(node.hasAttribute('srcset')){
-        const parts=typeof StudioMedia==='undefined'?node.getAttribute('srcset').split(',').map(x=>x.trim().split(/\s+/)):StudioMedia.parseSrcset(node.getAttribute('srcset'));
+        const parts=node.getAttribute('srcset').split(',');
         const rebuilt=[];
-        for(const [url,width] of parts){rebuilt.push(await media(url)+(width?' '+width:''));}
+        for(const part of parts){const [url,width]=part.trim().split(/\s+/);rebuilt.push(await media(url)+(width?' '+width:''));}
         node.setAttribute('srcset',rebuilt.join(', '));
       }
     }
@@ -215,20 +213,9 @@ const StudioPublish = (() => {
         }
       }
     }
-    for(const op of clonedOperations)if(op.kind==='image'&&Array.isArray(op.variants)){
-      const variants=[];
-      for(const variant of op.variants)if(mediaCache.has(variant.value)){
-        variants.push({...variant,value:{studioAsset:decodeURIComponent((await mediaCache.get(variant.value)).slice(BASE.length))}});
-      }
-      op.variants=variants;
-    }
     // Intermediate media overwritten later should not bloat the public repository or expose unused uploads.
     const ops=clonedOperations.filter(op=>!((['image','file','video'].includes(op.kind)||op.kind==='section-bg'&&['image','video'].includes(op.type))&&typeof op.value==='string'&&op.value.startsWith('data:')));
-    if(typeof StudioSeo!=='undefined'){
-      const image=StudioSeo.fromOperations(ops).socialImage;
-      if(image&&!context?.tree?.has('public/'+canonicalAsset(image.replace(/^\/Newcitywellness(?=\/)/,''))))throw Error('The social share image is not in the site’s /images/ folder.');
-    }
-    const portable={version:1,page:key==='home'?'new-city-wellness-homepage':'new-city-wellness-'+key,operations:typeof StudioDraft==='undefined'?ops:StudioDraft.compact(ops)};
+    const portable={version:1,page:key==='home'?'new-city-wellness-homepage':'new-city-wellness-'+key,operations:ops};
     const plain=utf8.encode(JSON.stringify(portable)+'\n');
     let draftText;
     if(typeof CompressionStream==='function'){
@@ -282,27 +269,17 @@ const StudioPublish = (() => {
   }
   async function remoteDraft(revision){
     if(!Array.isArray(revision?.operations))throw Error('There is no saved Studio publication to load yet.');
-    const cache=new Map();
-    async function materialize(value,kind){
-      if(!value||typeof value!=='object'||!value.studioAsset)return value;
-      const path=canonicalAsset(value.studioAsset),ext=path.split('.').pop().toLowerCase();
-      const type=kind==='file'?(ext==='pdf'&&/^[a-f0-9]{32}\.pdf$/.test(path.split('/').at(-1))?'application/pdf':StudioDocuments.MIME)
+    const ops=await Promise.all(revision.operations.map(async op=>{
+      if(!op.value||typeof op.value!=='object'||!op.value.studioAsset)return op;
+      const path=canonicalAsset(op.value.studioAsset),ext=path.split('.').pop().toLowerCase();
+      const type=op.kind==='file'?(ext==='pdf'&&/^[a-f0-9]{32}\.pdf$/.test(path.split('/').at(-1))?'application/pdf':StudioDocuments.MIME)
         :Object.keys(mediaMap).find(k=>mediaMap[k]===ext);
-      if(!type||ext==='bin'&&kind!=='file')throw Error('The published draft contains an unknown media format.');
-      if(!cache.has(path)){
-        const url=LIVE+path.split('/').map(encodeURIComponent).join('/');
-        cache.set(path,(async()=>{
-          const answer=await fetch(url,{cache:'force-cache',signal:AbortSignal.timeout(kind==='file'?90000:12000)});
-          if(!answer?.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
-          return 'data:'+type+';base64,'+pack(new Uint8Array(await answer.arrayBuffer()));
-        })());
-      }
-      return cache.get(path);
-    }
-    const ops=await Promise.all(revision.operations.map(async op=>({
-      ...op,value:await materialize(op.value,op.kind),
-      ...(Array.isArray(op.variants)?{variants:await Promise.all(op.variants.map(async v=>({...v,value:await materialize(v.value,'image')})))}:{}),
-    })));
+      if(!type||ext==='bin'&&op.kind!=='file')throw Error('The published draft contains an unknown media format.');
+      const url=LIVE+path.split('/').map(encodeURIComponent).join('/');
+      const answer=await fetch(url,{cache:'force-cache',signal:AbortSignal.timeout(op.kind==='file'?90000:12000)});
+      if(!answer?.ok)throw Error('A published media file is not ready yet. Wait for Pages to finish, then retry.');
+      return {...op,value:'data:'+type+';base64,'+pack(new Uint8Array(await answer.arrayBuffer()))};
+    }));
     return {...revision,operations:ops};
   }
   async function checkedPackage(update){
@@ -390,7 +367,6 @@ const StudioPublish = (() => {
       headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+token},
     }).catch(()=>null);
   }
-  const compatible=guard=>!!guard&&guardPaths().every(name=>guard[name]===canvasGuard()?.[name]);
   const canCloud=()=>signedIn()&&!!publisherSession.user&&supabaseReady()&&location.origin===SITE_ORIGIN;
   async function publisher(action, zip, params={}, target=selected(), raw=false){
     if(!signedIn())throw Error('Your session expired. Sign in again.');
@@ -400,7 +376,7 @@ const StudioPublish = (() => {
     try{
       response=await fetch(STUDIO_AUTH.url+'/functions/v1/publish-homepage?'+query,{
         method:'POST',credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(145000),
-        headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+publisherSession.token,...(zip?{'Content-Type':action.startsWith('draft-')?'application/octet-stream':'application/zip'}:{})},
+        headers:{apikey:STUDIO_AUTH.key,Authorization:'Bearer '+publisherSession.token,...(zip?{'Content-Type':action==='draft-write'?'application/octet-stream':'application/zip'}:{})},
         ...(zip?{body:zip}:{}),
       });
     }catch{throw Error(action==='publish'?'Could not confirm publishing. Check the GitHub Pages build before retrying.':'Could not reach the publishing service. Your draft is unchanged. Try again.');}
@@ -439,7 +415,7 @@ const StudioPublish = (() => {
     if(feedback.isConnected)feedback.textContent='Still waiting for GitHub Pages. Studio will pick up the deployed version automatically.';
   }
   function panel(reverting=false){
-    if(busy||reverting&&!StudioWorkflow.canRevert()||typeof StudioAuthoring!=='undefined'&&!StudioAuthoring.finish())return;
+    if(busy||reverting&&!StudioWorkflow.canRevert())return;
     const pos=open(reverting?'Revert '+selected()[1]+'?':'Publish '+selected()[1],'GITHUB PAGES');
     para(reverting?'This will put the previous published version of this page back on the live website. Other pages and your unpublished edits stay unchanged.'
       :'Publish your changes to the selected page. Sign in with your approved publisher account.');
@@ -451,20 +427,18 @@ const StudioPublish = (() => {
     if(!activeDraft)para(mode==='edit'?'Make a page edit before publishing.':'Use Back to editing before publishing.');
     const feedback=create('p',{role:'status',class:'publish-feedback'});
     body.append(feedback);
-    let checked=reverting||!activeDraft;
-    if(!checked)void StudioDraft.review(body,selected()).finally(()=>{checked=true;direct.disabled=busy||!signedIn()||!activeDraft||publishing();pos();});
     const controls=group(reverting?'revert-actions':'publish-actions');
     const progress=message=>{feedback.textContent=message;};
     const running=value=>{
       busy=value;
-      direct.disabled=value||!signedIn()||!activeDraft||publishing()||!checked;
+      direct.disabled=value||!signedIn()||!activeDraft||publishing();
       $('publish').disabled=value;
       if($('revert'))$('revert').disabled=value;
       if($('page-picker'))$('page-picker').disabled=value;
       authArea.querySelectorAll('button,input').forEach(el=>{el.disabled=value;});
     };
     const direct=button(controls,reverting?'Revert Live Page':'Publish Website',async()=>{
-      if(busy||!signedIn()||!activeDraft||publishing()||!checked)return;
+      if(busy||!signedIn()||!activeDraft||publishing())return;
       running(true);
       try{
         const target=selected(), snapshot=draftString();
@@ -547,7 +521,7 @@ const StudioPublish = (() => {
     if($('revert'))$('revert').onclick=()=>panel(true);
     $('publish-status').textContent='Ready to edit';
   };
-  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,canCloud,compatible,fromPublishedDraft:remoteDraft,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
+  return {start,details,status,prepare,fromData,safeLink,sha256,githubPackage,bindSource,baseOfDraft,liveManifest,loadLiveDraft,verifyLivePage,canCloud,action:(action,params,target,blob,raw)=>publisher(action,blob,params,target,raw),isBusy:()=>busy};
 })();
 
 StudioPublish.start();

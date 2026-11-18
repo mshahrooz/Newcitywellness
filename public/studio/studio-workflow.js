@@ -62,8 +62,6 @@ const StudioWorkflow=(()=>{
       revert.hidden=!canRevert();
       if(!revert.hidden)revert.disabled=StudioPublish.isBusy();
     }
-    const history=$('studio-history');
-    if(history)history.hidden=!(mode==='edit'&&liveRevision&&liveSource&&!switching);
     const conflict=$('draft-conflict');
     if(conflict)conflict.hidden=mode!=='edit'||(!stale()&&!slot()?.remote);
   }
@@ -110,8 +108,7 @@ const StudioWorkflow=(()=>{
   async function readRemote(target){
     const info=(await StudioPublish.action('draft-info',{},target)).draft;
     if(!info)return null;
-    let raw=await unpack(await StudioPublish.action('draft-read',{revision:info.revision},target,null,true));
-    if(typeof StudioMedia!=='undefined')raw=await StudioMedia.hydrate(raw,target);
+    const raw=await unpack(await StudioPublish.action('draft-read',{revision:info.revision},target,null,true));
     return {...info,raw};
   }
   function schedule(){
@@ -172,8 +169,7 @@ const StudioWorkflow=(()=>{
         const raw=draftString();
         s.current=raw;
         if(s.raw&&sameDraft(raw,s.raw)){s.raw=raw;return;}
-        const compact=typeof StudioMedia==='undefined'?raw:await StudioMedia.externalize(raw,target);
-        const compressed=await pack(compact);
+        const compressed=await pack(raw);
         if(!current(mark)||draftString()!==raw)return;
         try{
           const result=await StudioPublish.action('draft-write',{revision:s.revision,bytes:compressed.size},target,compressed);
@@ -182,7 +178,7 @@ const StudioWorkflow=(()=>{
           if(error.status!==409)throw error;
           s.remote=await readRemote(target)||{raw:null,revision:null,updated_at:null};
         }
-      }catch(e){s.error=e.message;if(typeof StudioDraft!=='undefined')StudioDraft.log('Cloud draft sync',e);}
+      }catch(e){s.error=e.message;}
     })();
     s.task=run;pendingWrite=run;touchStatus();
     try{await run;}finally{

@@ -6,30 +6,27 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#152c25">
 <title>New City Wellness · Page Studio</title>
-<link rel="stylesheet" href="studio.css?v=authoring1">
+<link rel="stylesheet" href="studio.css?v=inline-only1">
 <script src="pages.js?v=drag-guides1" defer></script>
 <script src="canvas-behavior.js?v=drag-guides1" defer></script>
 <script src="../homepage-studio/page-runtime.js?v=drag-guides1" data-preview-runtime defer></script>
 <script src="../homepage-studio/responsive-offsets.js?v=2" defer></script>
-<script src="embeds.js?v=provider-policy1" defer></script>
+<script src="embeds.js?v=drag-guides1" defer></script>
 <script src="columns.js?v=drag-guides1" defer></script>
-<script src="grid.js?v=media1" defer></script>
+<script src="grid.js?v=sticky-elements1" defer></script>
 <script src="flow.js?v=studio-drag2" defer></script>
-<script src="seo.js?v=2" defer></script>
+<script src="seo.js?v=1" defer></script>
 <script src="element-icons.js?v=1" defer></script>
 <script src="documents.js?v=verified-studio1" defer></script>
 <script src="resize.js?v=1" defer></script>
 <script src="device-layout.js?v=1" defer></script>
-<script src="studio-workflow.js?v=authoring1" defer></script>
-<script src="text-edit.js?v=2" defer></script>
-<script src="authoring.js?v=1" defer></script>
-<script src="design-tools.js?v=1" defer></script>
-<script src="draft-tools.js?v=1" defer></script>
-<script src="media.js?v=1" defer></script>
-<script src="studio.js?v=authoring1" defer></script>
+<script src="studio-workflow.js?v=revert1" defer></script>
+<script src="text-edit.js?v=inline-only1" defer></script>
+<script src="inline-text.js?v=1" defer></script>
+<script src="studio.js?v=inline-only1" defer></script>
 <script src="studio-revision.js?v=publish2" defer></script>
 <script src="publisher-config.js" defer></script>
-<script src="publish.js?v=authoring1" defer></script>
+<script src="publish.js?v=revert1" defer></script>
 </head>
 <body>
 <header class="studio-bar">
@@ -49,11 +46,8 @@
   <div class="tools right">
     <button type="button" id="page-seo" aria-label="Edit SEO settings for this page" aria-controls="popup" aria-expanded="false"><span aria-hidden="true">✦</span> Page SEO</button>
     <button type="button" id="preview" aria-pressed="false">Preview</button>
-    <button type="button" id="studio-links" aria-haspopup="dialog" title="Navigation and footer links">Links</button>
-    <button type="button" id="studio-history" aria-haspopup="dialog" hidden>History</button>
-    <button type="button" id="studio-guide" aria-haspopup="dialog" aria-label="Keyboard shortcuts and diagnostics" title="Keyboard shortcuts and diagnostics">?</button>
     <button type="button" id="revert" aria-label="Revert to Previous Version" aria-haspopup="dialog" hidden>Revert<span class="wide"> to Previous Version</span></button>
-    <button type="button" class="accent" id="save">Save now</button>
+    <button type="button" class="accent" id="save"><span class="wide">Save </span>draft</button>
     <button type="button" class="publish-cta" id="publish">Publish<span class="wide"> page</span></button>
   </div>
 </header>
@@ -67,12 +61,10 @@
   </header>
   <div id="element-sidebar-body" class="element-sidebar-body"></div>
 </aside>
-<main id="stage" aria-label="Page editor canvas"><iframe id="canvas" title="New City Wellness page canvas" allowfullscreen></iframe></main>
+<main id="stage" aria-label="Page editor canvas"><iframe id="canvas" title="New City Wellness page canvas" sandbox="allow-scripts allow-same-origin allow-presentation allow-downloads allow-popups allow-popups-to-escape-sandbox" allowfullscreen></iframe></main>
 </div>
 <div id="outline" hidden></div>
-<nav id="selection-trail" aria-label="Selected element path" hidden></nav>
 <div id="column-handles" role="group" aria-label="Resize column widths" hidden></div>
-<div class="smart-guide" id="smart-x" hidden aria-hidden="true"></div><div class="smart-guide" id="smart-y" hidden aria-hidden="true"></div>
 <div id="free-grid" aria-hidden="true" hidden></div>
 <div id="free-ghost" aria-hidden="true" hidden><span id="free-ghost-label"></span></div>
 <div id="palette-drag-chip" aria-hidden="true" hidden></div>
