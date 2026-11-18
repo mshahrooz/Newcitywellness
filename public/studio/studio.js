@@ -1900,7 +1900,7 @@ async function openPage(next) {
   loadCanvas();
 }
 function loadCanvas(){
-  $('revert').hidden=true;$('draft-conflict').hidden=true;
+  $('revert').hidden=true;
   switching=true;busyCanvas(true);if(picker){picker.value=page[0];picker.disabled=true;}
   $('saved').textContent='Opening '+page[1]+'…';
   $('publish-status').textContent='Ready to edit';
@@ -1927,6 +1927,5 @@ loadCanvas();
 // Check again when returning to the editor and while a tab stays open.
 window.addEventListener('focus',()=>void syncLiveCanvas());
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void syncLiveCanvas();});
-if(typeof StudioWorkflow!=='undefined')StudioWorkflow.start();
 setInterval(()=>{if(!document.hidden)void syncLiveCanvas();},12000);
 window.addEventListener('online',()=>{if(baselineReady){void syncLiveCanvas();void StudioWorkflow.sync();}});

@@ -62,8 +62,6 @@ const StudioWorkflow=(()=>{
       revert.hidden=!canRevert();
       if(!revert.hidden)revert.disabled=StudioPublish.isBusy();
     }
-    const conflict=$('draft-conflict');
-    if(conflict)conflict.hidden=mode!=='edit'||(!stale()&&!slot()?.remote);
   }
   const isPending=(target=page)=>{const state=pending(target[0]);return !!state&&Date.now()-state.at<180000;};
   const canRevert=()=>mode==='edit'&&!!liveRevision&&!!liveSource&&!switching&&!isPending();
@@ -281,8 +279,5 @@ const StudioWorkflow=(()=>{
     if(remote.raw)button(actions,'Open cloud copy',()=>exchange(true));
     button(actions,'Keep browser copy',()=>exchange(false));place();
   }
-  function start(){
-    $('draft-conflict').onclick=resolveDraft;
-  }
-  return {start,account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,canRevert,resolveDraft};
+  return {account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,canRevert,resolveDraft};
 })();
