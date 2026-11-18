@@ -53,7 +53,7 @@ const StudioWorkflow=(()=>{
     let kind='', message='Ready to edit';
     const followUp=!!state&&Date.now()-state.at<180000;
     if(state){kind='pending';message=followUp?(state.previousRevision?'Reverting…':'Publishing…'):'Waiting for GitHub Pages';}
-    else if(stale()){kind='conflict';message='Newer live version';}
+    else if(stale()){message='';}
     else if(liveRevision){kind='live';message='Live version verified';}
     if(kind)el.dataset.state=kind;else el.removeAttribute('data-state');
     el.textContent=message;

@@ -7,6 +7,36 @@ const StudioInline=(()=>{
   const drop=new Set('script style svg math iframe object template img input button video audio'.split(' '));
   const inlineAttrs=new Set('id class title lang dir aria-hidden data-builder-copy data-builder-shared data-bs-id data-bs-kind data-bs-native-copy data-bs-copy-only data-bs-generated'.split(' '));
   const badStyle=/(?:url\s*\(|expression\s*\(|@import|javascript\s*:|[\\<>])/i;
+  const svgNS='http://www.w3.org/2000/svg';
+  const icons={
+    bold:'M7 4h6a4 4 0 0 1 0 8H7zm0 8h7a4 4 0 0 1 0 8H7z',
+    italic:'M10 4h9M5 20h9M15 4 9 20',
+    underline:'M6 4v7a6 6 0 0 0 12 0V4M4 21h16',
+    link:'m10 13 4-4m-6 7-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0',
+    color:'M4 17 10 4h2l6 13M6 13h10M3 21h18',
+    size:'M3 6h12M9 6v14m7-10h5m-2.5 0v10M6 20h6',
+    left:'M4 5h16M4 10h10M4 15h16M4 20h10',
+    center:'M4 5h16M7 10h10M4 15h16M7 20h10',
+    right:'M4 5h16M10 10h10M4 15h16M10 20h10',
+    justify:'M4 5h16M4 10h16M4 15h16M4 20h16',
+    check:'m5 12 4 4 10-10',close:'m6 6 12 12M18 6 6 18'
+  };
+  const alignments=['left','center','right','justify'];
+  const palette=['#172238','#3756ff','#154637','#8b3f23','#b6204f','#165f88','#52388d','#ffffff'];
+  function icon(name){
+    const doc=document, svg=doc.createElementNS(svgNS,'svg'), path=doc.createElementNS(svgNS,'path');
+    svg.setAttribute('viewBox','0 0 24 24');
+    svg.setAttribute('aria-hidden','true');
+    svg.setAttribute('focusable','false');
+    path.setAttribute('d',icons[name]);
+    svg.append(path);
+    return svg;
+  }
+  function iconButton(parent,name,glyph,handler,attrs={}){
+    const control=button(parent,'',handler,{class:'inline-icon','aria-label':name,title:name,...attrs});
+    control.append(icon(glyph));
+    return control;
+  }
   function validLink(value){
     if(!value||value.length>4096||/[\x00-\x20\\]/.test(value)||value.startsWith('//'))return false;
     if(/^(#|\/)/.test(value))return true;
@@ -25,7 +55,8 @@ const StudioInline=(()=>{
       if(depth>32||++count>8000){valid=false;return;}
       if(node.nodeType===3){parent.append(doc.createTextNode(node.data));return;}
       if(node.nodeType!==1)return;
-      const tag=({b:'strong',i:'em'})[node.localName]||node.localName;
+      const sourceTag=node.localName;
+      const tag=({b:'strong',i:'em',u:'span',font:'span'})[sourceTag]||sourceTag;
       if(drop.has(tag))return;
       if(['div','p','li'].includes(tag)&&parent.childNodes.length)parent.append(doc.createElement('br'));
       if(!tags.has(tag)||tag==='a'&&inLink){for(const c of node.childNodes)add(parent,c,depth+1,inLink);return;}
@@ -36,6 +67,11 @@ const StudioInline=(()=>{
         if(tag==='a'&&name==='href'&&edits(value))next.setAttribute(name,value);
         if(tag==='a'&&name==='target'&&['_blank','_self'].includes(value))next.setAttribute(name,value);
         if(tag==='a'&&name==='rel'&&/^[a-z -]{1,80}$/i.test(value))next.setAttribute(name,value);
+      }
+      if(sourceTag==='u')next.style.textDecorationLine='underline';
+      if(sourceTag==='font'){
+        const color=node.getAttribute('color')||'';
+        if(/^#[0-9a-f]{6}$/i.test(color))next.style.color=color;
       }
       if(next.getAttribute('target')==='_blank')next.relList.add('noopener');
       for(const c of node.childNodes)add(next,c,depth+1,inLink||tag==='a');
@@ -51,10 +87,21 @@ const StudioInline=(()=>{
     if(!el?.matches('h1,h2,h3,h4,h5,h6,p,summary,blockquote,figcaption,strong,em,b,i,small,span,a,button,builder-copy,div,li,dt,dd,label'))return null;
     return el.querySelector('h1,h2,h3,h4,h5,h6,p,ol,ul,form,button,input,textarea,select,iframe,img,picture,video,audio,svg,table,details,section,article,code')?null:el;
   }
+  function alignmentFor(node){
+    const semantic='h1,h2,h3,h4,h5,h6,p,summary,blockquote,figcaption,li,dt,dd';
+    const block=node?.closest(semantic)|| (node?.matches('div,button')?node:null);
+    return block&&!block.matches('[data-bs-row],[data-bs-column],[data-bs-zone]')?block:null;
+  }
   function apply(n,op){
-    const node=rootFor(n), clean=node&&sanitize(node.ownerDocument,op.value,!!node.closest('a,button'));
-    if(!clean)return false;
-    node.replaceChildren(...clean.childNodes);return true;
+    const node=rootFor(n);
+    if(!node)return false;
+    const block=alignmentFor(node), hasText=op.value!==undefined;
+    if(op.align!==undefined&&(!block||!alignments.includes(op.align)))return false;
+    const clean=hasText?sanitize(node.ownerDocument,op.value,!!node.closest('a,button')):null;
+    if(hasText&&!clean||!hasText&&op.align===undefined)return false;
+    if(clean)node.replaceChildren(...clean.childNodes);
+    if(op.align!==undefined)block.style.textAlign=op.align;
+    return true;
   }
   const running=()=>!!edit, contains=target=>!!edit?.node.contains(target), inToolbar=target=>!!edit?.toolbar.contains(target);
   function position(){
@@ -66,13 +113,19 @@ const StudioInline=(()=>{
   }
   function finish(commit=true){
     if(!edit)return true;
-    const {node,target,toolbar,before,previousEditable,stop}=edit, changed=node.innerHTML!==before;
+    const {node,target,toolbar,before,previousEditable,block,previousAlign,priority,align,stop}=edit, changed=node.innerHTML!==before;
     const clean=commit&&changed?sanitize(node.ownerDocument,node.innerHTML,!!node.closest('a,button')):null;
     if(commit&&changed&&!clean){flash('This edit is too long or complex. Shorten it or press Esc to cancel.');return false;}
     edit=null;stop();toolbar.remove();node.classList.remove('bs-inline-editing');
     if(previousEditable===null)node.removeAttribute('contenteditable');else node.setAttribute('contenteditable',previousEditable);
     if(changed)node.innerHTML=before;
-    if(clean&&clean.innerHTML!==before)record({kind:'rich-text',id:idOf(target),value:clean.innerHTML});
+    if(align!==null)block.style.setProperty('text-align',previousAlign,priority);
+    if(commit&&(clean&&clean.innerHTML!==before||align!==null&&align!==previousAlign)){
+      const op={kind:'rich-text',id:idOf(target)};
+      if(clean&&clean.innerHTML!==before)op.value=clean.innerHTML;
+      if(align!==null&&align!==previousAlign)op.align=align;
+      record(op);
+    }
     paint();return true;
   }
   function start(n){
@@ -89,35 +142,132 @@ const StudioInline=(()=>{
     }
     const handlers=[];
     const watch=(el,type,fn)=>{el.addEventListener(type,fn);handlers.push(()=>el.removeEventListener(type,fn));};
-    edit={node,target:n,toolbar,before,previousEditable,stop:()=>handlers.forEach(stop=>stop())};
+    const block=alignmentFor(node), previousAlign=block?.style.getPropertyValue('text-align')||'', priority=block?.style.getPropertyPriority('text-align')||'';
+    edit={node,target:n,toolbar,before,previousEditable,block,previousAlign,priority,align:null,stop:()=>handlers.forEach(stop=>stop())};
     close();active=idOf(n);node.classList.add('bs-inline-editing');node.setAttribute('contenteditable','true');
-    const selected=()=>{const sel=doc.getSelection();return sel?.rangeCount&&!sel.isCollapsed&&contains(sel.anchorNode)&&contains(sel.focusNode);};
-    for(const [name,cmd] of [['Bold','bold'],['Italic','italic'],['Link','createLink']]){
-      const control=button(toolbar,name,()=>{
-        if(!selected()){flash('Select the text you want to format first.');return;}
-        if(name!=='Link'){doc.execCommand(cmd,false);return;}
-        const range=doc.getSelection().getRangeAt(0).cloneRange();
-        const old=toolbar.querySelector('.inline-link-controls');
-        if(old){old.querySelector('input').focus();return;}
-        const group=create('div',{class:'inline-link-controls'});
-        const address=input(group,'Link URL','',{placeholder:'https://…',maxlength:4096},el=>el.setCustomValidity(''));
-        const set=()=>{
-          const url=address.value.trim();
-          if(!validLink(url)){address.setCustomValidity('Enter a valid link address.');address.reportValidity();return;}
-          node.focus();const sel=doc.getSelection();sel.removeAllRanges();sel.addRange(range);
-          doc.execCommand(cmd,false,url);group.remove();position();
-        };
-        button(group,'Apply link',set);toolbar.append(group);position();address.focus();
-        address.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();set();}});
-      });
+    let box=null, owner=null;
+    const tools=create('div',{class:'inline-main-tools'});
+    toolbar.append(tools);
+    const selected=()=>{
+      const sel=doc.getSelection();
+      return sel?.rangeCount&&!sel.isCollapsed&&contains(sel.anchorNode)&&contains(sel.focusNode)?sel.getRangeAt(0).cloneRange():null;
+    };
+    const selectionOrHint=()=>{
+      const range=selected();
+      if(!range)flash('Select the text you want to format first.');
+      return range;
+    };
+    const restore=range=>{
+      if(!range||!contains(range.startContainer)||!contains(range.endContainer))return false;
+      node.focus({preventScroll:true});
+      const sel=doc.getSelection();sel.removeAllRanges();sel.addRange(range);return true;
+    };
+    const dismiss=()=>{
+      box?.remove();owner?.setAttribute('aria-expanded','false');
+      box=null;owner=null;position();
+    };
+    const expand=(control,label,render)=>{
+      if(owner===control){dismiss();return;}
+      const range=label==='Text alignment'?null:selectionOrHint();
+      if(label!=='Text alignment'&&!range)return;
+      dismiss();
+      owner=control;owner.setAttribute('aria-expanded','true');
+      box=create('section',{class:'inline-option-panel','aria-label':label});
+      box.append(create('small',{class:'inline-option-title'},label));
+      toolbar.append(box);render(box,range);position();
+    };
+    const preserve=control=>{
       control.addEventListener('pointerdown',e=>e.preventDefault());
-      if(name==='Link'&&node.closest('a,button'))control.disabled=true;
+      return control;
+    };
+    const marks=[];
+    const paintMarks=()=>{
+      for(const [control,command] of marks)control.setAttribute('aria-pressed',String(!!doc.queryCommandState?.(command)));
+    };
+    for(const [label,command] of [['Bold','bold'],['Italic','italic'],['Underline','underline']]){
+      const control=preserve(iconButton(tools,label,command,()=>{
+        const range=selectionOrHint();
+        if(range&&restore(range)){dismiss();doc.execCommand('styleWithCSS',false,false);doc.execCommand(command,false);paintMarks();}
+      },{'aria-pressed':'false'}));
+      marks.push([control,command]);
     }
-    button(toolbar,'Done',()=>finish());button(toolbar,'Cancel',()=>finish(false));
+    watch(doc,'selectionchange',()=>{if(contains(doc.getSelection()?.anchorNode))paintMarks();});
+    const option=(label,glyph,render)=>preserve(iconButton(tools,label,glyph,e=>expand(e.currentTarget,label,render),{'aria-expanded':'false'}));
+    const link=option('Link','link',(panel,range)=>{
+      const fields=create('div',{class:'inline-option-fields'});panel.append(fields);
+      const existing=range.startContainer.parentElement?.closest('a[href]');
+      const address=input(fields,'Link URL',existing?.getAttribute('href')||'',{placeholder:'https://…',maxlength:4096},el=>el.setCustomValidity(''));
+      const set=()=>{
+        const value=address.value.trim();
+        if(!validLink(value)){address.setCustomValidity('Enter a valid link address.');address.reportValidity();return;}
+        if(restore(range)){doc.execCommand('createLink',false,value);dismiss();}
+      };
+      button(fields,'Apply link',set);
+      address.focus();address.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();set();}});
+    });
+    link.disabled=!!node.closest('a,button');
+    tools.append(create('span',{class:'inline-separator','aria-hidden':'true'}));
+    option('Text color','color',(panel,range)=>{
+      const chooseColor=value=>{
+        if(!/^#[0-9a-f]{6}$/i.test(value)||!restore(range))return;
+        doc.execCommand('styleWithCSS',false,true);
+        try{doc.execCommand('foreColor',false,value);}
+        finally{doc.execCommand('styleWithCSS',false,false);}
+        dismiss();
+      };
+      const swatches=create('div',{class:'inline-swatches'});
+      for(const color of palette){
+        const control=button(swatches,'',()=>chooseColor(color),{title:color,'aria-label':'Use color '+color});
+        control.style.setProperty('--swatch',color);
+      }
+      panel.append(swatches);
+      const fields=create('div',{class:'inline-option-fields'});panel.append(fields);
+      const custom=input(fields,'Custom color',palette[0],{type:'color'},()=>{});
+      button(fields,'Apply color',()=>chooseColor(custom.value));
+    });
+    option('Text size','size',(panel,range)=>{
+      const set=size=>{
+        const px=Number(size);
+        if(!Number.isInteger(px)||px<10||px>96||!restore(range))return;
+        doc.execCommand('styleWithCSS',false,false);
+        doc.execCommand('fontSize',false,'7');
+        // The browser wraps the selected runs without splitting link targets
+        // ourselves. Turn its legacy size token into an exact CSS size.
+        for(const font of node.querySelectorAll('font[size="7"]')){
+          font.style.fontSize=px+'px';font.removeAttribute('size');
+        }
+        dismiss();
+      };
+      const sizes=create('div',{class:'inline-sizes'});
+      for(const size of [12,14,16,18,20,24,28,32,40])button(sizes,String(size),()=>set(size),{'aria-label':'Set text size to '+size+' pixels'});
+      panel.append(sizes);
+      const fields=create('div',{class:'inline-option-fields'});panel.append(fields);
+      const initial=Math.max(10,Math.min(96,Math.round(parseFloat(doc.defaultView.getComputedStyle(node).fontSize)||16)));
+      const custom=input(fields,'Size in pixels',initial,{type:'number',min:10,max:96,step:1},()=>{});
+      const applySize=()=>{if(custom.checkValidity()&&custom.value)set(custom.value);else custom.reportValidity();};
+      button(fields,'Apply size',applySize);
+      custom.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applySize();}});
+    });
+    option('Text alignment','left',panel=>{
+      const row=create('div',{class:'inline-alignments'});
+      const current=doc.defaultView.getComputedStyle(block).textAlign;
+      for(const side of alignments){
+        const label=side==='center'?'Center text':side==='justify'?'Justify text':'Align text '+side;
+        iconButton(row,label,side,()=>{
+          block.style.textAlign=side;edit.align=side;dismiss();
+        },{'aria-pressed':String(current===side||current==='start'&&side==='left'||current==='end'&&side==='right')});
+      }
+      panel.append(row);
+    }).disabled=!block;
+    tools.append(create('span',{class:'inline-separator','aria-hidden':'true'}));
+    iconButton(tools,'Done','check',()=>finish(),{class:'inline-icon inline-done'});
+    iconButton(tools,'Cancel','close',()=>finish(false),{class:'inline-icon inline-cancel'});
     document.body.append(toolbar);
     const keys=e=>{
       if(e.key==='Escape'||e.key==='Enter'&&(e.ctrlKey||e.metaKey)){
-        e.stopPropagation();e.preventDefault();finish(e.key!=='Escape');
+        e.stopPropagation();e.preventDefault();
+        if(e.key==='Escape'&&box){dismiss();node.focus({preventScroll:true});return;}
+        finish(e.key!=='Escape');
       }
     };
     watch(node,'keydown',keys);watch(toolbar,'keydown',keys);
@@ -135,5 +285,5 @@ const StudioInline=(()=>{
     const sel=doc.getSelection(), range=doc.createRange();range.selectNodeContents(node);sel.removeAllRanges();sel.addRange(range);
     paint();return true;
   }
-  return {apply,start,finish,running,contains,inToolbar,position};
+  return {apply,start,finish,running,contains,inToolbar,position,supports:n=>!!rootFor(n),canAlign:n=>!!alignmentFor(rootFor(n))};
 })();
