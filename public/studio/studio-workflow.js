@@ -24,16 +24,28 @@ const StudioWorkflow=(()=>{
     }
     return pendingByPage.get(k);
   }
-  function submitted(target,id,previousRevision){
-    const record={id,at:Date.now(),previousRevision}, k=target[0];
+  function storePending(k,record){
     pendingByPage.set(k,record);
     try{localStorage.setItem(pendingKey(k),JSON.stringify(record));}catch{}
     touchStatus();
+  }
+  function submitted(target,id,previousRevision,sha){
+    storePending(target[0],{id,at:Date.now(),previousRevision,sha});
+  }
+  function deploymentFailed(target,id,previousRevision,sha){
+    const k=target[0], record=pending(k);
+    if(record?.id===id&&record.previousRevision===previousRevision&&record.sha===sha){
+      // Keep the submission so a workflow rerun can still be verified later.
+      storePending(k,{...record,failed:true});
+    }
   }
   function verified(target,state,submittedRaw){
     const k=target[0];
     const record=pending(k);
     if(!record||record.id!==state.publication||record.previousRevision===state.revision)return;
+    const url=new URL(target[2]?target[2]+'/':'',StudioPublish.details.LIVE);
+    url.searchParams.set('ncw_rev',state.revision);
+    StudioRelease.set(k,'live',record.previousRevision?'The previous version is back online.':'The published page is verified and ready for visitors.',url.href);
     pendingByPage.delete(k);
     try{localStorage.removeItem(pendingKey(k));}catch{}
     const cloud=slots.get(browserAccount+':'+k), user=browserAccount;
@@ -52,7 +64,8 @@ const StudioWorkflow=(()=>{
     const el=$('publish-status'), state=pending(page[0]);
     let kind='', message='Ready to edit';
     const followUp=!!state&&Date.now()-state.at<180000;
-    if(state){kind='pending';message=followUp?(state.previousRevision?'Reverting…':'Publishing…'):'Waiting for GitHub Pages';}
+    if(state?.failed){kind='error';message='GitHub Pages deployment failed';}
+    else if(state){kind='pending';message=followUp?(state.previousRevision?'Reverting…':'Publishing…'):'Waiting for GitHub Pages';}
     else if(stale()){message='';}
     else if(liveRevision){kind='live';message='Live version verified';}
     if(kind)el.dataset.state=kind;else el.removeAttribute('data-state');
@@ -63,7 +76,8 @@ const StudioWorkflow=(()=>{
       if(!revert.hidden)revert.disabled=StudioPublish.isBusy();
     }
   }
-  const pendingRelease=(target=page)=>{const state=pending(target[0]);return state&&Date.now()-state.at<180000?state:null;};
+  const pendingRelease=(target=page)=>{const state=pending(target[0]);return state&&!state.failed&&Date.now()-state.at<180000?state:null;};
+  const latestRelease=(target=page)=>pending(target[0]);
   const isPending=(target=page)=>!!pendingRelease(target);
   const canRevert=()=>mode==='edit'&&!!liveRevision&&!!liveSource&&!switching&&!isPending();
   function draftStatus(){
@@ -232,5 +246,5 @@ const StudioWorkflow=(()=>{
       return true;
     }finally{paused=false;}
   }
-  return {account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,verified,isPending,pendingRelease,canRevert};
+  return {account,schedule,sync,pageReady,connect,disconnect,draftStatus,renderStatus,submitted,deploymentFailed,verified,isPending,pendingRelease,latestRelease,canRevert};
 })();

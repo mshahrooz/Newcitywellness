@@ -29,7 +29,7 @@ function fixture(reduce=false){
   const progress=()=>Number(card.children[1].children[1].attrs['aria-valuenow']);
   return {
     set:(stage)=>release.set('home',stage,stage,'https://example.test/'),
-    progress,
+    progress,card,
     tick(ms){now+=ms;const calls=[...pending.values()];pending.clear();calls.forEach(fn=>fn(now));return progress();},
   };
 }
@@ -83,4 +83,20 @@ test('reduced motion displays the verified completion immediately',()=>{
   assert.ok(f.tick(3000)<100);
   f.set('live');
   assert.equal(f.progress(),100);
+});
+
+test('a slow deployment has no frozen percentage and a failed one hides the meter',()=>{
+  const f=fixture();
+  f.set('deploy');
+  f.tick(25000);
+  f.set('waiting');
+  assert.ok(Number.isNaN(f.progress()));
+  assert.equal(f.card.children[1].children[0].children[1].hidden,true);
+  f.set('verify');
+  assert.ok(f.progress()<100);
+  f.set('error');
+  assert.equal(f.card.children[1].hidden,true);
+  f.set('prepare');
+  assert.equal(f.card.children[1].hidden,false);
+  assert.equal(f.progress(),0);
 });

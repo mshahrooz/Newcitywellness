@@ -407,18 +407,32 @@ const StudioPublish = (() => {
   }
   function bindSource(source){loadedSource=source;}
   function baseOfDraft(){return loadedSource;}
-  const watching=new Set();
-  async function waitForLivePublication(target,id,previousRevision){
-    if(id===null?!/^[a-f0-9]{24}$/.test(previousRevision):!/^[a-f0-9-]{36}$/.test(id))return;
-    const key=target[0], token=key+':'+id+':'+(previousRevision||'');
-    if(watching.has(token))return;
-    watching.add(token);
-    const start=Date.now(), deadline=start+180000;
+  const watching=new Map();
+  const waitingMessage='GitHub has saved your changes. Studio will finish once the public page is verified.';
+  const failedMessage='GitHub saved your changes, but the Pages deployment failed. Your draft is still saved. You can publish again.';
+  async function deploymentFailed(sha){
+    if(!VALID_SHA.test(sha))return false;
     try{
+      const filters=new URLSearchParams({head_sha:sha,branch:'main',event:'push',per_page:'5'});
+      const response=await fetchLive(API+REPO_API+'/actions/workflows/deploy.yml/runs?'+filters,4500);
+      if(!response.ok)return false;
+      const {workflow_runs:runs}=await response.json();
+      const latest=runs?.filter(run=>run.head_sha===sha).sort((a,b)=>b.run_number-a.run_number)[0];
+      return latest?.status==='completed'&&['failure','timed_out','action_required'].includes(latest.conclusion);
+    }catch{return false;} // The public status API is optional. The live page is authoritative.
+  }
+  function waitForLivePublication(target,id,previousRevision,sha){
+    if(id===null?!/^[a-f0-9]{24}$/.test(previousRevision):!/^[a-f0-9-]{36}$/.test(id))return Promise.resolve();
+    const key=target[0], token=key+':'+id+':'+(previousRevision||'');
+    if(watching.has(token))return watching.get(token);
+    const task=(async()=>{
+      const start=Date.now(), deadline=start+180000;
+      let nextStatusCheck=start+7000, waiting=false, matched=false;
       while(Date.now()<deadline){
         try{
           const live=await liveManifest(target);
           if(live&&live.publication===id&&live.revision!==previousRevision){
+            matched=true;
             StudioRelease.set(key,'verify','GitHub has announced the release. Checking the public page…');
             const url=await verifyLivePage(target,live);
             StudioRelease.set(key,'live',previousRevision?'The previous version is back online.':'The published page is verified and ready for visitors.',url);
@@ -427,10 +441,23 @@ const StudioPublish = (() => {
           }
         }catch{ /* Pages may still be deploying. */ }
         const elapsed=Date.now()-start;
+        if(!matched&&!waiting&&elapsed>=25000){
+          waiting=true;StudioRelease.set(key,'waiting',waitingMessage);
+        }
+        if(!matched&&Date.now()>=nextStatusCheck){
+          nextStatusCheck=Date.now()+8000;
+          if(await deploymentFailed(sha)){
+            StudioWorkflow.deploymentFailed(target,id,previousRevision,sha);
+            StudioRelease.set(key,'error',failedMessage);
+            return;
+          }
+        }
         await new Promise(resolve=>setTimeout(resolve,document.hidden?6000:elapsed<45000?1700:elapsed<90000?4500:8000));
       }
-      StudioRelease.set(key,'deploy','GitHub Pages is taking longer than usual. You can close this box. Studio will keep checking in the background.');
-    }finally{watching.delete(token);}
+      StudioRelease.set(key,'waiting','GitHub Pages is taking longer than usual. Your changes are saved. Studio will keep checking while this page is open.');
+    })().finally(()=>watching.delete(token));
+    watching.set(token,task);
+    return task;
   }
   function panel(reverting=false){
     if(busy||reverting&&!StudioWorkflow.canRevert())return;
@@ -459,6 +486,9 @@ const StudioPublish = (() => {
       authArea.querySelectorAll('button,input').forEach(el=>{el.disabled=value;});
     };
     const direct=button(controls,reverting?'Revert Live Page':'Publish Website',()=>void submit(),{class:reverting?'revert-live-button':'publish-website-button'});
+    const follow=(id,previousRevision,sha)=>void waitForLivePublication(target,id,previousRevision,sha).finally(()=>{
+      if(direct.isConnected)running(busy);
+    });
     async function submit(){
       if(busy||!signedIn()||!activeDraft||publishing())return;
       running(true);
@@ -476,9 +506,9 @@ const StudioPublish = (() => {
           if(!VALID_SHA.test(result.sha)||!(result.id===null?result.source===null:/^[a-f0-9-]{36}$/.test(result.id)&&VALID_SHA.test(result.source))){
             throw Error('GitHub did not confirm the revert. Check the live page before trying again.');
           }
-          StudioWorkflow.submitted(target,result.id,previousRevision);
+          StudioWorkflow.submitted(target,result.id,previousRevision,result.sha);
           StudioRelease.set(key,'deploy','The previous version is saved to GitHub. GitHub Pages is deploying it.');
-          void waitForLivePublication(target,result.id,previousRevision);
+          follow(result.id,previousRevision,result.sha);
           return;
         }
         const update=(message,stage)=>StudioRelease.set(key,stage||'checking',message);
@@ -498,10 +528,10 @@ const StudioPublish = (() => {
         if(result.id!==id||!VALID_SHA.test(result.source))throw Error('GitHub did not confirm the submitted revision. Your draft is still here.');
         {
           rememberSubmitted(target[0],id,snapshot);
-          StudioWorkflow.submitted(target,id);
+          StudioWorkflow.submitted(target,id,undefined,result.sha);
           void save();
           StudioRelease.set(key,'deploy','GitHub has saved your changes. GitHub Pages is putting the new version online.');
-          void waitForLivePublication(target,id);
+          follow(id,undefined,result.sha);
         }
       }catch(e){
         StudioRelease.set(key,'error',e.message);
@@ -544,9 +574,11 @@ const StudioPublish = (() => {
     showAuth();
     const pending=StudioWorkflow.pendingRelease(target);
     if(pending){
-      StudioRelease.set(key,'deploy','GitHub Pages is putting this version online.');
-      void waitForLivePublication(target,pending.id,pending.previousRevision);
-    }
+      const token=key+':'+pending.id+':'+(pending.previousRevision||'');
+      if(!watching.has(token))StudioRelease.set(key,'deploy','GitHub Pages is putting this version online.');
+      follow(pending.id,pending.previousRevision,pending.sha);
+    }else if(StudioWorkflow.latestRelease(target)?.failed)StudioRelease.set(key,'error',failedMessage);
+    else if(StudioWorkflow.latestRelease(target))StudioRelease.set(key,'waiting',waitingMessage);
   }
   const start=()=>{
     if(!$('publish'))return;

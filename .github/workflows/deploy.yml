@@ -16,6 +16,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -30,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -118,14 +119,43 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
+        id: upload
         uses: actions/upload-pages-artifact@v3
         with:
           path: out
           name: github-pages-${{ github.run_attempt }}
 
+      - name: Wait for Pages to see the uploaded artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_ARTIFACT_ID: ${{ steps.upload.outputs.artifact_id }}
+          PAGES_ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
+        run: python3 scripts/wait-pages-artifact.py
+
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages-${{ github.run_attempt }}
           reporting_interval: 2000
+
+      # The runner's artifact catalog can lag the REST API. Only retry
+      # creation if the first action did not receive a deployment URL.
+      - name: Wait for artifact metadata to catch up
+        if: steps.deployment.outcome == 'failure' && steps.deployment.outputs.page_url == ''
+        run: sleep 6
+
+      - name: Retry starting the Pages deployment
+        id: deployment-retry
+        if: steps.deployment.outcome == 'failure' && steps.deployment.outputs.page_url == ''
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+          reporting_interval: 2000
+
+      - name: Report a failed Pages deployment
+        if: steps.deployment.outcome == 'failure' && steps.deployment.outputs.page_url != ''
+        run: |
+          echo "::error::GitHub Pages started the deployment but did not complete it."
+          exit 1

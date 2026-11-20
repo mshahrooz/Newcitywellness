@@ -3,10 +3,10 @@
 // The step labels are confirmed events. The in-between percentage is an estimate.
 const StudioRelease=(()=>{
   const steps=['Prepare','Save to GitHub','Deploy','Verify live'];
-  const phase={idle:-1,prepare:0,checking:0,package:0,commit:1,deploy:2,verify:3,live:4};
+  const phase={idle:-1,prepare:0,checking:0,package:0,commit:1,deploy:2,waiting:2,verify:3,live:4};
   const pace={prepare:[10,5],checking:[22,5],package:[34,5.5],commit:[56,5],deploy:[94,3.5],verify:[99,5.5]};
   const titles={idle:'Ready to publish',prepare:'Preparing your page',checking:'Checking the live version',package:'Packaging your edits',
-    commit:'Saving the release',deploy:'Putting your page live',verify:'Verifying the live page',
+    commit:'Saving the release',deploy:'Putting your page live',waiting:'Waiting for GitHub Pages',verify:'Verifying the live page',
     live:'Your page is live',error:'Couldn’t publish'};
   const states=new Map(), views=new Map();
   const idle={step:'idle',index:-1,from:0,since:0,message:'Your changes go live when GitHub Pages finishes deploying.'};
@@ -59,10 +59,18 @@ const StudioRelease=(()=>{
     view.dismiss.hidden=state.step!=='live';
     if(state.step==='live')view.dismiss.href=state.url;
     cancelAnimationFrame(view.frame);
-    meter(view,state,performance.now());
+    view.progress.hidden=state.step==='error';
+    view.number.hidden=state.step==='waiting';
+    view.label.textContent=state.step==='waiting'?'GitHub Pages is deploying':'Estimated progress';
+    if(state.step==='waiting'){
+      view.integer=null;view.width='';
+      view.track.removeAttribute('aria-valuenow');view.track.removeAttribute('aria-valuetext');
+      view.fill.style.width='100%';
+    }else meter(view,state,performance.now());
   }
   function set(key,step,message,url){
     const prior=states.get(key)||idle, now=performance.now();
+    if(step==='live'&&prior.step===step&&prior.url===url)return;
     states.set(key,{step,message,url,index:phase[step]??Math.max(0,prior?.index??0),
       since:now,from:step==='prepare'?0:estimate(prior,now)});
     render(key);
@@ -87,14 +95,15 @@ const StudioRelease=(()=>{
     const progress=create('div',{class:'release-meter'});
     const caption=create('div',{class:'release-meter-caption'});
     const number=create('strong',{'aria-hidden':'true'},'0%');
-    caption.append(create('span',{},'Estimated progress'),number);
+    const label=create('span',{},'Estimated progress');
+    caption.append(label,number);
     const track=create('div',{class:'release-track',role:'progressbar','aria-label':'Publishing milestones','aria-valuemin':'0','aria-valuemax':'100'});
     const fill=create('span',{class:'release-fill'});
     track.append(fill);progress.append(caption,track);
     const dismiss=create('a',{class:'release-live-link',target:'_blank',rel:'noopener noreferrer',hidden:''},'View live page ↗');
     card.append(head,progress,sequence,dismiss);parent.append(card);
     const prior=views.get(key);if(prior)cancelAnimationFrame(prior.frame);
-    views.set(key,{card,title,note,steps:items,dismiss,track,fill,number,integer:null,width:'',frame:0});
+    views.set(key,{card,title,note,steps:items,dismiss,progress,label,track,fill,number,integer:null,width:'',frame:0});
     render(key);
     return card;
   }
