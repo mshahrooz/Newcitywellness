@@ -13,6 +13,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: ["main", "master"]
+    paths-ignore:
+      - ".github/uptime/supabase.json"
   workflow_dispatch:
 
 permissions:

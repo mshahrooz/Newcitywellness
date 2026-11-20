@@ -11,7 +11,8 @@ from pathlib import Path
 STUDIO_OUTPUT = re.compile(
     r"(?:src/content/(?:homepage-studio-published\.json|studio-pages/[a-z0-9-]+\.json)"
     r"|public/homepage-studio/(?:draft\.json|pages/[a-z0-9-]+/draft\.json)"
-    r"|public/(?:images|media)/homepage-studio/.+)"
+    r"|public/(?:images|media)/homepage-studio/.+"
+    r"|\.github/uptime/supabase\.json)"
 )
 MARKER = ".ncw-static-base"
 
@@ -29,8 +30,8 @@ def is_publication(path):
 
 
 def fingerprint(root, base_path):
-    # Byte identity of every tracked input. Only the files written by an
-    # ordinary Studio publish are excluded, including its uploaded media.
+    # Byte identity of tracked site inputs. Exclude mutable Studio publications,
+    # their uploaded media, and the operational keep-alive report.
     digest = hashlib.sha256(base_path.encode() + b"\0")
     for path, flags in tracked(root):
         if not is_publication(path):

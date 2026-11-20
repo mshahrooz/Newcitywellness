@@ -2,8 +2,8 @@ name: Supabase Keep Alive
 
 on:
   schedule:
-    # Monday and Thursday, 10:17 a.m. Pakistan time (05:17 UTC).
-    - cron: '17 5 * * 1,4'
+    # 06:17, 14:17, and 22:17 Pakistan time, daily.
+    - cron: '17 1,9,17 * * *'
   workflow_dispatch:
   push:
     branches: [main]
@@ -58,3 +58,47 @@ jobs:
             await sleep(attempt * 2000);
           }
           NODE
+
+  record-health:
+    # Only this isolated job can write one operational status file.
+    if: ${{ !cancelled() && github.repository == 'mshahrooz/Newcitywellness' && github.ref == 'refs/heads/main' && (needs.probe.result == 'success' || needs.probe.result == 'failure') }}
+    needs: probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: write
+    concurrency:
+      group: studio-supabase-health-record
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Record the check when the repository has been quiet
+        shell: bash
+        env:
+          PROBE_RESULT: ${{ needs.probe.result }}
+        run: |
+          set -euo pipefail
+          report=.github/uptime/supabase.json
+          head=$(git rev-parse HEAD)
+          age=$(( $(date +%s) - $(git log -1 --format=%ct HEAD) ))
+          # Record the first real test, then only after 35 days with no commits.
+          if [[ -f "$report" && "$age" -lt $((35 * 86400)) ]]; then
+            echo 'Recent repository activity detected. No health record commit needed.'
+            exit 0
+          fi
+
+          case "$PROBE_RESULT" in success|failure) ;; *) exit 1 ;; esac
+          mkdir -p "$(dirname "$report")"
+          printf '{\n  "checked_at": "%s",\n  "result": "%s",\n  "run_id": "%s"\n}\n' \
+            "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$PROBE_RESULT" "$GITHUB_RUN_ID" > "$report"
+          git add -- "$report"
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'Record Studio Supabase health check'
+          if ! git push origin HEAD:refs/heads/main; then
+            current=$(git ls-remote --exit-code origin refs/heads/main | cut -f1)
+            if [[ "$current" == "$head" ]]; then exit 1; fi
+            echo 'Main advanced during the health check. The newer commit already provides repository activity.'
+          fi
