@@ -1,0 +1,60 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Monday and Thursday, 10:17 a.m. Pakistan time (05:17 UTC).
+    - cron: '17 5 * * 1,4'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keep-alive.yml'
+      - 'public/studio/publisher-config.js'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Read one health row from Supabase
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { setTimeout as sleep } from 'node:timers/promises';
+
+          // Reuse the public settings shipped with Studio. No elevated key is needed.
+          const config = readFileSync('public/studio/publisher-config.js', 'utf8');
+          const url = config.match(/\burl:\s*['"](https:\/\/[a-z0-9]+\.supabase\.co)['"]/)?.[1];
+          const key = config.match(/\bkey:\s*['"](sb_publishable_[A-Za-z0-9_-]+)['"]/)?.[1];
+          if (!url || !key) throw new Error('Studio is missing a valid Supabase URL or publishable key.');
+
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            const response = await fetch(url + '/rest/v1/rpc/studio_keep_alive', {
+              headers: { apikey: key, Accept: 'application/json' },
+              redirect: 'error',
+              signal: AbortSignal.timeout(10000),
+            }).catch(() => null);
+
+            if (response?.ok) {
+              const rows = await response.json();
+              if (!Array.isArray(rows) || rows.length !== 1 || rows[0]?.ok !== true) {
+                throw new Error('Supabase did not return the expected single health row.');
+              }
+              console.log('Supabase keep-alive succeeded (one read-only row).');
+              break;
+            }
+            const status = response?.status;
+            if (attempt === 3 || status && status !== 429 && status < 500) {
+              throw new Error('Supabase keep-alive failed: ' + (status ? 'HTTP ' + status : 'network unavailable or timed out'));
+            }
+            await sleep(attempt * 2000);
+          }
+          NODE
